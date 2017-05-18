@@ -1,0 +1,31 @@
+print_neuttest	1
+print_matrixpol	0
+
+n_iterations	100
+seed1	81140
+n_loci	1
+n_samples	27
+n_sites	2240
+factorn_chr	1.0
+
+no_rec_males	0
+sex_ratio	1
+npop	3
+npop_sampled	3
+ssize_pop	9	17	1
+factor_pop	1	0.1	1
+
+npop_events	6
+pop_event	0 0 0 0.1      0.1   0 0 0  0 0 0,
+	1 1 1 0.5      0.3   0 0 0  0 0 0,
+	2 0 0 1.0      0.2   0 0 0  0 0 0,
+	3 1 1 2.0      0.2   0 0 0  0 0 0,
+	4 0 1 1.0     0.5  0 0 0  0 0 0,
+	5 0 2 1.0     4  0 0 0  0 0 0,
+
+mhits	1
+mhratio_sv	0.97
+pop_outgroup	2
+
+theta	0.01
+recombination	0.00

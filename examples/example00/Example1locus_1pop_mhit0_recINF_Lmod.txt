@@ -1,0 +1,14 @@
+print_neuttest	1
+print_matrixpol	0
+
+n_iterations	1000
+seed1	81140
+n_loci	1
+n_samples	20
+n_sites	1000 "10000"
+
+npop	1
+mhits	0
+
+theta	0.01
+recombination	1000000

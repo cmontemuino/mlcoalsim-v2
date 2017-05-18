@@ -1,0 +1,35 @@
+mlcoalsimX "Multilocus coalescent simulation program" performs coalescent simulations under several demographic and also a selective model. In this version, the parameters can be included in separated prior files. Also, it calculates simulations using more than one processor (defined by the user). Furthermore, the input file has been changed significantly in relation to the fist version.
+The graphical Interface is under development. The Manual of use still under construction.
+
+COMPILE:
+gcc *.c -lm -o mlcoalsimX -Wall -pedantic -DZNS_ACTIVE -O3
+OR (for parallel version)
+mpicc *.c -lm -o mlcoalsimXmpi -Wall -pedantic -DZNS_ACTIVE -O3 -DinMPI 
+
+The inclusion of ZnS statistics with the option "-DZNS_ACTIVE" can reduce significantly the speed of the simulations if the number of variants is high.
+
+RUN:
+./mlcoalsimX [input.txt] [output.txt]
+OR (for parallel varsion)
+mpirun -np [n_process] ./mlcoalsimXmpi [input.txt] [output.txt]
+
+
+Examples:
+Run the examples. Go into the folder example and run: 
+
+cd ./examples00/
+sh ./run_mlcoalsim00.sh
+cd ..
+
+cd ./example01/
+./mlcoalsimX ./Example1locus.txt ./Example1locus.out
+cd ..
+
+cd ./example02/
+sh ./run_mlcoalsim02.sh
+cd ..
+
+cd ./example10/
+mpirun -np 10 ./mlcoalsimXmpi ./Example10loci.txt ./outputs/Example10loci.out
+cd ..
+

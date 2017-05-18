@@ -1,0 +1,104 @@
+"
+This example simulates five loci from an autosome and five loci from X-chromosome in a mammal species.
+The population analyzed suffered a bottleneck defined in prior 1 after a time defined in prior 2. 
+After the bottleneck (time 0.01) the population recover to a size defined by prior 3. 
+Finally the population coalesce with the outgrip at time defined in prior 4.
+Prior 5 is prior 4 + prior 1 + 0.01.
+Every loci has defined a theta value (priors 6-15, here al autosome have the same value and X has the same too) 
+but a single recombination value (defined in prior 16).
+
+pop_event: matrix that contains 'npop_events' columns separated by commas, each with 5 values separated by spaces/tabs + 2 vectors: 
+	first the number of the event (starting from 0!)
+	second and third, the populations implicated in the event (if only one, type the same number twice, if second is negative, split pop).
+	Next, the the pop_size of the 'new' pop (relative to N). Warning: the 'new' pop must be the number of the smallest 
+		pop number when two pops are implicated.
+	Next, the time (in 4N gen) the event occurred. Note that this value is relative to the other events occurred before. 
+		First, the time is counted from events from 'nint', then, all the npop_events in sucesive order.
+	Finally, indicate the migration vector of the new pop(i) i->rest and the vector rest->i in the correct order, 
+		with n values (all n population from starting simulation, and writing 0 to the extinct pop and the diagonal).
+	In case split, two events have to be defined: the first event needs pop1 from split and pop2 a negative value (the new pop), 
+		factor pop for the current pop and the time of split, and migration vectors for the current pop.
+	In case split (cont) second event: pop1=pop2 the new pop, factor pop for the new pop, time (not counted) and the migration 
+		vectors for the new pop.
+"
+
+print_neuttest	3
+print_matrixpol	0
+
+n_iterations	100
+seed1	81140	34377	73919	39765	3407	38921	58985	64207	25957	2042
+n_loci	10 "5+5"
+n_samples	14	14	11	14	14	14	13	13	12	13
+n_sites	979	997	734	666	833	741	741	991	811	702	
+factorn_chr	1.0	1.0	1.0	1.0	1.0	0.75	0.75	0.75	0.75	0.75
+
+no_rec_males	0
+sex_ratio	1
+npop	2
+npop_sampled	2
+ssize_pop	13 1,	13 1,	10 1,	13 1,	13 1,	13 1,	12 1,	12 1,	11 1,	12 1
+factor_pop	1	1
+pop_outgroup	1
+
+mig_rate_matrix	0 0, 0 0
+
+npop_events	3
+pop_event	0 0 0 &1      &2   0 0  0 0,
+	1 0 0 &3      0.01 0 0  0 0,
+	2 0 1 1.00    &4   0 0  0 0
+	
+pevent_sexratio	1	&5
+
+mhits	1
+mhratio_sv	0.98
+
+theta	&6	&7	&8	&9	&10	&11	&12	&13	&14	&15
+recombination	&16
+
+nprior	1
+prior_file	./prior001.txt
+
+nprior	2
+prior_file	./prior002.txt
+
+nprior	3
+prior_file	./prior003.txt
+
+nprior	4
+prior_file	./prior004.txt
+
+nprior	5
+prior_file	./prior005.txt
+
+nprior	6
+prior_file	./prior006.txt
+
+nprior	7
+prior_file	./prior007.txt
+
+nprior	8
+prior_file	./prior008.txt
+
+nprior	9
+prior_file	./prior009.txt
+
+nprior	10
+prior_file	./prior010.txt
+
+nprior	11
+prior_file	./prior011.txt
+
+nprior	12
+prior_file	./prior012.txt
+
+nprior	13
+prior_file	./prior013.txt
+
+nprior	14
+prior_file	./prior014.txt
+
+nprior	15
+prior_file	./prior015.txt
+
+nprior	16
+prior_file	./prior016.txt

@@ -1,0 +1,1 @@
+mpirun -np 10 ./mlcoalsimXmpi ./Example10loci.txt ./outputs/Example10loci.out
