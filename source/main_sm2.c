@@ -27,8 +27,18 @@
 	#include <mpi.h>
 #endif
 
+#ifdef BENCHMARK
+#include "benchmark.h"
+#endif
+
 int main (int argc,char *argv[])
-{	    
+{
+#ifdef BENCHMARK
+	FILE *benchmark_file;
+	long start = now_in_seconds();
+	struct memory_stats_t memory_stats;
+	int err;
+#endif
     void input_data(FILE *,struct var **,struct var_priors **);
     void output_data(FILE *, char *,char *, struct var **,struct var_priors *);
     void getpars_fix(struct var **, struct var2 **);
@@ -630,6 +640,7 @@ int main (int argc,char *argv[])
 		}
 
 		for(x=nppr[my_rank];x<nppr[my_rank+1];x++) {
+
 			/*change the seed for each loci:*/
 			/*if(x)*/ init_seed1((*data).seed1[x+1]);/*init_seed1((long int)-(21474*x+(*data).seed1));*//*modify seeds. the user has to give the seed for each locus*/
 			getpars_mod(&data,&inputp,x);			
@@ -1104,6 +1115,13 @@ int main (int argc,char *argv[])
 		if(matrix_test) free(matrix_test);
 		free(matrix_test2);
 	}
+	
+#ifdef BENCHMARK
+		benchmark_file = create_benchmark_file(file_out);
+		err = collect_memory_stats(&memory_stats);
+		report_memory_stats(memory_stats, benchmark_file);
+#endif
+
     free_getpars_fix(&data,&inputp);
     free(inputp);
     free_inputdata(&data,priors,my_rank);
@@ -1116,6 +1134,13 @@ int main (int argc,char *argv[])
     #ifndef __DNASP__
 	printf("\n %s exited succesfully.\n\n",MLCOALSIM);
 	#endif
-
+#ifdef BENCHMARK
+	long elapsed_ms = now_in_seconds() - start;
+	report_elapsed_time(elapsed_ms, benchmark_file);
+	close_benchmark_file(benchmark_file);
+	// #ifdef __linux__
+	// 	fprintf(stdout, "Viene con linux\n");
+	// #endif
+#endif
 	return 0;
 }

@@ -1153,6 +1153,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 			weightmut,weightrec,(*inputp)->migrate_matrix,my_rank,(*inputp)->npop_events,(*inputp)->pop_event,
 			(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
 			(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit);
+
             if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut); /******** mhits ******************/
             if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp,(*inputp)->pop_outgroup); /******** outgroup ******************/
 			/*
@@ -1254,9 +1255,9 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					weightmut,weightrec,(*inputp)->migrate_matrix,my_rank,(*inputp)->npop_events,(*inputp)->pop_event,
 					(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
 					(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit);
+
 					if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut); /******** mhits ******************/
 					if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp,(*inputp)->pop_outgroup); /******** outgroup ******************/
-					
 					if((*inputp)->linked > 1) {/*linked fragments with subset fixed values*/
 						s0=s1=0;
 						nwindow=0;
