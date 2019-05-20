@@ -1,4 +1,4 @@
-print_neuttest	1
+ print_neuttest	1
 print_matrixpol	0
 
 n_iterations	1000
