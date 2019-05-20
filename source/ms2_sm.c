@@ -4030,7 +4030,7 @@ void make_gametes(int nsam, struct node *ptree, double tt,long int newsites,long
     int tdesn(struct node *,int,int);
 	
 	double rr;
-	double ran1();
+	double ran1(void);
 	char r;
 	
 	
@@ -9208,7 +9208,7 @@ int do_heter_gamma_sites(double *categories,double gammashape,double poppar,long
 	/*do a cummulative vector*/
 	long int i;
 	double gammadist(double),newpoppar;
-	double ran1();
+	double ran1(void);
 		
 	newpoppar = poppar * (double)nsites/(double)(nsites-invariable);
 	

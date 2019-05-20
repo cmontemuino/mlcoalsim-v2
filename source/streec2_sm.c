@@ -1503,7 +1503,7 @@ void xover(int nsam,int ic,long int is,double *weightrec,long int nsites,double 
     struct seg *pseg,*pseg2;
     long int i,lsg,lsgm1,newsg,jseg,k,in;
     double len,lenr;
-    double ran();
+    double ran(void);
     
     pseg = chrom[ic].pseg;	/* punter al primer segment de l'individu ic */
     lsg  = chrom[ic].nseg;	/* nombre de segments de ic */

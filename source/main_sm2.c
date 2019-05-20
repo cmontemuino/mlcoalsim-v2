@@ -38,7 +38,7 @@ int main (int argc,char *argv[])
 	int print_matrix_sfixalltheta(struct var **,FILE *,FILE *,struct prob_par **);
 	int print_matrix_rmfix(struct var **,FILE *,FILE * /*,FILE * */,int,struct prob_par **);
 	int make_priord(struct var_priors *,long int);
-	double ran1();
+	double ran1(void);
     
     int print_neuttest(struct var **,FILE *,char *,char *,double **,struct prob_par **);
     int ms(struct var2 **,char *,double **,struct prob_par **,long int,long int,long int *,long int *, long int *,struct var_priors *,int,long int);    
