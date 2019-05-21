@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "benchmark_types.h"
+#include <stdarg.h>
 
 // https://stackoverflow.com/questions/26932749/how-can-wgnu-zero-variadic-macro-arguments-warning-be-turned-off-with-clang
 #pragma clang diagnostic push

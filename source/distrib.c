@@ -23,10 +23,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// #include "log.h"
+
 /*Routines based on Numerical Recipes in C*/
 
 double gammalogn(double zz)
 {
+	// log_info("gammalogn -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992. p. 213. and on 
 	Lanczos 1964 J. SIAM Numer. Anal. Ser. B, Vol. 1 pp 86-96.*/
 	
@@ -60,6 +63,7 @@ double gammalogn(double zz)
 
 double factln(long int x)
 {
+	// log_info("factln -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	Lanczos 1964 J. SIAM Numer. Anal. Ser. B, Vol. 1 pp 86-96.*/
 	
@@ -88,6 +92,7 @@ double factln(long int x)
 
 double gammadist(double alfa) 
 {
+	// log_info("gammadist -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992, on
 	Cheng anf Feast 1979, Appl. Statist. 28, No. 3, pp. 290-295, and on
 	PSeq-Gen v1.1. Nicholas C. Grassly, Jun Adachi and Andrew Rambaut*/
@@ -134,7 +139,7 @@ double gammadist(double alfa)
 /*From PSeq-Gen v1.1. Nicholas C. Grassly, Jun Adachi and Andrew Rambaut */
 double rndgamma1 (double s)
 {
-
+	// log_info("rdngamma1 -- START", NULL);
 	double ran1(void);
 	double			r, x=0.0, small=1e-37, w;
 	static double	a, p, uf, ss=10.0, d;
@@ -170,6 +175,7 @@ double rndgamma1 (double s)
 
 double poissondist(double lambda) 
 {
+	// log_info("poissondist -- START", NULL);
 	/*Based on Atkinson 1979 Appl. Statist. 28: No. 1, pp, 29-35.*/
 	double ran1(void);	
 	double r,s;
@@ -227,6 +233,7 @@ double poissondist(double lambda)
 
 double binomialdist(double pp, int n) 
 {
+	// log_info("binomialdist -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	Fishman 1979 J. American Statistical Association Vol. 74, No. 366, pp 418-423*/
 	
@@ -320,6 +327,7 @@ double binomialdist(double pp, int n)
 
 double largebinomialdist(double pp, double n) 
 {
+	// log_info("largebinomialdist -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	 Fishman 1979 J. American Statistical Association Vol. 74, No. 366, pp 418-423*/
 	
@@ -383,6 +391,7 @@ double largebinomialdist(double pp, double n)
 
 int zbracn(double (*func)(double,double,double,double,double,double,double,double,double,double),double *x1,double *x2,double a0,double a1,double a2,double a3,double a4,double a5,double a6,double a7,double a8)
 {
+	// log_info("zbracn -- START", NULL);
 	/* Based on Numerical Recipes in C. Press et al. 1992. 
     We need *x1 and *x2 be the range where a root is within them. We expand geometrically the range until finding
 	(one a positive and one a negative value). If not, return 0.
@@ -417,6 +426,7 @@ int zbracn(double (*func)(double,double,double,double,double,double,double,doubl
 
 double zriddrn(double (*func)(double,double,double,double,double,double,double,double,double,double),double xlow,double xhigh,double xacc,double a0,double a1,double a2,double a3,double a4,double a5,double a6,double a7, double a8)
 {
+	// log_info("zriddrn -- START", NULL);
 	/* Based on Numerical Recipes in C. Press et al. 1992., p. 358 an on
 	Ridders, 1979, IEEE Transactions on Circuits and systems, Vol. Cas-26, No. 11, pp. 979-980.
 	*/
@@ -477,6 +487,7 @@ double zriddrn(double (*func)(double,double,double,double,double,double,double,d
 /*CALCULATE PRIORS AND INCLUDE ON THE STRUCT var_priors */
 int make_priord(struct var_priors *priorx,long int niter) 
 {
+	// log_info("make_priord -- START", NULL);
 	long int i,j;
 	double value;
 	double arg[6];
@@ -615,6 +626,7 @@ int make_priord(struct var_priors *priorx,long int niter)
 
 double gammln(double zz)
 {
+	// log_info("gammln -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992. p. 213. and on 
 	 Lanczos 1964 J. SIAM Numer. Anal. Ser. B, Vol. 1 pp 86-96.*/
 	
@@ -648,6 +660,7 @@ double gammln(double zz)
 
 double betacf(double a, double b, double x)
 {
+	// log_info("betacf -- START", NULL);
     /*
 	 used by betai: Evaluates continued fraction for incomplete beta function by modified
 	 Lentz's method. numerical recipes in C. 2nd ed. p. 227.
@@ -691,6 +704,7 @@ double betacf(double a, double b, double x)
 
 double betai(double a, double b,double x)
 {
+	// log_info("betai -- START", NULL);
     /*
 	 Returns the incomplete beta function Ix(a,b). numerical recipes in C. 2nd ed. p. 227.
 	 */
@@ -718,6 +732,7 @@ double betai(double a, double b,double x)
 double distp_binom(int n, int k, double p)
 /*p-value for a given n niter,k cases and p probability using a binomial*/
 {
+	// log_info("distp_binom -- START", NULL);
 	double s1=0.0;
 	int n1,nmax;
 	
@@ -732,6 +747,7 @@ double qsimp(double (*func)(int,int,double), double a, double b, int nsam, int k
 /*Return the integral of the function func from a to b. EPS accuracy. 2^(JMAX-1) define the number of steps*/
 /*Simpson's rule*/
 {
+	// log_info("qsimp -- START", NULL);
 	double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam, int k);
 	int j;
 	double s,st;
@@ -755,6 +771,7 @@ double qsimp(double (*func)(int,int,double), double a, double b, int nsam, int k
 double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam, int k)
 /*nth stage of trapezoidal rule. accuracy adding 2^n-2 interior points*/
 {
+	// log_info("trapzd -- START", NULL);
 	double x,tnm,sum,del;
 	static double s=0.0;
 	int it,j;
@@ -776,6 +793,7 @@ double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam,
 double trapzd_inv(double (*func)(int,int,double),double a,double b, int n, int nsam, int k, double *xm, double *psum)
 /*nth stage of trapezoidal rule. accuracy adding 2^n-2 interior points*/
 {
+	// log_info("trapzd_inv -- START", NULL);
 	double x,tnm,sum,del;
 	double s=0.0;
 	int it,j;
@@ -800,4 +818,3 @@ double trapzd_inv(double (*func)(int,int,double),double a,double b, int n, int n
 	}
 	return 0;
 }
-
