@@ -61,18 +61,9 @@ struct chromo {
     struct seg *pseg;
 };
 static struct chromo *chrom = NULL;
-/*Els arbres estan fets en nodes (contenen el temps de coalescencia i el nombre del node amb el que conecta per dalt)*/
-/*tambe tenim els segments-length que contenen l'inici nt(eg 10-500, es 10) del segment, la direccio al nodes (arbre) al qual esta conectat, i el nombre del següent segment (eg seria el segment que conte des del 501). Hi ha un segl per cada fragment produit per recombinacio que te un arbre associat.*/
-struct node {
-    int abv;
-    int ndes;
-    double time;
-} *ptree1,*ptree2;
-struct segl {
-    long int beg;
-    struct node *ptree;
-    long int next;
-};
+
+struct node *ptree1,*ptree2;
+
 static struct segl *seglst = NULL;
 
 /* El resultat és la matriu de segments-length, que té associat tots els arbres per a cada segment. */

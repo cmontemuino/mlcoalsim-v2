@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 time ./mlcoalsimX ./Example1locus_1pop_mhit0_rec100_t10.txt ./Example1locus_1pop_mhit0_rec100_t10A.out
 time ./mlcoalsimX ./Example1locus_1pop_mhit0_t10.txt  ./Example1locus_1pop_mhit0_t10A.out
 time ./mlcoalsimX ./Example1locus_1pop_mhit0_rec100.txt  ./Example1locus_1pop_mhit0_rec100.out

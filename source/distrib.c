@@ -23,14 +23,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// #include "log.h"
+#include "zf_log.h"
 
 /*Routines based on Numerical Recipes in C*/
 
 double gammalogn(double zz)
 {
-	// log_info("gammalogn -- START", NULL);
-	/*Based on Numerical Recipes in C, Press et al. 1992. p. 213. and on 
+	/*Based on Numerical Recipes in C, Press et al. 1992. p. 213. and on
 	Lanczos 1964 J. SIAM Numer. Anal. Ser. B, Vol. 1 pp 86-96.*/
 	
 	/*gamma distribution for a z integer*/
@@ -46,7 +45,7 @@ double gammalogn(double zz)
 	static double c6 =  0.000005363820;
 	
 	if(zz <= 0.) {
-		puts("Error gamma");
+		puts("Error gammalogn");
 		return (double)-10000.;
 	}
 	
@@ -57,42 +56,41 @@ double gammalogn(double zz)
 	loggammaz = log((double)h);
 	loggammaz += logg + log((double)sumc);
 	loggammaz -= log((double)z);
-	
+
 	return (double)loggammaz;
 }
 
 double factln(long int x)
 {
-	// log_info("factln -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	Lanczos 1964 J. SIAM Numer. Anal. Ser. B, Vol. 1 pp 86-96.*/
 	
 	/*G(n+1) = n!*/
 	/*do the log(n!)*/
 	double gammalogn(double);
-	static double factlog[120];
 		
-	/*
-	if(x < 0) { 
-		puts("Error factln");
-		return (double)-10000.;
+	if(x == 0) {
+	    return 0.;
 	}
-	*/
-	if(x == 0) return 0.;
 	
 	if(x < 120) {
+        static double factlog[120];
 		if(factlog[x] == (double)0) {
-			factlog[x] = gammalogn((double)x+(double)1.0);
+			ZF_LOGD("--> gammalogn(zz=%f)", (double)x + 1.0);
+			factlog[x] = gammalogn((double)x + 1.0);
 			return factlog[x];
 		}
-		else return factlog[x];
+		else {
+            return factlog[x];
+		}
 	}
-	return (gammalogn((double)x+(double)1.0));
+	ZF_LOGD("--> gammalogn(zz=%f)", (double)x + 1.0);
+	return (gammalogn((double)x + 1.0));
 }
 
 double gammadist(double alfa) 
 {
-	// log_info("gammadist -- START", NULL);
+    ZF_LOGD("START");
 	/*Based on Numerical Recipes in C, Press et al. 1992, on
 	Cheng anf Feast 1979, Appl. Statist. 28, No. 3, pp. 290-295, and on
 	PSeq-Gen v1.1. Nicholas C. Grassly, Jun Adachi and Andrew Rambaut*/
@@ -103,13 +101,18 @@ double gammadist(double alfa)
 	double a,b,c,d,f,W;
 	
 	if(alfa <= (double)0) {
+        puts("Error gammadist");
 		return (double)-10000.0;
 	}
 	if(alfa < (double)1) {
+        ZF_LOGD("END");
 		a = rndgamma1(alfa);
 		return a;
 	}
-	if(alfa == (double)1.) return (-(double)log((double)ran1()));
+	if(alfa == (double)1.) {
+        ZF_LOGD("END");
+	    return (-(double)log((double)ran1()));
+	}
 	
 	a = (double)alfa - (double)1.0;
 	b = (alfa - (double)1./((double)6.*(double)alfa))/a;
@@ -132,14 +135,15 @@ double gammadist(double alfa)
 		W = b * rand1/rand2;
 		if(c*rand2-d+W+(double)1./W <= (double)0.) break;
 	}while(c*log((double)rand2)-log((double)W)+W-(double)1. >= (double)0.);
-	
+
+    ZF_LOGD("END");
 	return a*W;
 }
 
 /*From PSeq-Gen v1.1. Nicholas C. Grassly, Jun Adachi and Andrew Rambaut */
 double rndgamma1 (double s)
 {
-	// log_info("rdngamma1 -- START", NULL);
+    ZF_LOGD("START");
 	double ran1(void);
 	double			r, x=0.0, small=1e-37, w;
 	static double	a, p, uf, ss=10.0, d;
@@ -162,7 +166,10 @@ double rndgamma1 (double s)
 				x = a*pow(r/p,1/s);
 				w=x;
 			}
-			else return ((double)0.0);
+			else {
+                ZF_LOGD("END");
+                return ((double)0.0);
+			}
 		}
 		r = (double)ran1();
 		if (1.0-r <= w && r > 0.0)
@@ -170,12 +177,12 @@ double rndgamma1 (double s)
 				continue;
 		break;
 	}
+    ZF_LOGD("END");
 	return ((double)x);
 }
 
 double poissondist(double lambda) 
 {
-	// log_info("poissondist -- START", NULL);
 	/*Based on Atkinson 1979 Appl. Statist. 28: No. 1, pp, 29-35.*/
 	double ran1(void);	
 	double r,s;
@@ -184,46 +191,39 @@ double poissondist(double lambda)
 	double factln(long int);
 	double alfa,beta,k,X;
 	double rand1,rand2;
-	static double c = (double)0.6;
+	static double c = 0.6;
 	
-	if(lambda < (double)0) {
+	if(lambda < 0.0) {
 		puts("Error poissondist");
-		return (double)-10000.;
+		return -10000.;
 	}
 	
-	if(lambda == (double)0) return (double)0;
-	if(lambda <= (double)20) {
-		/*included for having not biased small values with mhits=0...*/
-		/*if(lambda < 0.25) {
-			r = 1. - lambda;
-			s = ran1();
-			if(s >= r) N = (int)1;
-			else N = (int)0;
-		}
-		else {
-		*/	r = (double)exp(-(double)lambda);
-			N = (int)0;
-			s = (double)1;
-			do {
-				s *= ran1();
-				if(s >= r) N += (int)1;
-				else break;
-			}while(1);
-		/*}*/
+	if(lambda == 0.0) {
+	    return 0.0;
+	}
+	if(lambda <= 20.0) {
+        r = exp(-lambda);
+        N = 0;
+        s = 1.0;
+        do {
+            s *= ran1();
+            if(s >= r) N += 1;
+            else break;
+        } while(1);
 	}
 	else {
-		beta = (double)PI * (double)1./(double)sqrt((double)3*(double)lambda);
-		alfa = beta * (double)lambda;
-		k = (double)log((double)c) - (double)lambda - (double)log((double)beta);
+		beta = PI * 1./sqrt(3.0*lambda);
+		alfa = beta * lambda;
+		k = log(c) - lambda - log(beta);
 		do{
 			rand1 = ran1();
-			X = (alfa-(double)log(((double)1-(double)rand1)/(double)rand1))/beta;
-			if(X >= (double)-0.5) {
-				N = (int)(X + (double)0.5);
+			X = (alfa-(double)log((1.0 - rand1)/rand1))/beta;
+			if(X >= -0.5) {
+				N = (int)(X + 0.5);
 				rand2 = ran1();
-				if(alfa - beta*X +
-				  (double)log((double)(rand2/(((double)1+(double)exp((double)(alfa-beta*X)))*((double)1+(double)exp((double)(alfa-beta*X)))))) 
-				  <= k + (double)N*(double)log((double)lambda) - (double)factln((long int)N)) 
+				double den = 1.0+exp(alfa-beta*X);
+				ZF_LOGD("--> factln(x=%d)", N);
+				if(alfa - beta*X + log(rand2/(den*den)) <= k + (double)N*log(lambda) - factln((long int)N))
 					break;
 			}
 		}while(1);
@@ -233,7 +233,6 @@ double poissondist(double lambda)
 
 double binomialdist(double pp, int n) 
 {
-	// log_info("binomialdist -- START", NULL);
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	Fishman 1979 J. American Statistical Association Vol. 74, No. 366, pp 418-423*/
 	
@@ -277,7 +276,11 @@ double binomialdist(double pp, int n)
 		return (double)-10000.;
 	}
 	if(p==(double)0) {
-		if(pp > 0.5) return (double)n;
+		if(pp > 0.5) {
+            ZF_LOGD("END");
+		    return (double)n;
+		}
+        ZF_LOGD("END");
 		return (double)0;
 	}
 	
@@ -315,6 +318,7 @@ double binomialdist(double pp, int n)
 			m = (double)floor((double)(r));
 			do {
 				do {
+					ZF_LOGD("--> poissondist(lambda=%f)", mu);
 					N = (int)poissondist(mu);
 				}while((int)N > n);
 				V = -(double)log((double)ran1());
@@ -327,7 +331,7 @@ double binomialdist(double pp, int n)
 
 double largebinomialdist(double pp, double n) 
 {
-	// log_info("largebinomialdist -- START", NULL);
+    ZF_LOGD("START");
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	 Fishman 1979 J. American Statistical Association Vol. 74, No. 366, pp 418-423*/
 	
@@ -386,13 +390,14 @@ double largebinomialdist(double pp, double n)
 	}
 
 	if(pp > 0.5) N = (int)n - N;
+    ZF_LOGD("END");
 	return (double)N;
 }
 
 int zbracn(double (*func)(double,double,double,double,double,double,double,double,double,double),double *x1,double *x2,double a0,double a1,double a2,double a3,double a4,double a5,double a6,double a7,double a8)
 {
-	// log_info("zbracn -- START", NULL);
-	/* Based on Numerical Recipes in C. Press et al. 1992. 
+    ZF_LOGD("START");
+	/* Based on Numerical Recipes in C. Press et al. 1992.
     We need *x1 and *x2 be the range where a root is within them. We expand geometrically the range until finding
 	(one a positive and one a negative value). If not, return 0.
 	*/
@@ -405,7 +410,10 @@ int zbracn(double (*func)(double,double,double,double,double,double,double,doubl
     f1 = (*func)(*x1,a0,a1,a2,a3,a4,a5,a6,a7,a8);
     f2 = (*func)(*x2,a0,a1,a2,a3,a4,a5,a6,a7,a8);
 	
-	if(f1*f2 < (double)0) return 1;
+	if(f1*f2 < (double)0) {
+        ZF_LOGD("END");
+	    return 1;
+	}
 
     while(k--) {
         if(fabs(f1) < fabs(f2)) {
@@ -418,15 +426,19 @@ int zbracn(double (*func)(double,double,double,double,double,double,double,doubl
             *x2 += (double)1.5 * (*x2 - *x1);
             f2 = (*func)(*x2,a0,a1,a2,a3,a4,a5,a6,a7,a8);
         }
-        if(f1*f2 < (double)0) return 1;
+        if(f1*f2 < (double)0) {
+            ZF_LOGD("END");
+            return 1;
+        }
     }
-    
+
+    ZF_LOGD("END");
 	return 0;
 }
 
 double zriddrn(double (*func)(double,double,double,double,double,double,double,double,double,double),double xlow,double xhigh,double xacc,double a0,double a1,double a2,double a3,double a4,double a5,double a6,double a7, double a8)
 {
-	// log_info("zriddrn -- START", NULL);
+    ZF_LOGD("START");
 	/* Based on Numerical Recipes in C. Press et al. 1992., p. 358 an on
 	Ridders, 1979, IEEE Transactions on Circuits and systems, Vol. Cas-26, No. 11, pp. 979-980.
 	*/
@@ -480,40 +492,43 @@ double zriddrn(double (*func)(double,double,double,double,double,double,double,d
 			}
 		}
 		if(fabs(x1-x2) <= xacc) return x1;
-	}	
+	}
+    ZF_LOGD("END");
 	return (double)-1e32;
 }
 
 /*CALCULATE PRIORS AND INCLUDE ON THE STRUCT var_priors */
 int make_priord(struct var_priors *priorx,long int niter) 
 {
-	// log_info("make_priord -- START", NULL);
-	long int i,j;
-	double value;
+    ZF_LOGD("START");
+	long int x,i;
 	double arg[6];
 	double gammadist(double);
 	double betai(double,double,double);
 	double ran1(void);
 	void init_seed1(long int);
 	
-	double val1;
-	FILE *read_prior;
-	int x,c;
-	char number[100];
-	
 	if((*priorx).prior_file[0] != '\0') {
+        FILE *read_prior;
+        char number[100];
+        int c;
+
 		if (!(read_prior = fopen ((*priorx).prior_file,"r"))) {
 			printf("Error reading the prior file.\n");
 			exit(1);
 		}
-		if(!((*priorx).priordist = (double *)calloc((long unsigned)niter,sizeof(double)))) return 0;
+		if(!((*priorx).priordist = (double *)calloc((long unsigned)niter,sizeof(double)))) {
+            ZF_LOGD("END");
+		    fclose(read_prior); // avoid leaking read_prior
+		    return 0;
+		}
 		/*read a header*/
 		while((c = getc(read_prior))!= 10 && c!= 13 && c!= 0);
 		if(c==0) perror("Error reading the prior file.\n");
 		while((c = getc(read_prior))== 10 || c== 13);
 		if(c==0) perror("Error reading the prior file.\n");
 		/*read numbers*/
-		for(i=0;i<niter;i++) {
+		for(x=0, i=0;i<niter;i++) {
 			x = 0;
 			while(c!=0 && c!=10 && c!=13) {
 				number[x] = c;
@@ -527,11 +542,17 @@ int make_priord(struct var_priors *priorx,long int niter)
 			c = getc(read_prior);
 		}
 		fclose(read_prior);
-	}
-	else {
+	} else {
+        double val1;
+        double value;
+        long int j;
+
 		init_seed1((*priorx).seed_prior);
 		for(i=0;i<6;i++) arg[i] = (*priorx).dist_par[i];
-		if(!((*priorx).priordist = (double *)calloc((long unsigned)niter,sizeof(double)))) return 0;
+		if(!((*priorx).priordist = (double *)calloc((long unsigned)niter,sizeof(double)))) {
+            ZF_LOGD("END");
+		    return 0;
+		}
 
 		switch((*priorx).kind_dist) {
 			case 0:
@@ -617,6 +638,7 @@ int make_priord(struct var_priors *priorx,long int niter)
 			if((*priorx).kind_var == 1) (*priorx).priordist[i] = value;
 		}	
 	}
+    ZF_LOGD("END");
 	return 1;
 }
 
@@ -626,8 +648,8 @@ int make_priord(struct var_priors *priorx,long int niter)
 
 double gammln(double zz)
 {
-	// log_info("gammln -- START", NULL);
-	/*Based on Numerical Recipes in C, Press et al. 1992. p. 213. and on 
+    ZF_LOGD("START");
+	/*Based on Numerical Recipes in C, Press et al. 1992. p. 213. and on
 	 Lanczos 1964 J. SIAM Numer. Anal. Ser. B, Vol. 1 pp 86-96.*/
 	
 	/*gamma distribution for a z integer*/
@@ -654,13 +676,14 @@ double gammln(double zz)
 	loggammaz = log((double)h);
 	loggammaz += logg + log((double)sumc);
 	loggammaz -= log((double)z);
-	
+
+    ZF_LOGD("END");
 	return (double)loggammaz;
 }
 
 double betacf(double a, double b, double x)
 {
-	// log_info("betacf -- START", NULL);
+    ZF_LOGD("START");
     /*
 	 used by betai: Evaluates continued fraction for incomplete beta function by modified
 	 Lentz's method. numerical recipes in C. 2nd ed. p. 227.
@@ -696,6 +719,7 @@ double betacf(double a, double b, double x)
         if((double)fabs(del-(double)1.0) < EPS) break;
     }
     if(m > MAXIT)  {
+        ZF_LOGD("END");
 		puts("Error in betacf. MAXIT is too small.");
 		return (double)-10000;
 	}
@@ -704,7 +728,7 @@ double betacf(double a, double b, double x)
 
 double betai(double a, double b,double x)
 {
-	// log_info("betai -- START", NULL);
+    ZF_LOGD("START");
     /*
 	 Returns the incomplete beta function Ix(a,b). numerical recipes in C. 2nd ed. p. 227.
 	 */
@@ -713,14 +737,21 @@ double betai(double a, double b,double x)
     double bt;
     
     if(x < (double)0.0 || x > (double)1.0) {
+        ZF_LOGD("END");
         puts("Error in betai.");
         return (double)-1.0;
     }
     if(x == (double)0.0 || x == (double)1.0) bt = (double)0.0;
     else bt = (double)exp(gammln(a+b)-gammln(a)-gammln(b)+a*(double)log(x)+b*(double)log((double)1.0-x));
     
-    if(x < (a + (double)1.0)/(a + b + (double)2.0)) return bt*betacf(a,b,x)/a;
-    else return (double)1.0 - bt*betacf(b,a,(double)1.0-x)/b;
+    if(x < (a + (double)1.0)/(a + b + (double)2.0)) {
+        ZF_LOGD("END");
+        return bt*betacf(a,b,x)/a;
+    }
+    else {
+        ZF_LOGD("END");
+        return (double)1.0 - bt*betacf(b,a,(double)1.0-x)/b;
+    }
 }
 
 /*INTEGRATION BIONOMIAL: SEARCH FOR p FOR A GIVEN CUMMULATIVE VALUE*/
@@ -732,14 +763,18 @@ double betai(double a, double b,double x)
 double distp_binom(int n, int k, double p)
 /*p-value for a given n niter,k cases and p probability using a binomial*/
 {
-	// log_info("distp_binom -- START", NULL);
+    ZF_LOGD("START");
 	double s1=0.0;
 	int n1,nmax;
 	
-	if(p==0 || p==1) return 0;
+	if(p==0 || p==1) {
+        ZF_LOGD("END");
+	    return 0;
+	}
 	nmax =(k>n-k? k:n-k);
 	for(n1=n;n1>nmax;n1--) s1+=log(n1);
 	for(n1=1;n1<=n-nmax;n1++) s1-=log(n1);
+    ZF_LOGD("END");
 	return(exp(s1+(double)k*log(p)+(double)(n-k)*log(1.0-p)));
 }
 
@@ -747,7 +782,7 @@ double qsimp(double (*func)(int,int,double), double a, double b, int nsam, int k
 /*Return the integral of the function func from a to b. EPS accuracy. 2^(JMAX-1) define the number of steps*/
 /*Simpson's rule*/
 {
-	// log_info("qsimp -- START", NULL);
+    ZF_LOGD("START");
 	double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam, int k);
 	int j;
 	double s,st;
@@ -758,12 +793,15 @@ double qsimp(double (*func)(int,int,double), double a, double b, int nsam, int k
 		st=trapzd(func,a,b,j,nsam,k);
 		s=(4.0*st-ost)/3.0;
 		if(j>5) {
-			if(fabs(s-os) < EPS2*fabs(os) || (s==0.0 && os==0.0))
-				return s;
+			if(fabs(s-os) < EPS2*fabs(os) || (s==0.0 && os==0.0)) {
+                ZF_LOGD("END");
+                return s;
+            }
 		}
 		os=s;
 		ost=st;
 	}
+    ZF_LOGD("END");
 	/*if get here: error*/
 	return(0);
 }
@@ -771,12 +809,13 @@ double qsimp(double (*func)(int,int,double), double a, double b, int nsam, int k
 double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam, int k)
 /*nth stage of trapezoidal rule. accuracy adding 2^n-2 interior points*/
 {
-	// log_info("trapzd -- START", NULL);
+    ZF_LOGD("START");
 	double x,tnm,sum,del;
 	static double s=0.0;
 	int it,j;
 	
 	if(n==1) {
+        ZF_LOGD("END");
 		return(s=0.5*(b-a)*(FUNC(nsam,k,a)+FUNC(nsam,k,b)));
 	} else {
 		for(it=1,j=1;j<n-1;j++) it <<= 1;/*!!(2^n-2)*/
@@ -785,20 +824,20 @@ double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam,
 		x=a+0.5*del;
 		for(sum=0.0,j=1;j<=it;j++,x+=del) sum += FUNC(nsam,k,x);
 		s=0.5*(s+(b-a)*sum/tnm);
+        ZF_LOGD("END");
 		return s;
 	}
-	return 0;
 }
 
 double trapzd_inv(double (*func)(int,int,double),double a,double b, int n, int nsam, int k, double *xm, double *psum)
 /*nth stage of trapezoidal rule. accuracy adding 2^n-2 interior points*/
-{
-	// log_info("trapzd_inv -- START", NULL);
+{    ZF_LOGD("START");
 	double x,tnm,sum,del;
 	double s=0.0;
 	int it,j;
 	
 	if(n==1) {
+        ZF_LOGD("END");
 		return(s=0.5*(b-a)*(FUNC(nsam,k,a)+FUNC(nsam,k,b)));
 	} else {
 		for(it=1,j=1;j<n-1;j++) it <<= 1;/*!!(2^n-2)*/
@@ -814,7 +853,7 @@ double trapzd_inv(double (*func)(int,int,double),double a,double b, int n, int n
 		for(j=1;j<=it;j++) {
 			psum[j-1] = psum[j-1]/sum;
 		}
+        ZF_LOGD("END");
 		return s;
 	}
-	return 0;
 }

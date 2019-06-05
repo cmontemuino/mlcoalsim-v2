@@ -23,6 +23,7 @@
 #include <time.h>
 #include <math.h>
 #include <errno.h>
+#include "zf_log.h"
 
 #if inMPI==1 
 	#include <mpi.h>
@@ -604,65 +605,9 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						 }
 					}
 					if(c == '-') {		/* for a minus, but also for first-end */
-						/*
-						 if(x && number[x-1] < 58 && number[x-1] > 47) {
-							number[x] = '\0';
-							numb_c[numb_1][numb_2] = atof(number);
-							numb_c[numb_1][0]++;
-							numb_2++;
-							if(numb_2 >= 20) if(!(numb_c[numb_1] = realloc(numb_c[numb_1],(numb_2+1)*sizeof(double))))
-								perror("realloc error.2");
-							x = 0;
-						}
-						else {
-						 */
-							number[x] = c;
-							x++;
-						/*}*/                                    
+                        number[x] = c;
+                        x++;
 					}
-					/* intervals *//*
-					if(c == '/') {			
-						if(x) {
-							number[x] = '\0';
-							numb_c[numb_1][numb_2] = atof(number);
-							numb_c[numb_1][0]++;
-						}
-						if(numb_2 != 2) {
-							puts("Error in input data. Intervals usage using '/' is: 'first'-'end'/'interval'");
-							exit(1);
-						}
-						numb_2++;
-						if(numb_2 >= 20) 
-							if(!(numb_c[numb_1] = realloc(numb_c[numb_1],(numb_2+1)*sizeof(double)))) 
-								perror("realloc error.3");
-						c=fgetc(file_input);                                     
-						while(!((c < 58 && c > 42) || c == 69 || c == 101)) c=fgetc(file_input);
-						x = 0;
-						while((c < 58 && c > 47) || c == 69 || c == 101 || c == 43 || c == 45 || c == 46) {
-							number[x] = c;
-							x++;
-							c = fgetc(file_input);
-						}
-						number[x] = '\0';
-						end = numb_c[numb_1][2];
-						interval = atof(number);
-						st = numb_c[numb_1][1];
-						numb_2 = 1;
-						val = (int)floor((double)((end-st)/interval)) + 2;
-						if(val >= 20) 
-							if(!(numb_c[numb_1] = realloc(numb_c[numb_1],val*(sizeof(double)))))
-								perror("realloc error.4");
-						numb_c[numb_1][0] = 0;
-						
-						while(st <= end) {
-							numb_c[numb_1][numb_2] = st;
-							numb_c[numb_1][0] ++;
-							st += interval;
-							numb_2++;
-						}
-						x = 0;
-					}
-					*/
 					if(c == ',') {/* do a new vector */
 						if(x) {
 							if(number[0] == '&') {
@@ -673,7 +618,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 									printf("Error: prior mark '&' needs an identifier number linked after &.\n");
 									exit(1);
 								}
-								/*count_pri++;*/
 								if(count_pri < atof(number+1)) {
 									if(!(*priors = (struct var_priors *)realloc(*priors,(unsigned)((int)(double)atof(number+1))*sizeof(struct var_priors))))
 										perror("realloc error.9");
@@ -763,12 +707,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 				if((c < 91 && c > 64) || (c < 123 && c > 96) || c == 95) {	/* if letters, stop */
 					nam = 1;
 					break;
-				}/*
-				if(c == 34) {
-					c = fgetc(file_input);
-					while((c > 0) && (c != 34))
-						c = fgetc(file_input);
-				}*/
+				}
 				if(c <= 0) break;
 				c = fgetc(file_input);
 			}
@@ -802,7 +741,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 				break;
 			}
 			/* do assignments to the struct variables */
-        /*if(w<n_var) {*/
 			switch(w) {
 				case 0:
 					(*data)->mhits = (int)numb_c[0][1];
@@ -1436,12 +1374,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         printf("Error: Sliding windows is only allowed with linked value equal to 1. \n");
         exit(1);
     }
-	/*
-    if((*data)->linked ==  1 && ((*data)->despl == 0. || (*data)->window == 0.)) {
-        printf("Error: When pos_linked value is equal to 1, sliding windows have to be defined. \n");
-        exit(1);
-    }
-	 */
     if((*data)->includeEHHrel <  0 || (*data)->includeEHHrel > 1) {
         printf("Error: include_EHH_rel must be 0 or 1. \n");
         exit(1);
@@ -1485,8 +1417,8 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						exit(1);
 				}
 			}
-			if((/*(*data)->linked_segsites[0] > 0 || */(*data)->linked_segsites != (double)-1) && 
-			   ((*data)->sfix_allthetas == 0 /*&& ((*data)->theta_1[0] != (*data)->n_loci) || (*data)->theta_1[1] <= (double)0*/)) {
+			if(((*data)->linked_segsites != (double)-1) &&
+			   ((*data)->sfix_allthetas == 0)) {
 				printf("Error: Not allowed to fix segsites in linked fragments wihthout the option 'Sfix_allthetas'.\n");
 				exit(1);
 			}
@@ -1500,6 +1432,15 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						printf("Error: Only allowed linked_rm or rm (for the entire region). Not together\n");
 						exit(1);
 				}
+                if((*data)->linked_nhapl > 0) {
+                    if((*data)->linked_rm_nregion != (*data)->linked_nhapl_nregion) {
+                        printf("Error: linked__nregion_rm and linked_nregion_nhapl must be in the same region.\n");
+                        exit(1);
+                    }
+                    if((*data)->linked_nhapl_nregion == -1) {
+                        (*data)->linked_nhapl_nregion = (*data)->linked_rm_nregion;
+                    }
+                }
 			}
 			if((*data)->linked_nhapl > 0) {
 				if((*data)->linked_nhapl_nregion >= (*data)->linked) {
@@ -1516,18 +1457,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 				printf("Error: Not allowed to fix the number of haplotypes in linked fragments wihthout the option 'rmfix'.\n");
 				exit(1);
 			}
-
-			if((*data)->linked_rm > -1 && (*data)->linked_nhapl > 0) {
-				if((*data)->linked_rm_nregion != (*data)->linked_nhapl_nregion) {
-					printf("Error: linked__nregion_rm and linked_nregion_nhapl must be in the same region.\n");
-					exit(1);
-				}
-			}
-			if((*data)->linked_rm > -1 && (*data)->linked_nhapl > 0) {
-				if((*data)->linked_nhapl_nregion == -1) {
-					(*data)->linked_nhapl_nregion = (*data)->linked_rm_nregion;
-				}
-			}
 		}
     }		
 	
@@ -1542,22 +1471,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         printf("Error: n_samples needs n_loci inputs\n");
         exit(1);
     }
-    /*
-	if((*data)->ratio_sv[0] != 0) {
-        if(!((*data)->mhits && (*data)->theta_1[1] > 0.)) {
-            printf("Warning: mhits transitions/transversions is only used with mhits and theta options. Not used.\n\n");
-        }
-    }
-	*/
     if((*data)->mhits) {
-		/*
-        for(x=0;x<(*data)->n_loci;x++) {
-            if((*data)->nsam[x+1] == 2) {
-                printf("Error: sample=2, mhits is not enabled");
-                exit(1);
-            }
-        }
-		*/
         if(((*data)->theta_1[0] > 0 && (*data)->theta_1[1] > 0.) || (*data)->sfix_allthetas || (*data)->range_thetant || (*data)->ifgamma) {
             if((*data)->ratio_sv[0] < (*data)->n_loci) {
                 if(!((*data)->ratio_sv = (double *)realloc((*data)->ratio_sv,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
@@ -1580,14 +1494,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			exit(1);
 		}
     }
-	/*
-    if((*data)->r[0]) {
-		if((*data)->r[0] != (*data)->n_loci && (!((*data)->r[0] != (*data)->n_loci && (*data)->r[0] != 1))) {
-			printf("Error: recombination needs n_loci inputs or a single input (all loci equal)\n");
-			exit(1);
-		}
-    }
-	*/
     if((*data)->f[0] > 0) {
 		if((*data)->f[0] != (*data)->n_loci) {
 			printf("Error: not the same loci than defined in f\n");
@@ -1661,16 +1567,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		(*data)->heter_rm_alphag[0] = (double)(*data)->n_loci;
 		for(x=1;x<(*data)->n_loci+1;x++) (*data)->heter_rm_alphag[x] = (double)-1;
 	}
-	/*
-    if((*data)->r[0]==0) {
-		if(!((*data)->r = (double *)realloc((*data)->r,(unsigned)(1+1)*sizeof(double)))) {
-			perror("realloc error.33");
-			exit(1);
-		}
-		(*data)->r[0] = (double)1;
-		(*data)->r[1] = (double)-1;
-    }
-	*/
     if((int)(*data)->nsites[0] != (*data)->n_loci) {
         printf("Error: nsites needs n_loci inputs\n");
         exit(1);
@@ -1862,52 +1758,8 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 				printf("Error: tpast has not the same intervals indicated in nintn\n");
 				exit(1);
 			}
-			/*
-			totaltime = 0.;
-			for(y=0;y<(*data)->nintn[x+1];y++) {
-				if((*data)->tpast[x][y+1] != REFNUMBER && (*data)->time_scoal != REFNUMBER) {
-					totaltime += (*data)->tpast[x][y+1];
-					if((*data)->time_scoal > 0. && totaltime > (*data)->time_scoal) {
-						printf("Error: tpast can not have higher values than time_scoal.\n");
-						exit(1);
-					}
-				}
-			}
-			*/
 		}
 	}
-/*	
-    if((*data)->nintn > 0) {
-        if((*data)->nrec[0] != (*data)->nintn) {
-            printf("Error: nrec has not the same intervals indicated in nintn\n");
-            exit(1);
-        }
-        if((*data)->nrec[1] != 1.0) {
-            printf("Error: nrec must be 1.0 in the first value\n");
-            exit(1);
-        }
-        if((*data)->npast[0] != (*data)->nintn) {
-			if((*data)->npast[0] == 0) {
-				if(!((*data)->npast=(double *)realloc((*data)->npast,((*data)->nintn+1)*sizeof(double)))) {
-					printf("Error: malloc error in npast\n");
-					exit(1);
-				}
-				for(x=0;x<(*data)->nintn;x++) {
-					(*data)->npast[x+1] = (*data)->nrec[x+1];
-				}
-				(*data)->npast[0] = (*data)->nintn;
-			}
-			else {
-				printf("Error: npast has not the same intervals indicated in nintn\n");
-				exit(1);
-			}
-        }
-        if((*data)->tpast[0] != (*data)->nintn) {
-			printf("Error: tpast has not the same intervals indicated in nintn\n");
-			exit(1);
-        }
-    }
-*/
     if((*data)->ran_factorpop < 0 || (*data)->ran_factorpop > 1) {
         printf("Error ran_factorpop: it should be  0 or 1\n");
         exit(1);
@@ -2010,7 +1862,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
                 }
             }
         }
-        /**/
     }
 	
     if((*data)->theta_1[0] == 0 || ((*data)->theta_1[0] == 1 && (*data)->theta_1[1] <= (double)0)) {
@@ -2036,12 +1887,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			}	
 		}
 	}
-	/*
-	if((*data)->linked == 1 && (*data)->print_neuttest > 2) {
-		printf("Error: print_neuttest > 2 is not possible when nlinked_loci is 1 (sliding windows option)\n");
-		exit(1);
-	}
-	*/
     if((*data)->neutral_tests == 1) {
         if((*data)->pr_matrix != 0 && (*data)->print_neuttest > 2) {
             printf("Error: print_neuttest > 2 is not possible when pr_matrix is active\n");
@@ -2069,7 +1914,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         printf("Error: 'theta' and 'ifgamma' can not be defined at the same time.\n");
         exit(1);
     }
-    if(((*data)->range_thetant) && ((*data)->theta_1[0] > 0 && !((*data)->theta_1[0] == 1) && (*data)->theta_1[1] <= 0)) {
+    if(((*data)->range_thetant) && ((*data)->theta_1[0] > 0 && ((*data)->theta_1[0] != 1) && (*data)->theta_1[1] <= 0)) {
         printf("Error: 'theta' and 'range_thetant' can not be defined at the same time.\n");
         exit(1);
     }
@@ -2077,7 +1922,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         printf("Error: 'recombination' and 'ifgammar' can not be defined at the same time.\n");
         exit(1);
     }
-    if(((*data)->range_rnt) && ((*data)->r[0] > 0 && !((*data)->r[0] == 1) && (*data)->r[1] == 0)) {
+    if(((*data)->range_rnt) && ((*data)->r[0] > 0 && ((*data)->r[0] != 1) && (*data)->r[1] == 0)) {
         printf("Error: 'recombination' and 'range_rnt' can not be defined at the same time.\n");
         exit(1);
     }
@@ -2140,30 +1985,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         (*data)->ifselection[0] = (*data)->n_loci; /*definim tots els loci*/
     }
     /*Si només hi ha 1 valor és que no s´han definit els altres loci*/
-	/*
-	if((*data)->r[0] < (*data)->n_loci) { 
-         if((*data)->r[0] == 1) {
-			if(!((*data)->r = (double *)realloc((*data)->r,((*data)->n_loci+1)*sizeof(double))))
-				perror("realloc error.38bb");
-			for(z=0;z<(*data)->n_loci;z++)
-				(*data)->r[z+1] = (double)0;
-			(*data)->r[0] = (*data)->n_loci; 
-		}
-		else {
-			if(!((*data)->r = (double *)realloc((*data)->r,((*data)->n_loci+1)*sizeof(double))))
-				perror("realloc error.38bb");
-			for(z=0;z<(*data)->n_loci;z++)
-				(*data)->r[z+1] = (double)-1;
-			(*data)->r[0] = (*data)->n_loci; 
-		}
-    }
-	*/
-	/*
-    if((*data)->split_pop ==1 && (*data)->time_scoal <= (*data)->time_split) {
-        printf("Error: time_scoal must be larger than time_split\n");
-        exit(1);
-    }
-	*/
     if((*data)->split_pop == 1 && (*data)->freq[0] != (*data)->npoprefugia) {
         printf("Error: freq_refugia must be defined for all refugia\n");
         exit(1);
@@ -2178,11 +1999,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         printf("Error: factor_pop must be defined for all populations\n");
         exit(1);
     }
-	/*
-    if((*data)->split_pop == 0 && (*data)->npop > 1 && (*data)->mig_rate == 0. && (*data)->time_scoal == 0.) {
-        printf("Error: mig_rate or time_scoal must be higher than 0.\n");
-        exit(1);
-    }*/
 	if((*data)->ifgamma == 1) {
 		if((*data)->p_gamma[0] != (double)(*data)->n_loci) {
 			printf("Error: p gamma parameter must be defined for ALL loci and be higher than 0.\n");
@@ -2482,48 +2298,39 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			if((int)(*data)->pop_event[x][0] != 5 + 2*(*data)->npop) {
 				printf("Error: pop_event must include for each event 5 values (number_of_event pop1 pop2 factor_pop time_event) plus two vectors of migration values of npop values each (the row, pop->others, and the column, others->pop) starting with the 0 value and all separated by spaces\n");
 				exit(1);
-				break;
 			}
 			if((*data)->pop_event[x][1] >= (*data)->npop_events) {
 				printf("Error: pop_event: the number_of_event can not be bigger than npop_events (starting from 0)\n");
 				exit(1);
-				break;
 			}
 			if((*data)->pop_event[x][2] >= (*data)->npop && (*data)->pop_event[x][2] < 0.) {
 				printf("Error: pop_event pop1 value: the value must be between 0 and npop-1\n");
 				exit(1);
-				break;
 			}
 			if((*data)->pop_event[x][3] >= (*data)->npop && (*data)->pop_event[x][3] < 0.) {
 				printf("Error: pop_event pop2 value: the value must be between 0 and npop-1\n");
 				exit(1);
-				break;
 			}
 			if((*data)->pop_event[x][4] <= 0.) {
 				printf("Error: pop_event factor_pop value: the value must be higher than 0.\n");
 				exit(1);
-				break;
 			}
 			if((*data)->pop_event[x][5] < 0.) {
 				printf("Error: pop_event time_event value: the value must be higher than or equal to 0.\n");
 				exit(1);
-				break;
 			}
 			if((*data)->pop_event[x][6+(int)(*data)->pop_event[x][2]] != 0.) {
 				printf("Error: pop_event migration value: the migration for the population to itself must be zero\n");
 				exit(1);
-				break;
 			}
 			if((*data)->pop_event[x][6+(*data)->npop+(int)(*data)->pop_event[x][2]] != 0.) {
 				printf("Error: pop_event migration value: the migration for the population to itself must be zero\n");
 				exit(1);
-				break;
 			}
 			for(y=0;y<2*(*data)->npop;y++) {
 				if((*data)->pop_event[x][y+6] < 0.) {
 					printf("Error: pop_event migration values must be positive or zero values\n");
 					exit(1);
-					break;
 				}
 			}
 		}
@@ -2538,16 +2345,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			}
 		}
 	}
-/*
-	if((*data)->event_sexratio[0] > 2 && (*data)->event_sexratio[0] < (*data)->n_loci + 1) {
-		if(!((*data)->event_sexratio = (double *)realloc((*data)->event_sexratio,(unsigned)((*data)->n_loci+2)*sizeof(double)))) 
-			perror("realloc error.1553");
-		for(x=(int)(*data)->event_sexratio[0];x<=(int)(*data)->n_loci+1;x++) {
-			(*data)->event_sexratio[x] = (double)1.0;
-		}
-		(*data)->event_sexratio[0] = (double)(*data)->n_loci+1;
-	}
-*/	
 	
 	/*check for migration matrix, npop x npop values*/
 	if((*data)->npop > 1) {
@@ -2562,21 +2359,8 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 		if((*data)->mig_rate_matrix[0][0] == 1) {
 			/*all values in matrix are equal*/
-			/*if((*data)->mig_rate_matrix[0][1] >= REFNUMBER && (*data)->mig_rate_matrix[0][1] < REFNUMBER + 9999) {*/
-				(*data)->mig_rate = (*data)->mig_rate_matrix[0][1];
-				(*data)->mig_rate_matrix[0][0] = (*data)->mig_rate_matrix[0][1] = 0.;
-			/*}
-			else {
-				(*data)->mig_rate = (*data)->mig_rate_matrix[0][1];
-				
-				for(x=0;x<(*data)->npop;x++) {
-					for(y=0;y<=(*data)->npop;y++) {
-						if(y==0) (*data)->mig_rate_matrix[x][0] = (double)(*data)->npop;
-						else if(y != x+1) (*data)->mig_rate_matrix[x][y] = (*data)->mig_rate;
-							else (*data)->mig_rate_matrix[x][y] = 0.;
-					}
-				}
-			}*/
+            (*data)->mig_rate = (*data)->mig_rate_matrix[0][1];
+            (*data)->mig_rate_matrix[0][0] = (*data)->mig_rate_matrix[0][1] = 0.;
 		}
 		else {
 			if((*data)->mig_rate_matrix[0][0] > 1) {
@@ -2584,20 +2368,16 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					if((int)(*data)->mig_rate_matrix[x][0] != (*data)->npop) {
 						printf("Error: mig_rate_matrix must have npop values for each row, comma, and again for npop times (npop x npop). Diagonal values are not considered (type 0)\n");
 						exit(1);
-						break;
 					}
 					if((*data)->mig_rate_matrix[x][x+1] != 0.) {
 						printf("Error: mig_rate_matrix Diagonal values must be 0\n");
 						exit(1);
-						break;
 					}
 					for(y=1;y<=(*data)->npop;y++) {
 						if((*data)->mig_rate_matrix[x][y] < 0.) {
 							printf("Error: mig_rate_matrix must have positive or zero values\n");
 							exit(1);
-							break;
 						}
-						/*(*data)->mig_rate += (*data)->mig_rate_matrix[x][y]/((double)(*data)->npop-1);*/
 					}
 				}
 			}
@@ -2651,69 +2431,6 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 		free(defpop);
 	}
-/**/
-	
-	/*
-	first value 1/0
-	second npops1 <= npop - 1
-	third to [3] + 3 numbers no larger than npop neither < 0
-	then npops2 <= npop - npops1
-	...
-	npop3 <= npop - npops1 - npops2
-	...
-	*//*
-	if((*data)->ancestral_pol[0] < 5 && (*data)->ancestral_pol[1] != 0) {
-		printf("Error: if ancestral_pol is defined (first value is 1), it must contain at least the number of pops in npop1, then the number of the pops, the number of npops2, the number of the pops, and optionally the number od noutgroups and the number of pops outgroup\n");
-		exit(1);
-	}
-	if((*data)->ancestral_pol[1] != 0 && (*data)->ancestral_pol[1] != 1)  {
-		printf("Error: ancestral_pol must be 1 (calculated) or 0 (not calculated) in the first value\n");
-		exit(1);
-	}
-	if((*data)->ancestral_pol[1] == 1)  {
-		if((*data)->ancestral_pol[0] < 2+(*data)->ancestral_pol[2]+2) {
-			printf("Error: ancestral_pol: the number of the npops1 (pops) and number of npops2 (pops) are not well defined\n");
-			exit(1);
-		}
-		if((*data)->ancestral_pol[2] <= 0 || (*data)->ancestral_pol[2] > (*data)->npop - 1) {
-			printf("Error: ancestral_pol: the number of the npops1 can not be higher than npop-1\n");
-			exit(1);
-		}
-		for(y=3;y<3+(*data)->ancestral_pol[2];y++) {
-			if((*data)->ancestral_pol[y] >= (*data)->npop) {
-				printf("Error: ancestral_pol: the number of the pops can not be higher than the npop defined\n");
-				exit(1);
-			}
-		}
-		if((*data)->ancestral_pol[0] < 2+(*data)->ancestral_pol[2]+(*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1]+1) {
-			printf("Error: ancestral_pol: the number of the npops1 (pops) and number of npops2 (pops) are not well defined\n");
-			exit(1);
-		}
-		if((*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1] <= 0 || (*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1] > (*data)->npop - (*data)->ancestral_pol[2]) {
-			printf("Error: ancestral_pol: the number of the npops2 can not be higher than npop - npops1\n");
-			exit(1);
-		}
-		for(y=3+(*data)->ancestral_pol[2]+1;y<3+(*data)->ancestral_pol[2]+1+(*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1];y++) {
-			if((*data)->ancestral_pol[y] >= (*data)->npop) {
-				printf("Error: ancestral_pol: the number of the pops can not be higher than the npop defined\n");
-				exit(1);
-			}
-		}
-		if((*data)->ancestral_pol[0] >= 2+(*data)->ancestral_pol[2]+1+(*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1]+1) {
-			if((*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1+(*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1]+1] < 0 || 
-			   (*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1+(*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1]+1] > (*data)->npop - (*data)->ancestral_pol[2] - (*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1]) {
-				printf("Error: ancestral_pol: the number of the npops1 can not be higher than npop-npops1-npops2\n");
-				exit(1);
-			}
-			for(y=3+(*data)->ancestral_pol[2]+1+(*data)->ancestral_pol[2+(*data)->ancestral_pol[2]+1]+1;y<=(*data)->ancestral_pol[0];y++) {
-				if((*data)->ancestral_pol[y] >= (*data)->npop) {
-					printf("Error: ancestral_pol: the number of the pops can not be higher than the npop defined\n");
-					exit(1);
-				}
-			}
-		}
-	}
-	*/
 
 	if((*data)->ehh_fixnt[0] > 0 || ((*data)->ehh_fixnt[0] > 2 && (*data)->ehh_fixnt[1] > 1)) {
 	   printf("Error: ehh_fixnt: the first value must be 0 (inactive) or 1 (active)\n");
@@ -3220,8 +2937,6 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
 	}
 
     fprintf(out,"\n\"OUTPUT FILE: date %s\" \n\n\"Input data from the file: %s\"\n",s,in);
-    /*fputs("\nFinite island model. Population parameters in function of 4No\n",out);*/
-    /*fputs("except for the parameters that indicate the size of the populations (in No).\n",out);*/
     print_var(23,out);
     fprintf(out," %d",(*data)->print_neuttest);
 	print_var(16,out);
@@ -3230,10 +2945,6 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
 		print_var(91,out);
 		for(x=1;x<5;x++) fprintf(out," %G",(*data)->patcg[x]);
 	}
-	/*
-	print_var(75,out);
-    fprintf(out,"%d",(*data)->likelihood_line);
-	*/
     if((*data)->mhits && ((*data)->theta_1[1] > 0. || (*data)->sfix_allthetas || (*data)->range_thetant || (*data)->ifgamma)) {
         print_var(0,out);
         fprintf(out," %d",(*data)->mhits);
@@ -3257,10 +2968,6 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
                 else fprintf(out," %.3G",j);
             }
         }
-        /*
-		print_var(18,out);
-		fprintf(out," %ld",(*data)->seed2);
-		*/
     }
     print_var(1,out);
     fprintf(out," %ld",(*data)->n_iter);                
@@ -3564,7 +3271,7 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
 		
         if(!(*data)->npop_events) {
             for(x=0;x<npopt;x++) {
-                if(!((*data)->nintn[x] == 0)) {
+                if((*data)->nintn[x] != 0) {
                     print_var(50,out);
                     fprintf(out," %d",(*data)->iflogistic);
                     flag = 1;
@@ -3804,7 +3511,6 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
 		fputs("\n",outputind);
 		fclose(outputind);
 	}
-	/***/
 
 	if((*data)->includeEHHrel) {
 		print_var(92,out);
@@ -3855,6 +3561,7 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
         puts("\nError. Buffer print error\n");
         exit(1);
     }
+
 }
 
 void print_var(int x,FILE *out)
@@ -3871,7 +3578,6 @@ void print_var(int x,FILE *out)
     for(z=y+1;z<29;z++) til20[z] = 32;
     til20[29] = '\0';
     fprintf(out,"\n%s   ",til20);
-    
     return;
 }
 
@@ -3962,8 +3668,7 @@ void free_inputdata(struct var **data,struct var_priors *priors,int my_rank)
 				free((*data)->obs_statistics[x][y]);
 			free((*data)->obs_statistics[x]);
 		}
-	}	  
-    
+	}
     return;
 }
 
@@ -4531,25 +4236,6 @@ void BuildBcast_derived_data(struct var **data,struct var_priors **priors,int my
 					(*data)->loci_linked[j] = (long int *)malloc(3*sizeof(long int));
 			}
 		}
-		/*
-		displacements2 = (MPI_Aint *)malloc((*data)->linked*sizeof(MPI_Aint));
-		typelist2 = (MPI_Datatype *)malloc((*data)->linked*sizeof(MPI_Datatype));
-		block_lengths2 = (int *)malloc((*data)->linked*sizeof(int));
-		MPI_Get_address((*data)->loci_linked[0],&start_address);
-		for(j=0;j<(*data)->linked;j++) {
-			block_lengths2[j] = 3;
-			typelist2[j] = MPI_LONG;
-			MPI_Get_address((*data)->loci_linked[j],&address);
-			displacements2[j] = address - start_address;
-		}
-		MPI_Type_create_struct((*data)->linked,block_lengths2,displacements2,typelist2,&column_mpi_t);
-		MPI_Type_commit(&column_mpi_t);
-		MPI_Bcast((*data)->loci_linked[0],1,column_mpi_t,0,MPI_COMM_WORLD);
-		
-		free(displacements2);
-		free(typelist2);
-		free(block_lengths2);
-		*/
 		for(j=0;j<(*data)->linked;j++) {
 			MPI_Bcast((*data)->loci_linked[j],3,MPI_LONG,0,MPI_COMM_WORLD);
 		}
@@ -4698,10 +4384,6 @@ void BuildBcast_derived_data(struct var **data,struct var_priors **priors,int my
 			MPI_Bcast(priors[0][j].priordist,(*data)->n_iter,MPI_DOUBLE,0,MPI_COMM_WORLD);
 		}
 	}
-	/*
-	rankprint(data,priors,my_rank);
-	exit(1);
-	*/
 	return;
 }
 
@@ -4948,7 +4630,7 @@ void rankprint_inputp(struct var2 **inputp,int my_rank,int x)
 		printf("rank: %d, locus: %d, patcg[%d]: %g\n",my_rank,x,i,(*inputp)->patcg[i]);
 	printf("rank: %d, locus: %d, includeEHHrel: %d\n",my_rank,x,(*inputp)->includeEHHrel);
 	printf("rank: %d, locus: %d, pop_outgroup: %d\n",my_rank,x,(*inputp)->pop_outgroup);
-		
+
 	return;
 }
 

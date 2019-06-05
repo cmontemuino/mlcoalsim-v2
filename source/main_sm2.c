@@ -23,17 +23,25 @@
 #include <math.h>
 #include <time.h>
 
-#if inMPI == 1 
+#include "zf_log.h"
+
+#if inMPI == 1
 	#include <mpi.h>
+
 #endif
 
-#ifdef BENCHMARK
+#ifndef BENCHMARK_ENABLED
+	#define BENCHMARK_ENABLED 0
+#endif
+
+#if BENCHMARK_ENABLED == 1
 #include "benchmark.h"
 #endif
 
 int main (int argc,char *argv[])
 {
-#ifdef BENCHMARK
+    ZF_LOGD("START");
+#if BENCHMARK_ENABLED == 1
 	FILE *benchmark_file;
 	long start = now_in_seconds();
 	struct memory_stats_t memory_stats;
@@ -165,11 +173,13 @@ int main (int argc,char *argv[])
 		}
 
 		if (!(file_input = fopen (file_in,"r"))) perror("Error in input/output");
+		ZF_LOGD("--> input_data");
 		input_data(file_input,&data,&priors);
 		fclose(file_input);
 
 		if((*data).n_iter == 0) {
 			printf("\nInput file contained apparently NO ERRORS. Exit.\n");
+            ZF_LOGD("END");
 			exit(0);
 		}
 		
@@ -208,6 +218,7 @@ int main (int argc,char *argv[])
 		if((*data).neutral_tests == 0 && (*data).likelihood_line == 0) {
 			if(!(file_output = fopen (file_out,"w"))) perror("Error in input/output");
 			fputs(MLCOALSIM,file_output);
+			ZF_LOGD("--> output_data");
 			output_data(file_output,file_in,file_out,&data,priors);
 			fclose(file_output);
 		}
@@ -221,11 +232,13 @@ int main (int argc,char *argv[])
 					 strncat(namefile_,"_summary.out",420);
 					 if(!(file_output = fopen(namefile_,"w"))) perror("Error in input/output");
 					 fputs(MLCOALSIM,file_output);
+					 ZF_LOGD("--> output_data");
 					 output_data(file_output,file_in,file_out,&data,priors);
 				 }
 				 else {
 					if(!(file_output = fopen (file_out,"w"))) perror("Error in input/output");
 					fputs(MLCOALSIM,file_output);
+					ZF_LOGD("--> output_data");
 					output_data(file_output,file_in,file_out,&data,priors);
 				 }
 			}
@@ -337,6 +350,7 @@ int main (int argc,char *argv[])
 	/*init_seed1((*data).seed1[1]);*//*it is already defined in input_data()!*/
 	/*********** DEFINING VARIABLES FOR MS **************************************/	
 	if(!(inputp = (struct var2 *)calloc(1,sizeof(struct var2)))) perror("calloc error.main.0");		
+	ZF_LOGD("--> getpars_fix");
 	getpars_fix(&data,&inputp);
 	/*********** define the number of regions *******************/
 	if((*inputp).linked == 0)
@@ -630,6 +644,7 @@ int main (int argc,char *argv[])
 	my_rank = 0;
 	nppr[my_rank+1] = (*data).n_loci;
 	niterpr[my_rank+1] = (*inputp).howmany + (*inputp).mc_jump;
+	int ms_result = 0;
 #endif
 	y = 0;
 	if((*data).n_loci > 1) {		
@@ -642,12 +657,10 @@ int main (int argc,char *argv[])
 		for(x=nppr[my_rank];x<nppr[my_rank+1];x++) {
 
 			/*change the seed for each loci:*/
-			/*if(x)*/ init_seed1((*data).seed1[x+1]);/*init_seed1((long int)-(21474*x+(*data).seed1));*//*modify seeds. the user has to give the seed for each locus*/
+			init_seed1((*data).seed1[x+1]);/*modify seeds. the user has to give the seed for each locus*/
+			ZF_LOGD("--> getpars_mod");
 			getpars_mod(&data,&inputp,x);			
 
-			/*rankprint_inputp(&inputp,my_rank,x);
-			fflush(stdout);*/
-			/*exit(1);*/
 			
 			/*****In case MHMCMC/MCMCRA (inactivated).*******/
 			for(jcount=0;jcount<(*inputp).howmany + (*inputp).mc_jump;jcount++) {
@@ -657,7 +670,9 @@ int main (int argc,char *argv[])
 			jcount2 = mcount2 = 0;
 
 			/* DO NEUTRALITY TEST, MORE THAN ONE LOCUS*/
-			if(ms(&inputp,file_out,matrix_test2,postp2,0,(*inputp).howmany + (*inputp).mc_jump,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[x+1])) {
+			ZF_LOGD("--> ms");
+			ms_result = ms(&inputp,file_out,matrix_test2,postp2,0,(*inputp).howmany + (*inputp).mc_jump,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[x+1]);
+			if(ms_result) {
 				y = 1;
 				break;
 			}			 
@@ -740,14 +755,17 @@ int main (int argc,char *argv[])
 				for(x=0;x<NEUTVALUES2*(*data).max_npop_sampled;x++) 
 					free(matrix_test2[x]);
 				free(matrix_test2);
+				ZF_LOGD("--> free_getpars_fix");
 				free_getpars_fix(&data,&inputp);
 				free(inputp);
+				ZF_LOGD("--> free_inputdata");
 				free_inputdata(&data,priors,my_rank);
 				free(data);
 				free(priors);
 				free(nppr);
 				free(niterpr);
 				MPI_Finalize(); /*shut down MPI*/
+				ZF_LOGD("END");
 				return 0; /*exit(0);*/
 			}
 			else {
@@ -783,14 +801,17 @@ int main (int argc,char *argv[])
 					free(matrix_test2);
 					free(matrix_test);
 				}
+				ZF_LOGD("--> free_getpars_fix");
 				free_getpars_fix(&data,&inputp);
 				free(inputp);
+				ZF_LOGD("--> free_inputdata");
 				free_inputdata(&data,priors,my_rank);
 				free(data);
 				free(priors);
 				free(nppr);
 				free(niterpr);
 				MPI_Finalize(); /*shut down MPI*/
+				ZF_LOGD("END");
 				return 0; /*exit(0);*/
 			}
 		}
@@ -800,6 +821,7 @@ int main (int argc,char *argv[])
 		init_seed1((*data).seed1[1]);
         
         /* SINGLE LOCUS*/
+		ZF_LOGD("--> getpars_mod");
         getpars_mod(&data,&inputp,0);
 		
 		/*****In case MHMCMC/MCMCRA, (inactivated) *******/
@@ -814,18 +836,11 @@ int main (int argc,char *argv[])
 		
 		x1 = niterpr[my_rank+1]-niterpr[my_rank];
 		for(x0=niterpr[my_rank];x0<niterpr[my_rank+1];x0+=x1) {
-			/*debug*//*
-			printf("\nx0=%ld\tx1=%ld\tmy_rank=%d",niterpr[my_rank],niterpr[my_rank+1],my_rank);
-			fflush(stdout);
-			*/
 			jcount2 = mcount2 = 0;
-			
-			/*rankprint_inputp(&inputp,my_rank,0);*/
-			/*printf("\nmy_rank: %d, x0: %ld",my_rank,x0);*/
-			/*fflush(stdout);*/
-			/*exit(1);*/
 
-			if(ms(&inputp,file_out,matrix_test2,postp2,x0,x0+x1,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[1])) {
+			ZF_LOGD("--> ms");
+			ms_result = ms(&inputp,file_out,matrix_test2,postp2,x0,x0+x1,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[1]);
+			if(ms_result) {
 				y = 1;
 				break;
 			}
@@ -837,24 +852,6 @@ int main (int argc,char *argv[])
 						memcpy(&(matrix_test[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[x0]]),&(matrix_test2[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[x0]]),sizeof(double)*x1);
 			if((*inputp).ifgamma == 1 || (*inputp).range_thetant  || (*inputp).ifgammar == 1 || (*inputp).range_rnt)
 				memcpy(&(postp[0][listnumbers[x0]]),&(postp2[0][listnumbers[x0]]),sizeof(struct prob_par)*x1);				
-			/*
-			for(xx=x0;xx<x0+x1;xx++) {
-				printf("\nORIGINAL: %f\t%d",postp[0][xx].thetap,my_rank);
-			}
-			*/
-			/*
-			for(xx=x0;xx<x0+x1;xx++) {
-				if((*inputp).ifgamma == 1 || (*inputp).range_thetant || (*inputp).ifgammar == 1 || (*inputp).range_rnt) {
-					postp[0][listnumbers[xx]].thetap = postp2[0][listnumbers[xx]].thetap;
-					postp[0][listnumbers[xx]].recp = postp2[0][listnumbers[xx]].recp;
-					postp[0][listnumbers[xx]].Ttotp = postp2[0][listnumbers[xx]].Ttotp;
-				}
-				if((*inputp).neutral_tests && matrix_test)
-					for(n=0;n<windows;n++)
-						for(m=0;m<NEUTVALUES2*(*data).max_npop_sampled;m++)
-							matrix_test[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[xx]] = matrix_test2[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[xx]];
-			}
-			*/
 			if((*inputp).Sfix_alltheta == 1 || (*inputp).rmfix == 1) {
 				postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap += (double)mcount2; 
 				postp[0][(*inputp).howmany + (*inputp).mc_jump].recp  += (double)mcount2;
@@ -962,14 +959,17 @@ int main (int argc,char *argv[])
 					free(matrix_test2[0]);
 				}
 				free(matrix_test2);
+				ZF_LOGD("--> free_getpars_fix");
 				free_getpars_fix(&data,&inputp);
 				free(inputp);
+				ZF_LOGD("--> free_inputdata");
 				free_inputdata(&data,priors,my_rank);
 				free(data);
 				free(priors);
 				free(nppr);
 				free(niterpr);
 				MPI_Finalize(); /*shut down MPI*/
+				ZF_LOGD("END");
 				return 0; /*exit(0);*/
 			}
 			else {
@@ -1017,14 +1017,17 @@ int main (int argc,char *argv[])
 					free(matrix_test);
 					free(matrix_test2);
 				}
+				ZF_LOGD("--> free_getpars_fix");
 				free_getpars_fix(&data,&inputp);
 				free(inputp);
+				ZF_LOGD("--> free_inputdata");
 				free_inputdata(&data,priors,my_rank);
 				free(data);
 				free(priors);
 				free(nppr);
 				free(niterpr);
 				MPI_Finalize(); /*shut down MPI*/
+				ZF_LOGD("END");
 				return 0; /*exit(0);*/
 			}
 		}
@@ -1116,10 +1119,10 @@ int main (int argc,char *argv[])
 		free(matrix_test2);
 	}
 	
-#ifdef BENCHMARK
-		benchmark_file = create_benchmark_file(file_out);
-		err = collect_memory_stats(&memory_stats);
-		report_memory_stats(memory_stats, benchmark_file);
+#if BENCHMARK_ENABLED == 1
+	benchmark_file = create_benchmark_file(file_out);
+	err = collect_memory_stats(&memory_stats);
+	report_memory_stats(memory_stats, benchmark_file);
 #endif
 
     free_getpars_fix(&data,&inputp);
@@ -1134,13 +1137,11 @@ int main (int argc,char *argv[])
     #ifndef __DNASP__
 	printf("\n %s exited succesfully.\n\n",MLCOALSIM);
 	#endif
-#ifdef BENCHMARK
+#if BENCHMARK_ENABLED == 1
 	long elapsed_ms = now_in_seconds() - start;
 	report_elapsed_time(elapsed_ms, benchmark_file);
 	close_benchmark_file(benchmark_file);
-	// #ifdef __linux__
-	// 	fprintf(stdout, "Viene con linux\n");
-	// #endif
 #endif
+    ZF_LOGD("END");
 	return 0;
 }

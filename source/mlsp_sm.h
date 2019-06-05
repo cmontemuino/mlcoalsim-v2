@@ -16,6 +16,11 @@
 /* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  */
 /************************************************************************************/
 /*20150705*/
+#pragma once
+
+#ifndef _MLSP_SM_H_
+#define _MLSP_SM_H_
+
 #define MLCOALSIM "mlcoalsim version 1.9916b (20190520)\n"
 
 #define FREQSPECTRUM_TDFSR2	0
@@ -365,3 +370,63 @@ struct events { /*events occured, split, mig and factor_pop changes*/
 	double *mig_rv;/*mi of the rest with the new pop*/
 	double sex_ratio; /*NOW IS FOR ALL POPS*/
 };
+
+/* Els arbres estan fets en nodes (contenen el temps de coalescencia i el nombre del node amb el que conecta per dalt).
+ * Tambe tenim els segments-length que contenen l'inici nt(eg 10-500, es 10) del segment, la direccio al nodes (arbre) al qual esta conectat,
+ * i el nombre del següent segment (eg seria el segment que conte des del 501). Hi ha un segl per cada fragment produit per recombinacio que te un arbre associat.
+ */
+struct node {
+    int abv;
+    int ndes;
+    double time;
+};
+struct segl {
+    long int beg;
+    struct node *ptree;
+    long int next;
+};
+
+struct dnapar {
+    double k;
+    long int S;
+	int B1;
+    int Q1;
+    int *freq;
+    double piw;
+    double pib;
+    long int *unic;
+    int maxhapl;
+	int maxhapl1;
+	int Rm;
+	double thetaL;
+	
+	double withinw;
+	double max_iES;
+	double min_uiHS;
+	double max_uiHS;
+	
+	double *fstallcomp;
+	double *piwallcomp;
+	double *piaallcomp;
+	
+    int nhapl;
+    int *fhapl;
+	double *fsthapallcomp;
+	double *hapwallcomp;
+	double *hapaallcomp;
+	
+	int *Sanc; /*for 3 pops is: Sx1,Sx2,Sxo,Sf1,Sf2,Sfo,Sx1f2,Sx2f1,Ssh,Sso*/
+	int mhsites;
+	
+	double pie1;	/*Achaz*/
+	double pin1;
+	long int Se1;
+	long int Sn1;
+	
+	double m_sdev;
+	double m_skew;
+	double m_kurt;
+	double ragg;
+};
+
+#endif
