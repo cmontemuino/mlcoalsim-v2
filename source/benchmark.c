@@ -50,7 +50,7 @@ int collect_memory_stats(struct memory_stats_t *memory_stats_out)
     }
     else
     {
-        log_info("getrusage function has failed.")
+        log_info("getrusage function has failed.");
         return BENCHMARK_MEMORY_ERROR;
     }
 #elif

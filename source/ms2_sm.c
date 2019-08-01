@@ -26,6 +26,7 @@
 #include "neut_tests.h"
 #include "neutpar_common.h"
 #include "neutpar_window.h"
+#include "streec2_sm.h"
 
 #include "zf_log.h"
 
@@ -1035,8 +1036,8 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 		/* ranfactor: between 0.1 and 1, or between 1 and 10. Equally divided */
         if((*inputp)->ran_factorpop == 2) {
             for(i=1;i<(*inputp)->npop;i++) {
-                (*inputp)->factor_pop[i] = (double)ran1()* (double)9 + (double)1;
-                if((double)ran1() < 0.5) (*inputp)->factor_pop[i] = 1./(*inputp)->factor_pop[i];
+                (*inputp)->factor_pop[i] = ran1()* 9.0 + 1.0;
+                if(ran1() < 0.5) (*inputp)->factor_pop[i] = 1./(*inputp)->factor_pop[i];
             }
         }
         if((*inputp)->Sfix_alltheta == 0 && (*inputp)->rmfix == 0) {/*"normal" simulations: Fix theta (or fix S, for the wole populations together) and fix R*/
@@ -2988,12 +2989,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
     long int *ss;
     long int *len2;
     long int mmax;
-	double r_transc,r_transv;
-    struct segl *segtre_mig(long int ,int,int *,long int,double,double,double,
-        double ,long int *,long int,
-        double *,int,double,double,double,long int,int *,int *,int *,double **,double **,double **,
-        int, double, double, double, double *,double,int,double *,double,double *,double **,int,
-		int,struct events *,int, double,double,int, double, double,double);/* used to be: [MAXSEG]; */
+	double r_transc,r_transv;    
     double ttime(struct node *, int);
     double poissondist(double), ran1(void);
     void biggerlist(int);
@@ -3011,8 +3007,8 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 	double wstartm1,ttt;
 	long int *len_nozero,nsites_nozero,nz;
 	int loopcount;
-	int aa/**//**/,getinto;
-	long int kk,ll/**/,mm/**/,bb,cc,dd;
+	int aa,getinto;
+	long int kk,ll,mm,bb,cc,dd;
     long int nsites_mod_recinf=nsites;
     
 	if(!(selnsam = (int *)malloc((nsam)*sizeof(int)))) perror("malloc error sel. gensam.");
@@ -3280,6 +3276,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
     }
     free(selnsam);
 	free(len_nozero);
+	free(seglst);
 
     return ns;
 }

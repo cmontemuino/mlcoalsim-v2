@@ -3618,6 +3618,7 @@ void free_inputdata(struct var **data,struct var_priors *priors,int my_rank)
     free((*data)->sfreqend);
     free((*data)->sfreqinit);
     free((*data)->ts);
+	free((*data)->nintn);
 
 	if((*data)->npop > 20) loc = (int)(*data)->npop;
     else loc = 20;   
@@ -3658,6 +3659,7 @@ void free_inputdata(struct var **data,struct var_priors *priors,int my_rank)
     free((*data)->ancestral_pol);
     free((*data)->ehh_fixnt);
     free((*data)->event_sexratio);
+	free((*data)->seed1);
 	free((*data)->fixmax_abstime_event);
 
     if(my_rank == 0) {

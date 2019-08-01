@@ -973,13 +973,13 @@ double an(int n)
     if(nsam == 0) {
         an_m = (double *)calloc(n+2, sizeof(double));
         for(i=1;i<n+1;i++)
-            an_m[i+1] = an_m[i] + 1.0/(double)i;
+            an_m[i+1] = an_m[i] + 1.0/i;
         nsam = n;
     } else {
         if(nsam < n) {
             an_m = (double *)realloc(an_m,(n+2)*sizeof(double));
             for(i=nsam+1;i<n+1;i++)
-                an_m[i+1] = an_m[i] + 1.0/(double)i;
+                an_m[i+1] = an_m[i] + 1.0/i;
             nsam = n;
         }
     }
