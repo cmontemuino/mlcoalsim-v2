@@ -3011,7 +3011,8 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 	long int kk,ll,mm,bb,cc,dd;
     long int nsites_mod_recinf=nsites;
     
-	if(!(selnsam = (int *)malloc((nsam)*sizeof(int)))) perror("malloc error sel. gensam.");
+	if(!(selnsam = malloc((nsam)*sizeof(int))))
+		perror("malloc error sel. gensam.");
 	all_sel = 0;
 
     seglst = segtre_mig(npop,nsam,inconfig,nsites_mod_recinf,r,f,track_len,mig_rate,&nsegs,
@@ -3019,25 +3020,26 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
         nintn, nrec, nrec2, tpast,split_pop,time_split,time_scoal,factor_anc,freq,tlimit,
 		iflogistic,ts,factor_chrn,weightrec,migrate_matrix,my_rank,npop_events,pop_event,
 		event_forsexratio,event_sexratio,sex_ratio,no_rec_males,sendt,sfreqend,sfreqinit);
-    r_transc = rsv/(rsv + (double)1.);
-    r_transv = ((double)0.5)/(rsv + (double)1.); /*suma de transc + 1nt a transversio, quan sumen els 2nt es total = 1*/
+    r_transc = rsv/(rsv + 1.);
+    r_transv = 0.5/(rsv + 1.); /*suma de transc + 1nt a transversio, quan sumen els 2nt es total = 1*/
 
 	/*heterogeneity*/
-	if(!(len_nozero = (long int *)malloc((nsegs)*sizeof(long int)))) perror("malloc error len. gensam.");
+	if(!(len_nozero = malloc(nsegs*sizeof(long int))))
+		perror("malloc error len. gensam.");
 	nsites_nozero = 0;
+	
 	for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
 		end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1); /*next és l'index, beg és el punt físic */
 		start = seglst[seg].beg;
 		for(len_nozero[k]=0,nz=start;nz<=end;nz++) {
-			if(nz==0) wstartm1 = (double)0;
+			if(nz==0) wstartm1 = 0.0;
 			else wstartm1 = weightmut[nz-1];
-			if(((weightmut[nz]-wstartm1)*theta) != (double)0) {
+			if(((weightmut[nz]-wstartm1)*theta) != 0.0) {
 				len_nozero[k] += 1;
 				nsites_nozero += 1;
 			}
 		}
 	}
-	
 	/*Include mutations*/
     if(segsites == -1) {
         ns = 0;
@@ -3179,19 +3181,19 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 		}
     } else {/*THE PARTIAL SELECTION WITH SEG. SITE ARE NOT WELL DEBUGGED YET IN THE Sfix METHOD*/
         /* en cas de S fix */
-		pk = (double *)malloc((unsigned)(nsegs*sizeof(double)));
-        ss = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
-        len2 = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
+		pk = malloc(nsegs*sizeof(double));
+        ss = malloc(nsegs*sizeof(long int));
+        len2 = malloc(nsegs*sizeof(long int));
         if((pk==NULL)||(ss==NULL)||(len2 ==NULL)) perror("malloc error. gensam.2");
 		/*multiple hits for fixed mutations*/
 		if(mhits) mmax = (3 < nsam ? (long int)3 : (long int)(nsam-1)); /* mhits per nsam petites, no accepta en nsam=1, i nomes 2 en nsam=3 */
 		else mmax = (long int)1; /*if no multiple hits available*/
         /*set time  and nsites_nozero to zero*/
-		tt = ttt = (double)0;
-		if(mhits) tout = (double)0;
+		tt = ttt = 0.0;
+		if(mhits) tout = 0.0;
 		/*calcular primer la mida total de tot l'arbre*/
 		for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {		
-            end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
+            end = (k<nsegs-1 ? seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
             start = seglst[seg].beg;
             /*homogeneity. len2[k] afegit, maxim nombre de mutacions per segment *//*
 			len = end - start + 1;
@@ -3277,7 +3279,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
     free(selnsam);
 	free(len_nozero);
 	free(seglst);
-
+	
     return ns;
 }
 void biggerlist(int nsam)	/* fa més gran la matriu dels polimorfismes */
