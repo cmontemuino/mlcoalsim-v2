@@ -1,0 +1,60 @@
+
+
+Number of valid iterations:
+	TD[pop=0]	Fs[pop=0]	FDn[pop=0]	FFn[pop=0]	FD[pop=0]	FF[pop=0]	H[pop=0]	B[pop=0]	Q[pop=0]	ZnA[pop=0]	Fst[pop=0]	Kw[pop=0]	Hw[pop=0]	R2[pop=0]	S[pop=0]	piw[pop=0]	pib[pop=0]	ThetaW[pop=0]	ThetaT[pop=0]	ThetaFW[pop=0]	D_Dmin[pop=0]	H_norm[pop=0]	maxhap[pop=0]	maxhap1[pop=0]	Rm[pop=0]	ThetaFL[pop=0]	ThetaL[pop=0]	ZengE[pop=0]	EW[pop=0]	Fstw[pop=0]	minuiHS[pop=0]	maxuiHS[pop=0]	maxliES[pop=0]	fixoutg[pop=0]	KoutgJC[pop=0]	ThetaWA[pop=0]	ThetaWAn[pop=0]	ThetaTA[pop=0]	ThetaTAn[pop=0]	AchY[pop=0]	AchYn[pop=0]	msdev[pop=0]	mskew[pop=0]	mkurt[pop=0]	ragg[pop=0]	ZnS[pop=0]	ZZ[pop=0]
+locus_0	100	100	100	100	100	100	100	100	100	100	0	100	100	100	100	100	100	100	100	100	100	100	100	0	100	100	100	100	100	0	0	0	0	0	0	100	100	100	100	100	100	100	100	100	100	100	100
+average	100	100	100	100	100	100	100	100	100	100	0	100	100	100	100	100	100	100	100	100	100	100	100	0	100	100	100	100	100	0	0	0	0	0	0	100	100	100	100	100	100	100	100	100	100	100	100
+variance	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+
+PERCENTILES:
+
+locus_0
+
+	TD[pop=0]	Fs[pop=0]	FDn[pop=0]	FFn[pop=0]	FD[pop=0]	FF[pop=0]	H[pop=0]	B[pop=0]	Q[pop=0]	ZnA[pop=0]	Fst[pop=0]	Kw[pop=0]	Hw[pop=0]	R2[pop=0]	S[pop=0]	piw[pop=0]	pib[pop=0]	ThetaW[pop=0]	ThetaT[pop=0]	ThetaFW[pop=0]	D_Dmin[pop=0]	H_norm[pop=0]	maxhap[pop=0]	maxhap1[pop=0]	Rm[pop=0]	ThetaFL[pop=0]	ThetaL[pop=0]	ZengE[pop=0]	EW[pop=0]	Fstw[pop=0]	minuiHS[pop=0]	maxuiHS[pop=0]	maxliES[pop=0]	fixoutg[pop=0]	KoutgJC[pop=0]	ThetaWA[pop=0]	ThetaWAn[pop=0]	ThetaTA[pop=0]	ThetaTAn[pop=0]	AchY[pop=0]	AchYn[pop=0]	msdev[pop=0]	mskew[pop=0]	mkurt[pop=0]	ragg[pop=0]	ZnS[pop=0]	ZZ[pop=0]
+ 0.05%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+ 0.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+ 2.5%	-0.641673	-32.0924	-1.11807	-0.91083	-1.21852	-0.992199	-10.4352	0.0251256	0.045	0.0866217	na	67	0.988485	0.0762271	200	31.2382	0	38.6296	31.2382	26.2259	-0.213442	-0.454907	0.03	na	24	27	31.0202	-0.603188	0.0144	na	na	na	na	na	na	34.7108	34.5549	31.1002	31.0862	-0.578385	-0.589654	9.35215	-1.05622	-0.102133	0.000680992	0.0283596	0.057102
+ 5.0%	-0.49445	-27.7739	-0.920529	-0.775352	-1.03244	-0.836163	-9.90061	0.0301508	0.06	0.0895307	na	67	0.989192	0.0804904	200	32.934	0	38.6296	32.934	29.5996	-0.164471	-0.431604	0.03	na	24	28	32.5253	-0.483884	0.015	na	na	na	na	na	na	35.3092	35.2748	32.8102	32.817	-0.516856	-0.519318	9.4565	-1.02077	-0.0124088	0.000766799	0.0285496	0.0588639
+10.0%	-0.36694	-24.6269	-0.624226	-0.464553	-0.734699	-0.491989	-7.25758	0.040201	0.0675	0.0980477	na	68	0.989798	0.0838513	200	34.4028	0	38.6296	34.4028	30.9816	-0.122057	-0.316384	0.03	na	25	31	33.4343	-0.411821	0.0153	na	na	na	na	na	na	36.2668	36.3547	34.1662	34.163	-0.416555	-0.413977	9.70701	-0.946286	0.149388	0.000834527	0.0295131	0.0666192
+25.0%	-0.221549	-19.639	-0.262077	-0.233818	-0.288092	-0.262475	-4.87131	0.0502513	0.0925	0.113821	na	71	0.990909	0.088057	200	36.0776	0	38.6296	36.0776	34.5916	-0.0736948	-0.212358	0.04	na	27	35	35.6919	-0.232866	0.0165	na	na	na	na	na	na	37.7031	37.6745	35.9074	35.9046	-0.18825	-0.190384	10.3925	-0.851818	0.606131	0.000999367	0.0311181	0.0803107
+50.0%	0.0433365	-15.5152	-0.0316193	-0.0331076	-0.0275709	-0.0225474	0.593535	0.0603015	0.11	0.129532	na	73.5	0.992222	0.0960287	200	39.1288	0	38.6296	39.1288	37.4005	0.0144152	0.0258744	0.04	na	29	39	38.3384	-0.023084	0.0177	na	na	na	na	na	na	38.5409	38.5144	39.16	39.168	0.020254	0.020806	11.3534	-0.703475	0.990045	0.00123571	0.0336646	0.0956287
+75.0%	0.243375	-11.9243	0.264684	0.224982	0.270167	0.227336	4.47657	0.0753769	0.13	0.144195	na	76	0.993434	0.101846	200	41.433	0	38.6296	41.433	42.4349	0.0809549	0.19515	0.05	na	31	42.5	40.798	0.171885	0.019	na	na	na	na	na	na	39.4985	39.5942	41.5673	41.5274	0.247048	0.259329	12.3309	-0.508278	1.32063	0.00145399	0.03684	0.108482
+90.0%	0.421571	-9.67649	0.528065	0.520207	0.567906	0.538709	7.6598	0.0904523	0.155	0.159749	na	79	0.994747	0.106934	200	43.4857	0	38.6296	43.4857	48.3285	0.140229	0.333919	0.06	na	34	49	44.7879	0.48816	0.0202	na	na	na	na	na	na	40.456	40.5541	43.6271	43.6361	0.390361	0.384119	13.4007	-0.328093	1.63164	0.00172709	0.0399933	0.125552
+95.0%	0.495064	-8.01139	0.692678	0.589253	0.791209	0.618309	10.2436	0.10804	0.18	0.17822	na	80	0.994949	0.109089	200	44.3322	0	38.6296	44.3322	49.9601	0.164675	0.446558	0.07	na	35	52.5	45.5303	0.547011	0.0207	na	na	na	na	na	na	41.1742	41.154	44.4921	44.5012	0.556517	0.563747	14.067	-0.242678	1.83648	0.00199065	0.0418874	0.140613
+97.5%	0.548476	-7.42069	0.791446	0.61474	0.865644	0.640582	11.2574	0.120603	0.18	0.196625	na	83	0.995556	0.110651	200	44.9475	0	38.6296	44.9475	50.6667	0.182442	0.49075	0.07	na	36	55	45.7576	0.565026	0.0214	na	na	na	na	na	na	41.4135	41.5139	45.1301	45.1394	0.653905	0.649029	14.2805	-0.215674	2.1229	0.00220569	0.044366	0.155741
+99.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+99.95%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+
+average
+
+	TD[pop=0]	Fs[pop=0]	FDn[pop=0]	FFn[pop=0]	FD[pop=0]	FF[pop=0]	H[pop=0]	B[pop=0]	Q[pop=0]	ZnA[pop=0]	Fst[pop=0]	Kw[pop=0]	Hw[pop=0]	R2[pop=0]	S[pop=0]	piw[pop=0]	pib[pop=0]	ThetaW[pop=0]	ThetaT[pop=0]	ThetaFW[pop=0]	D_Dmin[pop=0]	H_norm[pop=0]	maxhap[pop=0]	maxhap1[pop=0]	Rm[pop=0]	ThetaFL[pop=0]	ThetaL[pop=0]	ZengE[pop=0]	EW[pop=0]	Fstw[pop=0]	minuiHS[pop=0]	maxuiHS[pop=0]	maxliES[pop=0]	fixoutg[pop=0]	KoutgJC[pop=0]	ThetaWA[pop=0]	ThetaWAn[pop=0]	ThetaTA[pop=0]	ThetaTAn[pop=0]	AchY[pop=0]	AchYn[pop=0]	msdev[pop=0]	mskew[pop=0]	mkurt[pop=0]	ragg[pop=0]	ZnS[pop=0]	ZZ[pop=0]
+ 0.05%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+ 0.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+ 2.5%	-0.641673	-32.0924	-1.11807	-0.91083	-1.21852	-0.992199	-10.4352	0.0251256	0.045	0.0866217	na	67	0.988485	0.0762271	200	31.2382	0	38.6296	31.2382	26.2259	-0.213442	-0.454907	0.03	na	24	27	31.0202	-0.603188	0.0144	na	na	na	na	na	na	34.7108	34.5549	31.1002	31.0862	-0.578385	-0.589654	9.35215	-1.05622	-0.102133	0.000680992	0.0283596	0.057102
+ 5.0%	-0.49445	-27.7739	-0.920529	-0.775352	-1.03244	-0.836163	-9.90061	0.0301508	0.06	0.0895307	na	67	0.989192	0.0804904	200	32.934	0	38.6296	32.934	29.5996	-0.164471	-0.431604	0.03	na	24	28	32.5253	-0.483884	0.015	na	na	na	na	na	na	35.3092	35.2748	32.8102	32.817	-0.516856	-0.519318	9.4565	-1.02077	-0.0124088	0.000766799	0.0285496	0.0588639
+10.0%	-0.36694	-24.6269	-0.624226	-0.464553	-0.734699	-0.491989	-7.25758	0.040201	0.0675	0.0980477	na	68	0.989798	0.0838513	200	34.4028	0	38.6296	34.4028	30.9816	-0.122057	-0.316384	0.03	na	25	31	33.4343	-0.411821	0.0153	na	na	na	na	na	na	36.2668	36.3547	34.1662	34.163	-0.416555	-0.413977	9.70701	-0.946286	0.149388	0.000834527	0.0295131	0.0666192
+25.0%	-0.221549	-19.639	-0.262077	-0.233818	-0.288092	-0.262475	-4.87131	0.0502513	0.0925	0.113821	na	71	0.990909	0.088057	200	36.0776	0	38.6296	36.0776	34.5916	-0.0736948	-0.212358	0.04	na	27	35	35.6919	-0.232866	0.0165	na	na	na	na	na	na	37.7031	37.6745	35.9074	35.9046	-0.18825	-0.190384	10.3925	-0.851818	0.606131	0.000999367	0.0311181	0.0803107
+50.0%	0.0433365	-15.5152	-0.0316193	-0.0331076	-0.0275709	-0.0225474	0.593535	0.0603015	0.11	0.129532	na	73.5	0.992222	0.0960287	200	39.1288	0	38.6296	39.1288	37.4005	0.0144152	0.0258744	0.04	na	29	39	38.3384	-0.023084	0.0177	na	na	na	na	na	na	38.5409	38.5144	39.16	39.168	0.020254	0.020806	11.3534	-0.703475	0.990045	0.00123571	0.0336646	0.0956287
+75.0%	0.243375	-11.9243	0.264684	0.224982	0.270167	0.227336	4.47657	0.0753769	0.13	0.144195	na	76	0.993434	0.101846	200	41.433	0	38.6296	41.433	42.4349	0.0809549	0.19515	0.05	na	31	42.5	40.798	0.171885	0.019	na	na	na	na	na	na	39.4985	39.5942	41.5673	41.5274	0.247048	0.259329	12.3309	-0.508278	1.32063	0.00145399	0.03684	0.108482
+90.0%	0.421571	-9.67649	0.528065	0.520207	0.567906	0.538709	7.6598	0.0904523	0.155	0.159749	na	79	0.994747	0.106934	200	43.4857	0	38.6296	43.4857	48.3285	0.140229	0.333919	0.06	na	34	49	44.7879	0.48816	0.0202	na	na	na	na	na	na	40.456	40.5541	43.6271	43.6361	0.390361	0.384119	13.4007	-0.328093	1.63164	0.00172709	0.0399933	0.125552
+95.0%	0.495064	-8.01139	0.692678	0.589253	0.791209	0.618309	10.2436	0.10804	0.18	0.17822	na	80	0.994949	0.109089	200	44.3322	0	38.6296	44.3322	49.9601	0.164675	0.446558	0.07	na	35	52.5	45.5303	0.547011	0.0207	na	na	na	na	na	na	41.1742	41.154	44.4921	44.5012	0.556517	0.563747	14.067	-0.242678	1.83648	0.00199065	0.0418874	0.140613
+97.5%	0.548476	-7.42069	0.791446	0.61474	0.865644	0.640582	11.2574	0.120603	0.18	0.196625	na	83	0.995556	0.110651	200	44.9475	0	38.6296	44.9475	50.6667	0.182442	0.49075	0.07	na	36	55	45.7576	0.565026	0.0214	na	na	na	na	na	na	41.4135	41.5139	45.1301	45.1394	0.653905	0.649029	14.2805	-0.215674	2.1229	0.00220569	0.044366	0.155741
+99.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+99.95%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+
+variance
+
+	TD[pop=0]	Fs[pop=0]	FDn[pop=0]	FFn[pop=0]	FD[pop=0]	FF[pop=0]	H[pop=0]	B[pop=0]	Q[pop=0]	ZnA[pop=0]	Fst[pop=0]	Kw[pop=0]	Hw[pop=0]	R2[pop=0]	S[pop=0]	piw[pop=0]	pib[pop=0]	ThetaW[pop=0]	ThetaT[pop=0]	ThetaFW[pop=0]	D_Dmin[pop=0]	H_norm[pop=0]	maxhap[pop=0]	maxhap1[pop=0]	Rm[pop=0]	ThetaFL[pop=0]	ThetaL[pop=0]	ZengE[pop=0]	EW[pop=0]	Fstw[pop=0]	minuiHS[pop=0]	maxuiHS[pop=0]	maxliES[pop=0]	fixoutg[pop=0]	KoutgJC[pop=0]	ThetaWA[pop=0]	ThetaWAn[pop=0]	ThetaTA[pop=0]	ThetaTAn[pop=0]	AchY[pop=0]	AchYn[pop=0]	msdev[pop=0]	mskew[pop=0]	mkurt[pop=0]	ragg[pop=0]	ZnS[pop=0]	ZZ[pop=0]
+ 0.05%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+ 0.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+ 2.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+ 5.0%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+10.0%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+25.0%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+50.0%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+75.0%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+90.0%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+95.0%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+97.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+99.5%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
+99.95%	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na	na
