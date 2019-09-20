@@ -11,18 +11,22 @@ function validate {
     local baseline=$3
 
     pushd $output >/dev/null
-    local status1=$(cmp --silent ${case}A_PPercentiles.out $baseline/${case}A_PPercentiles.out && echo 0 || echo 1)
-    if [[ $status1 -ne 0 ]]; then
-        echo "\t\t Percentiles do not match!"
-    fi
 
-    local status2="$(sha256sum --check --status --strict $baseline/${case}A_linkedlocus_sha256.txt && echo 0 || echo 1)"
-    if [[ $status2 -ne 0 ]]; then
-        echo "\t\t Checksum do not match!"
+    cmp --silent ${case}A_PPercentiles.out $baseline/${case}A_PPercentiles.out
+    local status=$?
+    if [[ $status -eq 0 ]]; then
+        sha256sum --check --status --strict $baseline/${case}A_linkedlocus_sha256.txt
+        status=$?
+        if [[ $status -ne 0 ]]; then
+            echo >&2 "\t\t Checksum do not match! (error code: $status)"
+        fi
+    else
+        echo >&2 "\t\t Percentiles do not match! (error code: $status)"
     fi
 
     popd >/dev/null
-    return 0 || status1 || status2
+
+    return $status
 }
 
 # the case number
@@ -31,26 +35,29 @@ function run {
     local case=$2
     local output=/tmp/$id
 
-    echo "-- Running the validation for case '$case' --"
+    echo >&2 "-- Running the validation for case '$case' --"
 
     mkdir -p $output
 
-    echo "\tCreating the folder to put the generated data: $output"
+    echo >&2 "\tCreating the folder to put the generated data: $output"
     bin/mlcoalsimX baselines/$id/$case.txt $output/${case}A.txt >/dev/null 2>&1
 
-    echo "\tValidating the generated data for case $case"
+    echo >&2 "\tValidating the generated data for case $case"
     local here=$(pwd)
-    local status="$(validate $output ${case} $here/baselines/$id && echo 0 || echo 1)"
+    validate $output ${case} $here/baselines/$id
+    local status=$?
 
-    echo "\tTear down"
+    echo >&2 "\tTear down"
+    
     rm -rf $output
 
-    return 0 || status
+    return $status
 }
 
 run case01 1locus_1pop_mhit0_n100_S200 || exit 1
 run case02 1locus_1pop_mhit0_rec100_n100_S200 || exit 1
 run case03 1locus_1pop_mhit0_recINF_Lmod || exit 1
+run case04 1locus_1pop_mhit0_obs || exit 1
 
 echo "\n***All validations OK!!***"
 exit 0
