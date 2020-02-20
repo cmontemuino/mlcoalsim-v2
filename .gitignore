@@ -17,5 +17,6 @@ _deps
 
 ### Where we put generated binaries
 build/*
+bin/*
 
 
