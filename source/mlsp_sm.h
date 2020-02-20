@@ -16,7 +16,7 @@
 /* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  */
 /************************************************************************************/
 /*20150705*/
-#define MLCOALSIM "mlcoalsim version 1.9916b (20190520)\n"
+#define MLCOALSIM "mlcoalsim version 2.0.0 (20200220)\n"
 
 #define FREQSPECTRUM_TDFSR2	0
 /*1 means print S,tajimaD,ZnA,Fs,R2,theta,pi,fwh and freq_spectrum; 2 means freq_spectrum. ONLY WORKS IN OPTION print_neuttest 3, otherwise CRASH*/
@@ -44,7 +44,7 @@
 	#define inMPI	0
 #endif
 #ifndef ZNS_ACTIVE
-	#define ZNS_ACTIVE	1
+	#define ZNS_ACTIVE	0
 #endif
 
 #define MAXREJECT 100000
