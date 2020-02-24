@@ -24,9 +24,16 @@ use whatever other folder if you like to:
 
 ```shell script
 mkdir build
-cmake -B build
+cmake -B build -DCMAKE_BUILD_TYPE=<build_type>
 make -C build
 ```
+
+where `<build_type>` must be some of:
+
+* `Debug`: Adds the `-g` flag
+* `Release`: Adds the `-O3 -DNDEBUG` flags to the compiler
+* `MinSizeRel`: Adds `-Os -DNDEBUG` flags
+* `RelWithDebInfo`: Adds `-O2 -g -DNDEBUG` flags  **_<--- Default option if `DCMAKE_BUILD_TYPE` is not provided_**
 
 Four executables are going to be generated:
 * `mlcoalsimX`: application running without MPI
@@ -59,6 +66,13 @@ pushd examples/example10
 mpirun -np 4 ../../build/mlcoalsimXmpi  Example10loci.txt ../../build/Example10loci.out
 popd
 ```
+
+Other examples you might want to run:
+
+* `build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0_rec100.txt build/Example1locus_1pop_mhit0_rec100.out`
+* `build/mlcoalsimXmpi examples/example00/Example1locus_1pop_mhit0_rec100.txt build/Example1locus_1pop_mhit0_rec100.out`
+* `build/mlcoalsimX_ZnS examples/example00/Example1locus_1pop_mhit0_rec100_S20_n100.txt build/Example1locus_1pop_mhit0_rec100_S20_n100.out`
+* `build/mlcoalsimXmpi_ZnS examples/example00/Example1locus_1pop_mhit0_rec100_S20_n100.txt build/Example1locus_1pop_mhit0_rec100_S20_n100.out`
 
 [clion]: https://www.jetbrains.com/clion/
 [cmake]: https://cmake.org
