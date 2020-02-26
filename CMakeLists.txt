@@ -20,6 +20,9 @@ include_directories(${MPI_INCLUDE_PATH})
 # Include ZF_LOG
 add_subdirectory(zf_log)
 
+# Include the Benchmark library
+add_subdirectory(benchmark)
+
 file(GLOB SOURCES "source/*.c")
 
 # This is handy so we can enable MPI in our IDE of choice by just defining an environment variable
@@ -41,24 +44,24 @@ endif()
 # No MPI / No ZnS
 add_executable(mlcoalsimX ${SOURCES})
 set_target_properties(mlcoalsimX PROPERTIES COMPILE_FLAGS "-Wall -pedantic")
-target_link_libraries(mlcoalsimX zf_log)
+target_link_libraries(mlcoalsimX zf_log benchmark)
 install(TARGETS mlcoalsimX DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 # No MPI / With ZnS
 add_executable(mlcoalsimX_ZnS ${SOURCES})
 set_target_properties(mlcoalsimX_ZnS PROPERTIES COMPILE_FLAGS "-DZNS_ACTIVE")
-target_link_libraries(mlcoalsimX_ZnS zf_log)
+target_link_libraries(mlcoalsimX_ZnS zf_log benchmark)
 install(TARGETS mlcoalsimX_ZnS DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 # With MPI / No ZnS
 add_executable(mlcoalsimXmpi ${SOURCES})
-target_link_libraries(mlcoalsimXmpi zf_log)
+target_link_libraries(mlcoalsimXmpi zf_log benchmark)
 target_link_libraries(mlcoalsimXmpi ${MPI_LIBRARIES} -DinMPI)
 install(TARGETS mlcoalsimXmpi DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 # With MPI / With ZnS
 add_executable(mlcoalsimXmpi_ZnS ${SOURCES})
 set_target_properties(mlcoalsimX_ZnS PROPERTIES COMPILE_FLAGS "-DZNS_ACTIVE")
-target_link_libraries(mlcoalsimXmpi_ZnS zf_log)
+target_link_libraries(mlcoalsimXmpi_ZnS zf_log benchmark)
 target_link_libraries(mlcoalsimXmpi_ZnS ${MPI_LIBRARIES} -DinMPI)
 install(TARGETS mlcoalsimXmpi_ZnS DESTINATION ${CMAKE_INSTALL_PREFIX})

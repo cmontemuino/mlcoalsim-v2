@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14.5)
 
+project(zf_log)
+
 # zf_log target (required)
 set(HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(HEADERS zf_log.h)
