@@ -46,8 +46,6 @@ cd ..
 	{"correct_gammar"},	/*use in case ifgammar = 1. the result of the gamma distribution is multiplied by this value*/
 	{"invar_mut_sites"},	/*number of positions that are considered invariable. The algorithm will calculate (as an average) the number of invariable positions for each iteration.*/
 	
-	{"likelihood_line"},	/*In case 1, the likelihood value for each simulation will be shown given the observed data and the interval +-*/
-	
 	{"sfix_pop"},		/*in case sfix_all_thetas and several populations. indicate the population where the S will be fixed (starting from pop 0 to n-1)*/
 	{"rmfix_pop"},		/*in case rmfix and several populations. indicate the population where the S will be fixed (starting from pop 0 to n-1)*/
 	
@@ -79,16 +77,13 @@ cd ..
 					Fourth: number of populations in outgroup (nso): indicate the number of the populations (nso values).*/
 
 	{"patcg"},		/*if included: proportion of ATCG (from 0 to 1) sum must be 1. Only used in case print_matrixpol is 1*/
-	{"include_ehh_rel"},	/*calculate EHH related statistics or not. By default is zero because is very slow.*/
 	{"pop_outgroup"},	/*if >= 0 indicates the population defined as outgroup, by defect is -1*/
-	{"sehh_fixnt"},		/*The first value indicates if define (1 or not 0). the second value indicates the range to see the closest polymorphism (eg., 100 means +-100 bp from the value indicated) then indicate indicates the nt position ehh (and related statitics) must be used, for each locus. For a windows,it is ony calculated in one vindow*/
 	{"pevent_sexratio"},	/*indicate the pop_event number where the factor_chrn changes (e.g., change in male/female ratio) and the values of factor_chrn (two values for each event, no more changes than events)*/
 	{"sex_ratio"},		/*ratio homogametic/heterogametic*/
 	{"fixmax_abstime_event"},/*in some events it is necessary to fix a maximum absolute time the event occurred*/
 	
     	{"sendt"}, 		/*time at the selective event that selection finish (from present to past)*/
     	{"sfreqend"}, 		/*frequence of the selective position at which the selection finish (start from past to present)*/
-    
     	{"sfreqinit"}, 		/*frequence of the selective position at which the selection start (finish from past to present)*/
 
 #New statistics:
@@ -111,23 +106,4 @@ cd ..
 	{"_ZnS.out"},
 	{"_ZZ.out"}
 
-#New tests functions:
-
-	double E_zeng(int,double,double,double,double *);
-    	double Fstw(double *, int *,double,int);
-    	double EWtest(int, int *);
-	double pwh(int,double *);
- 	double estnm(int,int,int *,long int,char **);
-    	double logPPoisson2(long int, double);
-    	double koutg(int,int,int *);
-	double koutgJC(int,int,int *,unsigned long);
-	double fixoutg(int,int,int);
- 	
-	double fl_f_achaz(int,int *,long int);
-	double fl_f2_achaz(int,int *,long int);
-	double fl_d_achaz(int,int *,long int);
-	double fl_d2_achaz(int,int *,long int);
-	double Y_achaz(int,int *,long int);
-	double Y2_achaz(int,int *,long int);
-
-#INCLUDE SELECTION generation by generation.
+#INCLUDE SELECTION generation by generation, backward.
