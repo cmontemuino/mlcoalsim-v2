@@ -1,4 +1,4 @@
-mlcoalsimX "Multilocus coalescent simulation program" performs coalescent simulations under several demographic and also a selective model. In this version, the parameters can be included in separated prior files. Also, it calculates simulations using more than one processor (defined by the user). Furthermore, the input file has been changed significantly in relation to the fist version. The Manual of use still under construction.
+mlcoalsimX "Multilocus coalescent simulation program" performs coalescent simulations under several demographic and also a selective model. In this version, the parameters can be included in separated prior files. Also, it calculates simulations using more than one processor (defined by the user). Furthermore, the input file has been changed significantly in relation to the fist version. The Manual of use is the same than in mlcoalsim-v1 (https://github.com/CRAGENOMICA/mlcoalsim-v1) , except for a given parameters and installation indicated bellow:
 
 COMPILE:
 gcc *.c -lm -o mlcoalsimX -Wall -pedantic -DZNS_ACTIVE -O3
