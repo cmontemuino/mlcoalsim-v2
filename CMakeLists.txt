@@ -41,27 +41,24 @@ endif()
 ####################
 ### Executables  ###
 ####################
-# No MPI / No ZnS
-add_executable(mlcoalsimX ${SOURCES})
-set_target_properties(mlcoalsimX PROPERTIES COMPILE_FLAGS "-Wall -pedantic")
-target_link_libraries(mlcoalsimX zf_log benchmark)
-install(TARGETS mlcoalsimX DESTINATION ${CMAKE_INSTALL_PREFIX})
+# No MPI / No ZnS       : mlcoalsimX
+# No MPI / With ZnS     : mlcoalsimX_ZnS
+# With MPI / No ZnS     : mlcoalsimXmpi
+# With MPI / With ZnS   : mlcoalsimXmpi_ZnS
+set(ALL_EXECUTABLES mlcoalsimX mlcoalsimX_ZnS mlcoalsimXmpi mlcoalsimXmpi_ZnS)
+foreach(EXECUTABLE ${ALL_EXECUTABLES})
+    add_executable(${EXECUTABLE} ${SOURCES})
 
-# No MPI / With ZnS
-add_executable(mlcoalsimX_ZnS ${SOURCES})
-set_target_properties(mlcoalsimX_ZnS PROPERTIES COMPILE_FLAGS "-DZNS_ACTIVE")
-target_link_libraries(mlcoalsimX_ZnS zf_log benchmark)
-install(TARGETS mlcoalsimX_ZnS DESTINATION ${CMAKE_INSTALL_PREFIX})
+    # With MPI
+    if (${EXECUTABLE} MATCHES ".*mpi")
+        target_link_libraries(${EXECUTABLE} ${MPI_LIBRARIES} -DinMPI)
+    endif ()
 
-# With MPI / No ZnS
-add_executable(mlcoalsimXmpi ${SOURCES})
-target_link_libraries(mlcoalsimXmpi zf_log benchmark)
-target_link_libraries(mlcoalsimXmpi ${MPI_LIBRARIES} -DinMPI)
-install(TARGETS mlcoalsimXmpi DESTINATION ${CMAKE_INSTALL_PREFIX})
+    # With ZnS
+    if (${EXECUTABLE} MATCHES ".*ZnS")
+        set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "-DZNS_ACTIVE")
+    endif ()
+    target_link_libraries(${EXECUTABLE} zf_log)
+    install(TARGETS ${EXECUTABLE} DESTINATION ${CMAKE_INSTALL_PREFIX})
+endforeach()
 
-# With MPI / With ZnS
-add_executable(mlcoalsimXmpi_ZnS ${SOURCES})
-set_target_properties(mlcoalsimX_ZnS PROPERTIES COMPILE_FLAGS "-DZNS_ACTIVE")
-target_link_libraries(mlcoalsimXmpi_ZnS zf_log benchmark)
-target_link_libraries(mlcoalsimXmpi_ZnS ${MPI_LIBRARIES} -DinMPI)
-install(TARGETS mlcoalsimXmpi_ZnS DESTINATION ${CMAKE_INSTALL_PREFIX})
