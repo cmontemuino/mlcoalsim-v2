@@ -25,9 +25,12 @@ add_subdirectory(benchmark)
 
 file(GLOB SOURCES "source/*.c")
 
-# This is handy so we can enable MPI in our IDE of choice by just defining an environment variable
+# This is handy so we can enable MPI/Benchmark in our IDE of choice by just defining an environment variable
 if (DEFINED ENV{WITH_MPI})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DinMPI")
+endif()
+if (DEFINED ENV{WITH_BENCHMARK_ENABLED})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DBENCHMARK_ENABLED")
 endif()
 
 # Set default build type
@@ -45,7 +48,8 @@ endif()
 # No MPI / With ZnS     : mlcoalsimX_ZnS
 # With MPI / No ZnS     : mlcoalsimXmpi
 # With MPI / With ZnS   : mlcoalsimXmpi_ZnS
-set(ALL_EXECUTABLES mlcoalsimX mlcoalsimX_ZnS mlcoalsimXmpi mlcoalsimXmpi_ZnS)
+# mlcoalsimB is same as mlcoalsimX but with benchmarking enabled
+set(ALL_EXECUTABLES mlcoalsimX mlcoalsimX_ZnS mlcoalsimXmpi mlcoalsimXmpi_ZnS mlcoalsimB)
 foreach(EXECUTABLE ${ALL_EXECUTABLES})
     add_executable(${EXECUTABLE} ${SOURCES})
 
@@ -58,7 +62,12 @@ foreach(EXECUTABLE ${ALL_EXECUTABLES})
     if (${EXECUTABLE} MATCHES ".*ZnS")
         set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "-DZNS_ACTIVE")
     endif ()
-    target_link_libraries(${EXECUTABLE} zf_log)
+
+    # With Benchmarks
+    if (${EXECUTABLE} MATCHES "mlcoalsimB.*")
+        set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "-DBENCHMARK_ENABLED")
+    endif ()
+
+    target_link_libraries(${EXECUTABLE} zf_log benchmark)
     install(TARGETS ${EXECUTABLE} DESTINATION ${CMAKE_INSTALL_PREFIX})
 endforeach()
-
