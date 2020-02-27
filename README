@@ -33,7 +33,7 @@ mpirun -np 10 ./mlcoalsimXmpi ./Example10loci.txt ./outputs/Example10loci.out
 cd ..
 
 
-#New input parameters and format:
+#New input parameters and input format (specially for pop_event) in version2:
 
 	{"linked_fixsegsites"}, /*in case linked loci, indicate the number of segregating sites. They will be fixed in simulations (for a specific region and population)*/
 	{"linked_fixrm"},	/*in case linked loci, indicate the number of min. rec. events. They will be fixed in simulations (for a specific region and population)*/
@@ -92,32 +92,24 @@ cd ..
     	{"sfreqinit"}, 		/*frequence of the selective position at which the selection start (finish from past to present)*/
 
 #New statistics:
-	{"thetafl_obs"},
-	{"thetal_obs"},
-	{"zenge_obs"},
-	{"tew_obs"},
-	{"fstw_obs"},
-	{"min_uihs_obs"},
-	{"max_uihs_obs"},
-	{"max_lies_obs"},
-	{"fixoutg_obs"},
-	{"koutgjc_obs"},
-	{"thetawa_obs"},
-	{"thetawan_obs"},
-	{"thetata_obs"},
-	{"thetatan_obs"},
-	{"achy_obs"},
-	{"achyn_obs"},
-	{"msdev_obs"},
-	{"mskew_obs"},
-	{"mkurt_obs"},
-	{"ragg_obs"},
-	{"zns_obs"},
-	{"zz_obs"},
-
-{"_ThetaL.out"},{"_ZengE.out"},{"_EW.out"},{"_Fstw.out"},{"_minuiHS.out"},{"_maxuiHS.out"},{"_maxliES.out"},{"_fixoutg.out"},{"_KoutgJC.out"},
-	{"_ThetaWA.out"},{"_ThetaWAn.out"},{"_ThetaTA.out"},{"_ThetaTAn.out"},{"_AchY.out"},{"_AchYn.out"},
-	{"_msdev.out"},{"_mskew.out"},{"_mkurt.out"},{"_ragg.out"},{"_ZnS.out"},{"_ZZ.out"}
+	{"_ThetaL.out"},
+	{"_ZengE.out"},
+	{"_EW.out"},
+	{"_Fstw.out"},
+	{"_fixoutg.out"},
+	{"_KoutgJC.out"},
+	{"_ThetaWA.out"},
+	{"_ThetaWAn.out"},
+	{"_ThetaTA.out"},
+	{"_ThetaTAn.out"},
+	{"_AchY.out"},
+	{"_AchYn.out"},
+	{"_msdev.out"},
+	{"_mskew.out"},
+	{"_mkurt.out"},
+	{"_ragg.out"},
+	{"_ZnS.out"},
+	{"_ZZ.out"}
 
 #New tests functions:
 
