@@ -23,12 +23,26 @@
 #include <math.h>
 #include <time.h>
 
+#include "zf_log.h"
+
 #if inMPI == 1 
 	#include <mpi.h>
 #endif
 
+#if BENCHMARK_ENABLED
+    #include "benchmark.h"
+#endif
+
 int main (int argc,char *argv[])
-{	    
+{
+#if BENCHMARK_ENABLED
+    // Start the stopwatch before doing anything else
+    struct timespec start = stopwatch_start();
+
+    FILE *benchmark_file;               // to persist metrics collected trough the application's lifecycle
+    struct memory_stats_t memory_stats; // structure to hold memory stats
+#endif
+
     void input_data(FILE *,struct var **,struct var_priors **);
     void output_data(FILE *, char *,char *, struct var **,struct var_priors *);
     void getpars_fix(struct var **, struct var2 **);
@@ -1104,6 +1118,12 @@ int main (int argc,char *argv[])
 		if(matrix_test) free(matrix_test);
 		free(matrix_test2);
 	}
+
+#if BENCHMARK_ENABLED
+	// collect memory metrics before freeing data structures
+    collect_memory_stats(&memory_stats);
+#endif
+
     free_getpars_fix(&data,&inputp);
     free(inputp);
     free_inputdata(&data,priors,my_rank);
@@ -1116,6 +1136,16 @@ int main (int argc,char *argv[])
     #ifndef __DNASP__
 	printf("\n %s exited succesfully.\n\n",MLCOALSIM);
 	#endif
+
+#if BENCHMARK_ENABLED
+	ZF_LOGI("Reporting benchmarks.");
+    benchmark_file = create_benchmark_file(file_out);
+    report_memory_stats(memory_stats, benchmark_file);
+    long elapsed_ms = stopwatch_stop(start);
+    report_elapsed_time(elapsed_ms, benchmark_file);
+    close_benchmark_file(benchmark_file);
+    ZF_LOGI("Benchmark reporting has finished.");
+#endif
 
 	return 0;
 }
