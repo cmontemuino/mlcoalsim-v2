@@ -11,6 +11,13 @@ struct memory_stats_t
     unsigned long long rss; /* Resident memory size (MB)*/
     unsigned long long max_rss; /* Maximum resident memory size (MB)*/
 };
+
+// We store a set of memory_stats value in this structure
+typedef struct memory_stats_set {
+    struct memory_stats_t val;
+    struct memory_stats_set *next;
+} memory_stats_set_t;
+
 #elif __linux__
 struct memory_stats_t
 {

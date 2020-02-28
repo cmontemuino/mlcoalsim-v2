@@ -24,7 +24,7 @@
 struct timespec stopwatch_start(void)
 {
     struct timespec tp;
-    clock_settime(CLOCK_ID, &tp);
+    clock_gettime(CLOCK_ID, &tp);
     return tp;
 }
 
@@ -73,6 +73,19 @@ int collect_memory_stats(struct memory_stats_t *memory_stats_out)
     return BENCHMARK_UNIMPLEMENTED;
 #endif
     return BENCHMARK_SUCCESS;
+}
+
+memory_stats_set_t *add_memory_metric_point(memory_stats_set_t *memory_stats, int with_next_element)
+{
+    struct memory_stats_t memory_stats_point;
+    collect_memory_stats(&memory_stats_point);
+    memory_stats->val = memory_stats_point;
+    if (with_next_element)
+        memory_stats->next = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
+    else
+        memory_stats->next = NULL;
+
+    return memory_stats;
 }
 
 FILE *create_benchmark_file(char *template)
@@ -149,24 +162,22 @@ void report_elapsed_time(long elapsed_ms, FILE *benchmark_file)
     }
 }
 
-void report_memory_stats(struct memory_stats_t memory_stats, FILE *benchmark_file)
+void report_memory_stats(memory_stats_set_t *head, FILE *benchmark_file)
 {
-#ifdef __APPLE__
-    ZF_LOGD("max_rss = %lld MB", memory_stats.max_rss);
-#elif __linux__
-    ZF_LOGD("max_rss = %ld MB", memory_stats.max_rss);
-#endif
+    if (benchmark_file) {
+        memory_stats_set_t *current = head;
+        fputs("\"max_rss\": [ ", benchmark_file);
+        while (current != NULL) {
+            ZF_LOGD("Metric point: max_rss = %lld MB", current->val.max_rss);
+            fprintf(benchmark_file, "%lld", current->val.max_rss);
 
-    if(benchmark_file)
-    {
-#ifdef __APPLE__
-        fprintf(benchmark_file, "\"max_rss\": %lld", memory_stats.max_rss);
-#elif __linux__
-        fprintf(benchmark_file, "\"max_rss\": %ld", memory_stats.max_rss);
-#endif
-    }
-    else
-    {
+            if (current->next != NULL) // Avoid adding a "comma" unless there are more metric points
+                fputs(", ", benchmark_file);
+
+            current = current->next;
+        }
+        fputs(" ] ", benchmark_file);
+    } else {
         fprintf(stderr, "Benchmark file cannot be opened for write.");
     }
 }
