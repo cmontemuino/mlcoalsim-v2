@@ -81,8 +81,12 @@ FILE *create_benchmark_file(char *template)
 
     // First we make a copy of the template because we need to massage it and we don't want to produce a side-effect
     int bytes = snprintf(0, 0, "%s", template);
-    char *template_cpy = (char *) malloc (bytes + 1);
-    snprintf(template_cpy, bytes, "%s", template);
+    // Implementation Note:
+    // Somehow we need to copy one extra byte, otherwise the source template file name gets truncated.
+    // For example, `somefile.out` gets truncated to `somefile.ou`. It could be related to how the template file
+    // is managed by the original ms code.
+    char *template_cpy = (char *) malloc (bytes + 2);
+    snprintf(template_cpy, bytes + 1, "%s", template);
 
     // Usually all templates are `something.txt`, so we get `.txt` here
     char *extension = strrchr(template_cpy, '.');
@@ -99,6 +103,7 @@ FILE *create_benchmark_file(char *template)
     snprintf (benchmark_path, bytes, "%s%s", template_cpy, benchmark_extension);
 
     // Finally we create the file
+    ZF_LOGD("Going to create the benchmark file |%s|", benchmark_path);
     FILE *benchmark_file = fopen(benchmark_path, "w");
 
     // Be a good citizen
@@ -133,7 +138,7 @@ void close_benchmark_file(FILE *benchmark_file)
 
 void report_elapsed_time(long elapsed_ms, FILE *benchmark_file)
 {
-    ZF_LOGI("Elapsed time: %ld s\n", elapsed_ms);
+    ZF_LOGD("Elapsed time: %ld s\n", elapsed_ms);
     if(benchmark_file)
     {
         fprintf(benchmark_file, ", \"elapsed_s\": %ld", elapsed_ms);
@@ -147,9 +152,9 @@ void report_elapsed_time(long elapsed_ms, FILE *benchmark_file)
 void report_memory_stats(struct memory_stats_t memory_stats, FILE *benchmark_file)
 {
 #ifdef __APPLE__
-    ZF_LOGI("max_rss = %lld MB", memory_stats.max_rss);
+    ZF_LOGD("max_rss = %lld MB", memory_stats.max_rss);
 #elif __linux__
-    ZF_LOGI("max_rss = %ld MB", memory_stats.max_rss);
+    ZF_LOGD("max_rss = %ld MB", memory_stats.max_rss);
 #endif
 
     if(benchmark_file)
