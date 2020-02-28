@@ -41,10 +41,8 @@ int main (int argc,char *argv[])
 
     FILE *benchmark_file = NULL;  // to persist metrics collected trough the application's lifecycle
 
-    memory_stats_set_t *memory_stats = NULL; // structure to hold memory stats
-    memory_stats = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
-    memory_stats_set_t *current_memory_stats = memory_stats; // we add values here.
-    struct memory_stats_t memory_stats_point;
+    // structure for memory metrics
+    memory_stats_set_t *memory_stats = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
 #endif
 
     void input_data(FILE *,struct var **,struct var_priors **);
@@ -669,7 +667,7 @@ int main (int argc,char *argv[])
 				break;
 			}
 #if BENCHMARK_ENABLED
-            current_memory_stats = add_memory_metric_point(current_memory_stats, 1)->next;
+            add_memory_metric_point(&memory_stats);
 #endif
 			if((*data).neutral_tests && matrix_test)
 				for(n=0;n<NEUTVALUES2*(*data).max_npop_sampled;n++)
@@ -835,7 +833,7 @@ int main (int argc,char *argv[])
 			/*fflush(stdout);*/
 			/*exit(1);*/
 #if BENCHMARK_ENABLED
-            current_memory_stats = add_memory_metric_point(current_memory_stats, 1)->next;
+            add_memory_metric_point(&memory_stats);
 #endif
 			if(ms(&inputp,file_out,matrix_test2,postp2,x0,x0+x1,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[1])) {
 				y = 1;
@@ -850,7 +848,7 @@ int main (int argc,char *argv[])
 			if((*inputp).ifgamma == 1 || (*inputp).range_thetant  || (*inputp).ifgammar == 1 || (*inputp).range_rnt)
 				memcpy(&(postp[0][listnumbers[x0]]),&(postp2[0][listnumbers[x0]]),sizeof(struct prob_par)*x1);
 #if BENCHMARK_ENABLED
-            current_memory_stats = add_memory_metric_point(current_memory_stats, 1)->next;
+            add_memory_metric_point(&memory_stats);
 #endif
 			/*
 			for(xx=x0;xx<x0+x1;xx++) {
@@ -1133,7 +1131,7 @@ int main (int argc,char *argv[])
 
 #if BENCHMARK_ENABLED
 	// collect the last memory metric point before freeing data structures
-    add_memory_metric_point(current_memory_stats, 0);
+    add_memory_metric_point(&memory_stats);
 #endif
 
     free_getpars_fix(&data,&inputp);

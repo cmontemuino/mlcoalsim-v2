@@ -75,17 +75,20 @@ int collect_memory_stats(struct memory_stats_t *memory_stats_out)
     return BENCHMARK_SUCCESS;
 }
 
-memory_stats_set_t *add_memory_metric_point(memory_stats_set_t *memory_stats, int with_next_element)
+int add_memory_metric_point(memory_stats_set_t **head)
 {
-    struct memory_stats_t memory_stats_point;
-    collect_memory_stats(&memory_stats_point);
-    memory_stats->val = memory_stats_point;
-    if (with_next_element)
-        memory_stats->next = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
-    else
-        memory_stats->next = NULL;
+    struct memory_stats_t metric_point;
+    int err = collect_memory_stats(&metric_point);
 
-    return memory_stats;
+    if (err == BENCHMARK_SUCCESS)
+    {
+        memory_stats_set_t *metric_set = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
+        metric_set->val = metric_point;
+        metric_set->next = *head;
+        *head = metric_set;
+    }
+
+    return err;
 }
 
 FILE *create_benchmark_file(char *template)

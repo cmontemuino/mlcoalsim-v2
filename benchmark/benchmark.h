@@ -10,9 +10,10 @@ struct timespec stopwatch_start(void);
 // Stops the stopwatch and returns the time difference in seconds given the starting time.
 long stopwatch_stop(struct timespec start);
 
-int collect_memory_stats(struct memory_stats_t *memory_stats_out);
-
-memory_stats_set_t *add_memory_metric_point(memory_stats_set_t *memory_stats, int with_next_element);
+// Add a memory stats metric point to the head of a list.
+// This works like a stack. The passed `head` will point ot the newly added metric point.
+// It returns either BENCHMARK_SUCCESS or BENCHMARK_MEMORY_ERROR in case of problems collecting the memory metric.
+int *add_memory_metric_point(memory_stats_set_t **head);
 
 FILE *create_benchmark_file(char *template);
 
