@@ -39,8 +39,12 @@ int main (int argc,char *argv[])
     // Start the stopwatch before doing anything else
     struct timespec start = stopwatch_start();
 
-    FILE *benchmark_file;               // to persist metrics collected trough the application's lifecycle
-    struct memory_stats_t memory_stats; // structure to hold memory stats
+    FILE *benchmark_file = NULL;  // to persist metrics collected trough the application's lifecycle
+
+    memory_stats_set_t *memory_stats = NULL; // structure to hold memory stats
+    memory_stats = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
+    memory_stats_set_t *current_memory_stats = memory_stats; // we add values here.
+    struct memory_stats_t memory_stats_point;
 #endif
 
     void input_data(FILE *,struct var **,struct var_priors **);
@@ -636,7 +640,7 @@ int main (int argc,char *argv[])
 	niterpr[my_rank+1] = (*inputp).howmany + (*inputp).mc_jump;
 #endif
 	y = 0;
-	if((*data).n_loci > 1) {		
+	if((*data).n_loci > 1) {
 		/*In case MHMCMC/MCMCRA, we need to mix values to avoid high correlations. ELIMINATED*/
 		if(!(listnumbers = (long int *)malloc((unsigned)((*inputp).howmany + (*inputp).mc_jump)*sizeof(long int)))) {
 			perror("calloc error ms.theta_acc");
@@ -663,7 +667,10 @@ int main (int argc,char *argv[])
 			if(ms(&inputp,file_out,matrix_test2,postp2,0,(*inputp).howmany + (*inputp).mc_jump,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[x+1])) {
 				y = 1;
 				break;
-			}			 
+			}
+#if BENCHMARK_ENABLED
+            current_memory_stats = add_memory_metric_point(current_memory_stats, 1)->next;
+#endif
 			if((*data).neutral_tests && matrix_test)
 				for(n=0;n<NEUTVALUES2*(*data).max_npop_sampled;n++)
 					memcpy(matrix_test[(x-nppr[my_rank])*(NEUTVALUES2*(*data).max_npop_sampled)+n],matrix_test2[0*(NEUTVALUES2*(*data).max_npop_sampled)+n],sizeof(double)*((*inputp).howmany + (*inputp).mc_jump));
@@ -827,7 +834,9 @@ int main (int argc,char *argv[])
 			/*printf("\nmy_rank: %d, x0: %ld",my_rank,x0);*/
 			/*fflush(stdout);*/
 			/*exit(1);*/
-
+#if BENCHMARK_ENABLED
+            current_memory_stats = add_memory_metric_point(current_memory_stats, 1)->next;
+#endif
 			if(ms(&inputp,file_out,matrix_test2,postp2,x0,x0+x1,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[1])) {
 				y = 1;
 				break;
@@ -839,7 +848,10 @@ int main (int argc,char *argv[])
 					for(m=0;m<NEUTVALUES2*(*data).max_npop_sampled;m++)
 						memcpy(&(matrix_test[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[x0]]),&(matrix_test2[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[x0]]),sizeof(double)*x1);
 			if((*inputp).ifgamma == 1 || (*inputp).range_thetant  || (*inputp).ifgammar == 1 || (*inputp).range_rnt)
-				memcpy(&(postp[0][listnumbers[x0]]),&(postp2[0][listnumbers[x0]]),sizeof(struct prob_par)*x1);				
+				memcpy(&(postp[0][listnumbers[x0]]),&(postp2[0][listnumbers[x0]]),sizeof(struct prob_par)*x1);
+#if BENCHMARK_ENABLED
+            current_memory_stats = add_memory_metric_point(current_memory_stats, 1)->next;
+#endif
 			/*
 			for(xx=x0;xx<x0+x1;xx++) {
 				printf("\nORIGINAL: %f\t%d",postp[0][xx].thetap,my_rank);
@@ -1120,8 +1132,8 @@ int main (int argc,char *argv[])
 	}
 
 #if BENCHMARK_ENABLED
-	// collect memory metrics before freeing data structures
-    collect_memory_stats(&memory_stats);
+	// collect the last memory metric point before freeing data structures
+    add_memory_metric_point(current_memory_stats, 0);
 #endif
 
     free_getpars_fix(&data,&inputp);
@@ -1144,6 +1156,7 @@ int main (int argc,char *argv[])
     long elapsed_ms = stopwatch_stop(start);
     report_elapsed_time(elapsed_ms, benchmark_file);
     close_benchmark_file(benchmark_file);
+    free(memory_stats);
     ZF_LOGI("Benchmark reporting has finished.");
 #endif
 
