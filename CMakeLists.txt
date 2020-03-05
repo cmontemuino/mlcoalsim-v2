@@ -49,13 +49,14 @@ endif()
 # With MPI / No ZnS     : mlcoalsimXmpi
 # With MPI / With ZnS   : mlcoalsimXmpi_ZnS
 # mlcoalsimB is same as mlcoalsimX but with benchmarking enabled
-set(ALL_EXECUTABLES mlcoalsimX mlcoalsimX_ZnS mlcoalsimXmpi mlcoalsimXmpi_ZnS mlcoalsimB)
+set(ALL_EXECUTABLES mlcoalsimX mlcoalsimX_ZnS mlcoalsimXmpi mlcoalsimXmpi_ZnS mlcoalsimB mlcoalsimBmpi)
 foreach(EXECUTABLE ${ALL_EXECUTABLES})
     add_executable(${EXECUTABLE} ${SOURCES})
 
     # With MPI
     if (${EXECUTABLE} MATCHES ".*mpi")
-        target_link_libraries(${EXECUTABLE} ${MPI_LIBRARIES} -DinMPI)
+        target_link_libraries(${EXECUTABLE} ${MPI_LIBRARIES})
+        set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "-DinMPI")
     endif ()
 
     # With ZnS
