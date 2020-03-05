@@ -42,6 +42,7 @@ int main (int argc,char *argv[])
     FILE *benchmark_file = NULL;  // to persist metrics collected trough the application's lifecycle
 
     // structure for memory metrics
+    // TODO: define a "local memory stats" that can be populated by MPI processes. Then all metrics should be collected
     memory_stats_set_t *memory_stats = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
 #endif
 
@@ -666,7 +667,7 @@ int main (int argc,char *argv[])
 				y = 1;
 				break;
 			}
-#if BENCHMARK_ENABLED
+#if BENCHMARK_ENABLED && !inMPI
             add_memory_metric_point(&memory_stats);
 #endif
 			if((*data).neutral_tests && matrix_test)
@@ -832,7 +833,7 @@ int main (int argc,char *argv[])
 			/*printf("\nmy_rank: %d, x0: %ld",my_rank,x0);*/
 			/*fflush(stdout);*/
 			/*exit(1);*/
-#if BENCHMARK_ENABLED
+#if BENCHMARK_ENABLED && !inMPI
             add_memory_metric_point(&memory_stats);
 #endif
 			if(ms(&inputp,file_out,matrix_test2,postp2,x0,x0+x1,listnumbers,&jcount2,&mcount2,priors,my_rank,(*data).seed1[1])) {
@@ -847,7 +848,7 @@ int main (int argc,char *argv[])
 						memcpy(&(matrix_test[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[x0]]),&(matrix_test2[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[x0]]),sizeof(double)*x1);
 			if((*inputp).ifgamma == 1 || (*inputp).range_thetant  || (*inputp).ifgammar == 1 || (*inputp).range_rnt)
 				memcpy(&(postp[0][listnumbers[x0]]),&(postp2[0][listnumbers[x0]]),sizeof(struct prob_par)*x1);
-#if BENCHMARK_ENABLED
+#if BENCHMARK_ENABLED && !inMPI
             add_memory_metric_point(&memory_stats);
 #endif
 			/*
@@ -1129,7 +1130,7 @@ int main (int argc,char *argv[])
 		free(matrix_test2);
 	}
 
-#if BENCHMARK_ENABLED
+#if BENCHMARK_ENABLED && !inMPI
 	// collect the last memory metric point before freeing data structures
     add_memory_metric_point(&memory_stats);
 #endif
@@ -1149,10 +1150,12 @@ int main (int argc,char *argv[])
 
 #if BENCHMARK_ENABLED
 	ZF_LOGI("Reporting benchmarks.");
-    benchmark_file = create_benchmark_file(file_out);
-    report_memory_stats(memory_stats, benchmark_file);
     long elapsed_ms = stopwatch_stop(start);
+    benchmark_file = create_benchmark_file(file_out);
     report_elapsed_time(elapsed_ms, benchmark_file);
+#if !inMPI
+    report_memory_stats(memory_stats, benchmark_file);
+#endif
     close_benchmark_file(benchmark_file);
     free(memory_stats);
     ZF_LOGI("Benchmark reporting has finished.");
