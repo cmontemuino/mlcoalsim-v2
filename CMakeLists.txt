@@ -61,12 +61,14 @@ foreach(EXECUTABLE ${ALL_EXECUTABLES})
 
     # With ZnS
     if (${EXECUTABLE} MATCHES ".*ZnS")
-        set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "-DZNS_ACTIVE")
+        get_property(CURRENT_FLAGS TARGET ${EXECUTABLE} PROPERTY COMPILE_FLAGS)
+        set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "${CURRENT_FLAGS} -DZNS_ACTIVE")
     endif ()
 
     # With Benchmarks
     if (${EXECUTABLE} MATCHES "mlcoalsimB.*")
-        set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "-DBENCHMARK_ENABLED")
+        get_property(CURRENT_FLAGS TARGET ${EXECUTABLE} PROPERTY COMPILE_FLAGS)
+        set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "${CURRENT_FLAGS} -DBENCHMARK_ENABLED")
     endif ()
 
     target_link_libraries(${EXECUTABLE} zf_log benchmark)
