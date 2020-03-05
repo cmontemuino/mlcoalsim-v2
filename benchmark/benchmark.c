@@ -84,6 +84,7 @@ int add_memory_metric_point(memory_stats_set_t **head)
     {
         memory_stats_set_t *metric_set = (memory_stats_set_t *) malloc(sizeof(memory_stats_set_t));
         metric_set->val = metric_point;
+        ZF_LOGD("Collected metric point: max_rss = %lld MB", metric_point.max_rss);
         metric_set->next = *head;
         *head = metric_set;
     }
@@ -157,7 +158,7 @@ void report_elapsed_time(long elapsed_ms, FILE *benchmark_file)
     ZF_LOGD("Elapsed time: %ld s\n", elapsed_ms);
     if(benchmark_file)
     {
-        fprintf(benchmark_file, ", \"elapsed_s\": %ld", elapsed_ms);
+        fprintf(benchmark_file, "\"elapsed_s\": %ld", elapsed_ms);
     }
     else
     {
@@ -169,7 +170,7 @@ void report_memory_stats(memory_stats_set_t *head, FILE *benchmark_file)
 {
     if (benchmark_file) {
         memory_stats_set_t *current = head;
-        fputs("\"max_rss\": [ ", benchmark_file);
+        fputs(", \"max_rss\": [ ", benchmark_file);
         while (current != NULL) {
             ZF_LOGD("Metric point: max_rss = %lld MB", current->val.max_rss);
             fprintf(benchmark_file, "%lld", current->val.max_rss);
