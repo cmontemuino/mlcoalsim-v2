@@ -138,10 +138,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     void calc_neutparSRH(int,long int,struct var2 **,struct dnapar *,double,int,int);
     double tajima_d(double,int, double *);
     double Fs(int,double,int);
-    /*
-	double fl_d(int,int,int,double *);
-    double fl_d2(int,int,int,double *);
-	*/
     double fay_wu(int,int *,double);
     double fay_wu_normalized2(int,double,double,double,double *,double);
     double Fst(double,double,int);
@@ -189,18 +185,17 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     double div=0.; double divt,divr;
     int burn_in=0;
     int compare_(const void *,const void *);
-    int /*windows,*/nwindow,aa;
+    int nwindow,aa;
     long int s0,s1,kk,ll;
 	long int inputS;
 
 	int Rmi;
-	/*double ZAi;*/int nhi;
+	int nhi;
 	double rece=0.;
 	double recemin=0.;
 	double recemax=0.;
 	double recombinationv=0.;
     double correction_recabs(double,double,int);
-    /*double correction_theta(double,double);*/
     void calc_neutpar_window(struct var2 **,struct dnapar *,long int,long int,double,int);
     void calc_neutpar_windowSRH(struct var2 **,struct dnapar *,long int,long int,double,int,int);
 
@@ -261,15 +256,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	char namefile_[420];
 	char file_out_[420];
 	char *el;
-	/*
-	char names[NEUTVALUES2][20]  = {{"TD"},{"Fs"},{"FDn"},{"FFn"},{"FD"},{"FF"},{"H"},
-		{"B"},{"Q"},{"ZnA"},{"Fst"},{"Kw"},{"Hw"},{"R2"},
-		{"S"},{"piw"},{"pib"},{"ThetaW"},{"ThetaT"},
-		{"ThetaFW"},{"D_Dmin"},{"H_norm"},{"maxhap"},{"maxhap"},{"Rm"},
-		{"ThetaFL"},{"ThetaL"},{"ZengE"},{"EW"},{"Fstw"},{"minuiHS"},{"maxuiHS"},{"maxliES"},
-		{"fixoutg"},{"KoutgJC"},{"ThetaWA"},{"ThetaWAn"},{"ThetaTA"},{"ThetaTAn"},{"AchY"},{"AchYn"}
-	};
-	*/
+
 	#if DEBUGSOUT
     FILE *file_debug;
     if (!(file_debug = fopen("debug.out","w"))) perror("Error in input/output");
@@ -915,70 +902,62 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
         if(!(posit = (long int *)malloc((long int)(((long int)(*inputp)->segsitesin+1)*sizeof(long int)))))
             perror("ms error.2");
     }
-    /*if((*inputp)->neutral_tests) {*/
-        /* matriu double test taj,fs,fd,ff,h,B,Q,ZnS,Fst,#hap,divhap... per tots loci */
-        if(coef == NULL) {
-            if((neutpar = (struct dnapar *)calloc(1,sizeof(struct dnapar))) == NULL) {
+    /* matriu double test taj,fs,fd,ff,h,B,Q,ZnS,Fst,#hap,divhap... per tots loci */
+    if(coef == NULL) {
+        if((neutpar = (struct dnapar *)calloc(1,sizeof(struct dnapar))) == NULL) {
+            perror("calloc error ms.1d1");
+            exit(1);
+        }
+        if((coef = (double **)calloc(1,sizeof(double *))) == NULL) {
+            perror("calloc error ms.1d1");
+            exit(1);
+        }
+        for(i=0;i<1;i++) {
+            if((coef[i] = (double *)calloc(18,sizeof(double))) == NULL) {
                 perror("calloc error ms.1d1");
                 exit(1);
-            }
-            if((coef = (double **)calloc(1,sizeof(double *))) == NULL) {
-                perror("calloc error ms.1d1");
-                exit(1);
-            }
-            for(i=0;i<1;i++) {
-                if((coef[i] = (double *)calloc(18,sizeof(double))) == NULL) {
-                    perror("calloc error ms.1d1");
-                    exit(1);
-                }
             }
         }
-		
-		if((neutpar[0].freq = (int *)calloc((*inputp)->nsam,sizeof(int))) == NULL) {
-			perror("calloc error ms.1d3");
-			exit(1);
-		}
-		if((neutpar[0].fhapl = (int *)calloc((*inputp)->nsam,sizeof(int))) == NULL) {
-			perror("calloc error ms.1d3");
-			exit(1);
-		}
-		if((neutpar[0].unic = (long int *)calloc((*inputp)->nsam,sizeof(long int))) == NULL) {
-			perror("calloc error ms.1d3");
-			exit(1);
-		}
-		/*
-		if((neutpar[0].pid = (double *)calloc(((*inputp)->nsam * ((*inputp)->nsam-1))/2,sizeof(double))) == NULL) {
-			perror("calloc error ms.1d6");
-			exit(1);
-		}
-		*/
-		if((*inputp)->max_npop_sampled > 2 || ((*inputp)->max_npop_sampled == 2 && (*inputp)->pop_outgroup == -1)) {
-			if((neutpar[0].fstallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
-				perror("calloc error ms.1d30");
-				exit(1);
-			}
-			if((neutpar[0].piwallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
-				perror("calloc error ms.1d31");
-				exit(1);
-			}
-			if((neutpar[0].piaallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
-				perror("calloc error ms.1d32");
-				exit(1);
-			}
-			if((neutpar[0].fsthapallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
-				perror("calloc error ms.1d30");
-				exit(1);
-			}
-			if((neutpar[0].hapwallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
-				perror("calloc error ms.1d31");
-				exit(1);
-			}
-			if((neutpar[0].hapaallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
-				perror("calloc error ms.1d32");
-				exit(1);
-			}
-		}
-	/*}*/
+    }
+
+    if((neutpar[0].freq = (int *)calloc((*inputp)->nsam,sizeof(int))) == NULL) {
+        perror("calloc error ms.1d3");
+        exit(1);
+    }
+    if((neutpar[0].fhapl = (int *)calloc((*inputp)->nsam,sizeof(int))) == NULL) {
+        perror("calloc error ms.1d3");
+        exit(1);
+    }
+    if((neutpar[0].unic = (long int *)calloc((*inputp)->nsam,sizeof(long int))) == NULL) {
+        perror("calloc error ms.1d3");
+        exit(1);
+    }
+    if((*inputp)->max_npop_sampled > 2 || ((*inputp)->max_npop_sampled == 2 && (*inputp)->pop_outgroup == -1)) {
+        if((neutpar[0].fstallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
+            perror("calloc error ms.1d30");
+            exit(1);
+        }
+        if((neutpar[0].piwallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
+            perror("calloc error ms.1d31");
+            exit(1);
+        }
+        if((neutpar[0].piaallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
+            perror("calloc error ms.1d32");
+            exit(1);
+        }
+        if((neutpar[0].fsthapallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
+            perror("calloc error ms.1d30");
+            exit(1);
+        }
+        if((neutpar[0].hapwallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
+            perror("calloc error ms.1d31");
+            exit(1);
+        }
+        if((neutpar[0].hapaallcomp = (double *)calloc((*inputp)->max_npop_sampled,sizeof(double))) == NULL) {
+            perror("calloc error ms.1d32");
+            exit(1);
+        }
+    }
 	if((*inputp)->type_ancestral > 3) {
 		if((neutpar[0].Sanc = (int *)calloc(4*(*inputp)->type_ancestral,sizeof(int))) == NULL) {
 			perror("calloc error ms.1d321");
@@ -1059,31 +1038,24 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     
 	/************************************************  ITERATIONS: Routine from Hudson and modified ****************************************************/
     while(countmax - count0++) {    
-		/*debuging: change the seed for each iteration in case linked*/
-		/*if((*inputp)->linked) init_seed1((long int)-(2*count0+seed1));*/
-		
 		/*take into account the prior distributions*/
 		for(x=0;x<(*inputp)->npriors;x++) {
 			if((*inputp)->pointtoprior[x]) 
 				*((*inputp)->pointtoprior[x]) = priors[x].priordist[count0-1];
-			/*printf("\nmy_rank: %d,locus: %d, count: %03ld, *((*inputp)->pointtoprior[%d]): %f",my_rank,(*inputp)->nloci,count0,x,*((*inputp)->pointtoprior[x]));*/
-		}		
+		}
 		
-		/*count (*inputp)->time_scoal, (*inputp)->tpast[x][y] and maxtpast, Do here because the priors do not allow to do before*/
 		maxtpast = 0.;
 		for(x=0;x<(*inputp)->npop/*-((*inputp)->ifselection)*/;x++) { /*NOT ALLOWED MORE THAN ONE POPULATION NOW*/
 			for(y=1;y<=(*inputp)->nintn[x];y++) {
 				(*inputp)->tpast[x][y] = (*inputp)->tpastS[x][y] + (*inputp)->tpastS[x][y-1]; 
 				if(maxtpast < (*inputp)->tpast[x][y]) maxtpast = (*inputp)->tpast[x][y];
-				/*printf("\nmy_rank: %d,locus: %d, count: %03ld, maxtpast: %f, (*inputp)->tpast[x][y]: %f",my_rank,(*inputp)->nloci,count0,maxtpast,(*inputp)->tpast[x][y]);*/
-			}		
+			}
 		}
 		if((*inputp)->split_pop) {
 			/*time_split is the first event in split_pop*/
 			(*inputp)->time_scoal = (*inputp)->time_scoalS + (*inputp)->time_split;
 		}
 		else {
-			/*(*inputp)->time_scoal = (*inputp)->time_scoalS + maxtpast;*/
 			for(x=0;x<(*inputp)->npop_events;x++) {/*events*/
 				if((*inputp)->fixmax_abstime_event[x] > (*inputp)->pop_event[x].timeS_event + maxtpast)
 					(*inputp)->pop_event[x].time_event = (*inputp)->pop_event[x].timeS_event + maxtpast; 
@@ -1122,26 +1094,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 				inputS = -1;
 			}
 			else thetaSv = (double)1.0; /*indicated 1.0 (and not 0) because it has to be taken into account the heterogeneity in relation to thetaSv*/
-			/*
-			do_heter_gamma_sites(weightmut,(*inputp)->heter_theta_alphag,1.0,(*inputp)->nsites+1,(*inputp)->invariable_mut_sites);
-			do_heter_gamma_sitesrec(weightrec,(*inputp)->heter_rm_alphag,1.0,(*inputp)->nsites);
-			*/
-			/*
-			printf("\nBEFOREmy_rank: %d,locus: %d,npop: %ld,nsam: %d,config: %p,nsites: %ld,theta: %f,S: %ld,rec: %f,f: %f,track: %f,migrate: %f,mhits: %d, iter: %ld,factor_pop: %p,length: %p,ifsel: %d",
-				   my_rank,(*inputp)->nloci,(*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites,
-				   thetae, (*inputp)->segsitesin, recombinationv, (*inputp)->f, (*inputp)->track_len,
-				   (*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
-				   &lengtht,(*inputp)->ifselection);
-			printf("\nBEFOREmy_rank: %d,locus: %d,pop_sel: %f,sinit: %f,pop_size: %f,sel_nt: %ld,Tout: %f,Sout: %p,nintn: %p,nrec: %p,nrec: %p,tpast: %p,split_pop: %d,time_split: %f,time_scoal: %f,factor_anc: %f,freq: %p",
-				   my_rank,(*inputp)->nloci,(*inputp)->pop_sel,(*inputp)->sinit,(*inputp)->pop_size,(long int)(*inputp)->sel_nt,(*inputp)->T_out,&(*inputp)->Sout,
-				   (*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
-				   (*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq);
-			printf("\nBEFOREmy_rank: %d,locus: %d,tlimit: %f,iflogistic: %d,ts: %p,1.0/factor_chrn: %f,ratio_sv: %f,weightmut: %p,weightrec: %p,migrate_matrix: %p",
-				   my_rank,(*inputp)->nloci,(*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,1.0/(*inputp)->factor_chrn,(*inputp)->ratio_sv,
-				   weightmut,weightrec,(*inputp)->migrate_matrix);
-			printf("\nBEFOREmy_rank: %d,locus: %d,*lengtht: %f",my_rank,(*inputp)->nloci,lengtht);
-			fflush(stdout);
-			*/
+
 			segsites = gensam((*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites,
             thetaSv, (*inputp)->segsitesin, rece, (*inputp)->f, (*inputp)->track_len,
             (*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
@@ -1155,23 +1108,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 			(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit);
             if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut); /******** mhits ******************/
             if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp,(*inputp)->pop_outgroup); /******** outgroup ******************/
-			/*
-			printf("\n AFTERmy_rank: %d,locus: %d,npop: %ld,nsam: %d,config: %p,nsites: %ld,theta: %f,S: %ld,rec: %f,f: %f,track: %f,migrate: %f,mhits: %d, iter: %ld,factor_pop: %p,length: %p,ifsel: %d",
-				   my_rank,(*inputp)->nloci,(*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites,
-				   thetae, (*inputp)->segsitesin, recombinationv, (*inputp)->f, (*inputp)->track_len,
-				   (*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
-				   &lengtht,(*inputp)->ifselection);
-			printf("\n AFTERmy_rank: %d,locus: %d,pop_sel: %f,sinit: %f,pop_size: %f,sel_nt: %ld,Tout: %f,Sout: %p,nintn: %p,nrec: %p,nrec: %p,tpast: %p,split_pop: %d,time_split: %f,time_scoal: %f,factor_anc: %f,freq: %p",
-				   my_rank,(*inputp)->nloci,(*inputp)->pop_sel,(*inputp)->sinit,(*inputp)->pop_size,(long int)(*inputp)->sel_nt,(*inputp)->T_out,&(*inputp)->Sout,
-				   (*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
-				   (*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq);
-			printf("\n AFTERmy_rank: %d,locus: %d,tlimit: %f,iflogistic: %d,ts: %p,factor_chrn: %f,ratio_sv: %f,weightmut: %p,weightrec: %p,migrate_matrix: %p",
-				   my_rank,(*inputp)->nloci,(*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,1.0/(*inputp)->factor_chrn,(*inputp)->ratio_sv,
-				   weightmut,weightrec,(*inputp)->migrate_matrix);
-			printf("\n AFTERmy_rank: %d,locus: %d,*lengtht: %f",my_rank,(*inputp)->nloci,lengtht);
-			fflush(stdout);
-			*/
-			/*printf("%ld\n",segsites);*/
 			if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
 				postp[0][/*listnumbers[*/count0-1/*]*/].thetap = thetae;
 			if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
@@ -1223,14 +1159,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					/*be careful with mhits*/
 					inputS = (*inputp)->segsitesin;
 					if((*inputp)->mhits == 1) inputS = -1;
-					/*
-					if((*inputp)->segsitesin == -1 || (*inputp)->range_thetant || (*inputp)->ifgamma) {
-						thetaSv = thetae;
-						inputS = -1;
-					}
-					else thetaSv = (double)1.0;
-					*/
-					/**/
 					if((*inputp)->segsitesin == -1 || (*inputp)->mhits == 1 || ((*inputp)->npop > 1 && (*inputp)->Sfix_pop < (*inputp)->npop)) {
 						thetaSv = thetae /** correction_theta((*inputp)->factor_chrn,(*inputp)->sex_ratio)*/;
 						inputS = -1;
@@ -1238,11 +1166,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					else {
 						thetaSv = (double)1.0;
 					}
-					/**/
-					/*
-					do_heter_gamma_sites(weightmut,(*inputp)->heter_theta_alphag,thetaSv+thetaSv/(double)(*inputp)->nsites,(*inputp)->nsites+1,(*inputp)->invariable_mut_sites);
-					do_heter_gamma_sitesrec(weightrec,(*inputp)->heter_rm_alphag,(double)recombinationv,(*inputp)->nsites);
-					*/
 					segsites = gensam((*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites,
 					thetaSv, /*(*inputp)->segsitesin*/inputS, rece, (*inputp)->f, (*inputp)->track_len,
 					(*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
@@ -1277,11 +1200,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 											if(jcount - nrej >= MAXREJECT) {
 												rejflag = 1;
 												aa = (*inputp)->linked;
-												/*
-												printf("\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-												fprintf(output,"\n\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-												exit(2);
-												*/
 											}
 											break; /*reject*/
 										}
@@ -1295,11 +1213,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 										if(jcount - nrej >= MAXREJECT) {
 											rejflag = 1;
 											aa = (*inputp)->linked;
-											/*
-											 printf("\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-											 fprintf(output,"\n\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-											 exit(2);
-											 */
 										}
 										break; /*reject*/
 									}
@@ -1313,11 +1226,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 												if(jcount - nrej >= MAXREJECT) {
 													rejflag = 1;
 													aa = (*inputp)->linked;
-													/*
-													printf("\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-													fprintf(output,"\n\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-													exit(2);
-													*/
 												}
 												break; /*reject*/
 											}
@@ -1331,24 +1239,24 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							if(rejflag == 0) {
 								/*accept*/ /*We will be in this loop until we have "howmany" success*/
 								if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
-									postp[0][/*listnumbers[*/count0-1/*]*/].thetap = thetae;
+									postp[0][count0-1].thetap = thetae;
 								if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
-									postp[0][/*listnumbers[*/count0-1/*]*/].recp = rece;
+									postp[0][count0-1].recp = rece;
 								if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant || (*inputp)->ifgammar == 1 || (*inputp)->range_rnt) {
-									postp[0][/*listnumbers[*/count0-1/*]*/].Ttotp  = lengtht;
-									postp[0][/*listnumbers[*/count0-1/*]*/].prob  = 1.0/(double)(1.0 + jcount - nrej);								
+									postp[0][count0-1].Ttotp  = lengtht;
+									postp[0][count0-1].prob  = 1.0/(double)(1.0 + jcount - nrej);
 								}
 								mcount++;
 								jcount++;
 							}
 							else {
 								if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
-									postp[0][/*listnumbers[*/count0-1/*]*/].thetap = -10000.;
+									postp[0][count0-1].thetap = -10000.;
 								if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
-									postp[0][/*listnumbers[*/count0-1/*]*/].recp = -10000.;
+									postp[0][count0-1].recp = -10000.;
 								if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant || (*inputp)->ifgammar == 1 || (*inputp)->range_rnt) {
-									postp[0][/*listnumbers[*/count0-1/*]*/].Ttotp  = -10000.;
-									postp[0][/*listnumbers[*/count0-1/*]*/].prob  = 0.0;				
+									postp[0][count0-1].Ttotp  = -10000.;
+									postp[0][count0-1].prob  = 0.0;
 								}
 							}
 							/*printing a point every 2% of the total iterations*/
@@ -1379,11 +1287,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								jcount += 1;
 								if(jcount - nrej >= MAXREJECT) {
 									rejflag = 1;
-									/*
-									printf("\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-									fprintf(output,"\n\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-									exit(2);
-									*/
 								}
 								if(rejflag==0) continue; /*reject*/
 							}
@@ -1396,11 +1299,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								if(jcount - nrej >= MAXREJECT) {
 									rejflag = 1;
 									aa = (*inputp)->linked;
-									/*
-									 printf("\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-									 fprintf(output,"\n\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-									 exit(2);
-									 */
 								}
 								if(rejflag==0) continue; /*reject*/
 							}
@@ -1412,11 +1310,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 									jcount += 1;
 									if(jcount - nrej >= MAXREJECT) {
 										rejflag = 1;
-										/*
-										fprintf(output,"\n\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-										printf("\nSorry: Too much rejections using the current parameter. Aborting simulation\n");
-										exit(2);
-										*/
 									}
 									if(rejflag==0) continue; /*reject*/
 								}
@@ -1425,24 +1318,24 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						if(rejflag == 0) {
 							/*accept*/ /*We will be in this loop until we have "howmany" success*/
 							if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
-								postp[0][/*listnumbers[*/count0-1/*]*/].thetap = thetae;
+								postp[0][count0-1].thetap = thetae;
 							if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
-								postp[0][/*listnumbers[*/count0-1/*]*/].recp = rece;
+								postp[0][count0-1].recp = rece;
 							if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant || (*inputp)->ifgammar == 1 || (*inputp)->range_rnt) {
-								postp[0][/*listnumbers[*/count0-1/*]*/].Ttotp  = lengtht;
-								postp[0][/*listnumbers[*/count0-1/*]*/].prob  = 1.0/(double)(jcount - nrej);								
+								postp[0][count0-1].Ttotp  = lengtht;
+								postp[0][count0-1].prob  = 1.0/(double)(jcount - nrej);
 							}
 							mcount++;
 							jcount++;
 						}
 						else {
 							if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
-								postp[0][/*listnumbers[*/count0-1/*]*/].thetap = -10000.;
+								postp[0][count0-1].thetap = -10000.;
 							if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
-								postp[0][/*listnumbers[*/count0-1/*]*/].recp = -10000.;
+								postp[0][count0-1].recp = -10000.;
 							if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant || (*inputp)->ifgammar == 1 || (*inputp)->range_rnt) {
-								postp[0][/*listnumbers[*/count0-1/*]*/].Ttotp  = -10000.;
-								postp[0][/*listnumbers[*/count0-1/*]*/].prob  = 1.0/(double)(jcount - nrej);								
+								postp[0][count0-1].Ttotp  = -10000.;
+								postp[0][count0-1].prob  = 1.0/(double)(jcount - nrej);
 							}
 						}
 						/*printing a point every 2% of the total iterations*/
@@ -1470,7 +1363,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 		if((*inputp)->pr_matrix) /******** print the whole matrix **********/
 			if(rejflag==0) print_matrix(segsites,inputp,output,(*inputp)->pr_matrix,/*listnumbers[*/count0-1/*]*/,priors,(*inputp)->mhits);
 		/******************************* STATISTICS *******************************/
-		/*for(x=0;x<(*inputp)->npriors;x++)  printf("\nmy_rank: %d,loci: %d, prior: %d ,count: %03ld, value: %f, value2: %f",my_rank,(*inputp)->nloci,x,count0,*((*inputp)->pointtoprior[x]),priors[x].priordist[count0-1]);*/
 
 		if((*inputp)->print_neuttest) {
 			for(npops=0;npops<(*inputp)->max_npop_sampled;npops++) {
@@ -1485,7 +1377,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							while(s1 < segsites && posit[s1]<ll) s1++;
 							/*calc_estadistics*/
 							if(rejflag==0 && npops < (*inputp)->npop_sampled) {
-		/*if((*inputp)->missing == 0) {*/
 								init_coef(coef[0],(*inputp)->config[npops]);
 								calc_neutpar_window(inputp,neutpar,s0,s1,(double)recombinationv,npops);
 								/*calc_neut_tests*/
@@ -1499,15 +1390,11 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 == 0		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+2][listnumbers[count0-1]]
 									= (double)fl_d2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-									/*= (double)fl_d2((*inputp)->config[npops],
-													neutpar[0].freq[1]+neutpar[0].freq[(*inputp)->config[npops]-1],
-													neutpar[0].S,coef[0]);*/
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+3][listnumbers[count0-1]] 
 									= (double)fl_f2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+4][listnumbers[count0-1]] 
 									= (double)fl_d_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-									/*= (double)fl_d((*inputp)->config[npops],neutpar[0].freq[1],neutpar[0].S,coef[0]);*/
-								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+5][listnumbers[count0-1]] 
+								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+5][listnumbers[count0-1]]
 									= (double)fl_f_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+6][listnumbers[count0-1]] 
 									= (double)fay_wu((*inputp)->config[npops],neutpar[0].freq,neutpar[0].k);
@@ -1527,7 +1414,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] 
-									= /*-10000;*//**/(double)ZnA_window(inputp,s0,s1,npops);/**//*CHECKING*/
+									= (double)ZnA_window(inputp,s0,s1,npops);
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -1539,7 +1426,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								
 								if(neutpar[0].nhapl > -10000)
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]] 
-									= (double)neutpar[0].nhapl/*/(double)(*inputp)->config[npops]*/;
+									= (double)neutpar[0].nhapl;
 								else
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]] = -10000;
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+12][listnumbers[count0-1]] 
@@ -1554,7 +1441,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#endif
 							#if FREQSPECTRUM_TDFSR2 < 3		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+14][listnumbers[count0-1]] 
-									= (double)neutpar[0].S;/*Gxi((*inputp)->config[npops],neutpar[0].freq,(double)neutpar[0].S/coef[0][0]);*//*MODIFIED*/
+									= (double)neutpar[0].S;
 							#endif
 							#if FREQSPECTRUM_TDFSR2 == 0		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+15][listnumbers[count0-1]] 
@@ -1584,7 +1471,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#endif
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+21][listnumbers[count0-1]] 
-									/*= (double)fay_wu_normalized((int)(*inputp)->config[npops],neutpar[0].freq,neutpar[0].k,neutpar[0].S);*/
 									= (double)fay_wu_normalized2((int)(*inputp)->config[npops],(double)neutpar[0].thetaL,(double)neutpar[0].S/(double)coef[0][0],(double)neutpar[0].S,coef[0],neutpar[0].k);
 							#endif
 							#if FREQSPECTRUM_TDFSR2 == 0		
@@ -1616,15 +1502,11 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 									= (double)Fst(neutpar[0].withinw,neutpar[0].pib,(int)(*inputp)->npop);
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]] 
-									/*= (double)pwh((int)(*inputp)->config[npops],neutpar[0].pid)/(double)neutpar[0].k;*/
 									= neutpar[0].min_uiHS;
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+31][listnumbers[count0-1]] 
-									/*= (double)pwh((int)(*inputp)->config[npops],neutpar[0].pid)/(double)neutpar[0].k;*/
 									= neutpar[0].max_uiHS;
-									/*= -10000;*/
-									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]] 
+									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]]
 									= neutpar[0].max_iES;
-									/*= -10000;*/
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]] = (double)-10000;
@@ -1723,36 +1605,32 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+nv][listnumbers[count0-1]] = (double)-10000;
 								}
 							}
-			/*}
-			else if((*inputp)->missing == 1){
-			 
-			}*/
 							/*printing values*/
 							if((*inputp)->print_neuttest >/*= */2 && (*inputp)->print_neuttest < 5 && (*inputp)->likelihood_line == 0) {
 								if(npops==0) {
-									if((*inputp)->print_neuttest > 2 && (*inputp)->print_neuttest < 5) fprintf(file_outputm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
+									if((*inputp)->print_neuttest > 2 && (*inputp)->print_neuttest < 5) fprintf(file_outputm[nwindow],"%ld\t",count0-1);
 								#if SHOW_PRIORS
 									for(nv=0;nv<(*inputp)->npriors;nv++) {
 										fprintf(file_outputm[nwindow],"%f\t",priors[nv].priordist[count0-1]);
 									}
 								#endif
 									if((*inputp)->max_npop_sampled > 2 || ((*inputp)->max_npop_sampled == 2 && (*inputp)->pop_outgroup == -1)) {
-										fprintf(outfstallcompm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
-										fprintf(outpiwallcompm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
-										fprintf(outpiaallcompm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
+										fprintf(outfstallcompm[nwindow],"%ld\t",count0-1);
+										fprintf(outpiwallcompm[nwindow],"%ld\t",count0-1);
+										fprintf(outpiaallcompm[nwindow],"%ld\t",count0-1);
 										fflush(outfstallcompm[nwindow]);
 										fflush(outpiwallcompm[nwindow]);
 										fflush(outpiaallcompm[nwindow]);
 										
-										fprintf(outfsthapallcompm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
-										fprintf(outhapwallcompm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
-										fprintf(outhapaallcompm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
+										fprintf(outfsthapallcompm[nwindow],"%ld\t",count0-1);
+										fprintf(outhapwallcompm[nwindow],"%ld\t",count0-1);
+										fprintf(outhapaallcompm[nwindow],"%ld\t",count0-1);
 										fflush(outfsthapallcompm[nwindow]);
 										fflush(outhapwallcompm[nwindow]);
 										fflush(outhapaallcompm[nwindow]);
 										
 										if((*inputp)->type_ancestral) {
-											fprintf(outancestralm[nwindow],"%ld\t",/*listnumbers[*/count0-1/*]*/);
+											fprintf(outancestralm[nwindow],"%ld\t",count0-1);
 											if((*inputp)->type_ancestral > 3) {
 												for(nv=0;nv<4*(*inputp)->type_ancestral;nv++) {
 													if(neutpar[0].Sanc[nv] == (double)-10000) fprintf(outancestralm[nwindow],"na\t");
@@ -1921,7 +1799,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							if(ll == (*inputp)->nsites) break;
 							else ll += (*inputp)->despl;
 							if(ll > (*inputp)->nsites) ll = (*inputp)->nsites;
-							s0 = s1; /*s1=s0*/
+							s0 = s1;
 						}
 					}
 					else {/*linked regions*/
@@ -1953,15 +1831,11 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 == 0		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+2][listnumbers[count0-1]] 
 									= (double)fl_d2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-									/*(double)fl_d2((*inputp)->config[npops],
-													neutpar[0].freq[1]+neutpar[0].freq[(*inputp)->config[npops]-1],
-													neutpar[0].S,coef[0]);*/
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+3][listnumbers[count0-1]] 
 									= (double)fl_f2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+4][listnumbers[count0-1]] 
 									= (double)fl_d_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-									/*= (double)fl_d((*inputp)->config[npops],neutpar[0].freq[1],neutpar[0].S,coef[0]);*/
-								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+5][listnumbers[count0-1]] 
+								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+5][listnumbers[count0-1]]
 									= (double)fl_f_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+6][listnumbers[count0-1]] 
 									= (double)fay_wu((*inputp)->config[npops],neutpar[0].freq,neutpar[0].k);
@@ -1981,7 +1855,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] 
-									= /*-10000;*//**/(double)ZnA_window(inputp,s0,s1,npops);/**//*CHECKING*/
+									= (double)ZnA_window(inputp,s0,s1,npops);
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -1993,7 +1867,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								
 								if(neutpar[0].nhapl > -10000)
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]] 
-									= (double)neutpar[0].nhapl/*/(double)(*inputp)->config[npops]*/;
+									= (double)neutpar[0].nhapl;
 								else
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]] = -10000;
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+12][listnumbers[count0-1]] 
@@ -2008,7 +1882,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#endif		
 							#if FREQSPECTRUM_TDFSR2 < 3		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+14][listnumbers[count0-1]] 
-									= (double)neutpar[0].S;/*Gxi((*inputp)->config[npops],neutpar[0].freq,(double)neutpar[0].S/coef[0][0]);*//*MODIFIED*/
+									= (double)neutpar[0].S;
 							#endif
 							#if FREQSPECTRUM_TDFSR2 == 0		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+15][listnumbers[count0-1]] 
@@ -2038,7 +1912,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#endif
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+21][listnumbers[count0-1]] 
-									/*= (double)fay_wu_normalized((*inputp)->config[npops],neutpar[0].freq,neutpar[0].k,neutpar[0].S);*/
 									= (double)fay_wu_normalized2((int)(*inputp)->config[npops],(double)neutpar[0].thetaL,(double)neutpar[0].S/(double)coef[0][0],(double)neutpar[0].S,coef[0],neutpar[0].k);
 							#endif
 							#if FREQSPECTRUM_TDFSR2 == 0		
@@ -2070,15 +1943,11 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								= (double)Fst(neutpar[0].withinw,neutpar[0].pib,(int)(*inputp)->npop);
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]] 
-									/*= (double)pwh((int)(*inputp)->config[npops],neutpar[0].pid)/(double)neutpar[0].k;*/
 									= neutpar[0].min_uiHS;
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+31][listnumbers[count0-1]] 
-									/*= (double)pwh((int)(*inputp)->config[npops],neutpar[0].pid)/(double)neutpar[0].k;*/
 									= neutpar[0].max_uiHS;
-									/*= -10000;*/
-									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]] 
+									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]]
 									= neutpar[0].max_iES;
-									/*= -10000;*/
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]] = (double)-10000;
@@ -2377,212 +2246,203 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						init_coef(coef[0],(*inputp)->config[npops]);
 						calc_neutpar(0,segsites,inputp,neutpar+0,(double)recombinationv,npops);
 					#if FREQSPECTRUM_TDFSR2 < 2		
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+0][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+0][listnumbers[count0-1]]
 							= (double)tajima_d(neutpar[0].k,(int)neutpar[0].S,coef[0]);
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+1][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+1][listnumbers[count0-1]]
 							= (double)Fs((*inputp)->config[npops],neutpar[0].k,neutpar[0].nhapl);
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 0
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+2][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+2][listnumbers[count0-1]]
 							= (double)fl_d2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-							/*= (double)fl_d2((*inputp)->config[npops],
-											neutpar[0].freq[1]+neutpar[0].freq[(*inputp)->config[npops]-1],
-											neutpar[0].S,coef[0]);*/
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+3][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+3][listnumbers[count0-1]]
 							= (double)fl_f2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+4][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+4][listnumbers[count0-1]]
 							= (double)fl_d_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-							/*= (double)fl_d((*inputp)->config[npops],neutpar[0].freq[1],neutpar[0].S,coef[0]);*/
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+5][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+5][listnumbers[count0-1]]
 							= (double)fl_f_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+6][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+6][listnumbers[count0-1]]
 							= (double)fay_wu((*inputp)->config[npops],neutpar[0].freq,neutpar[0].k);
 					#endif					
 					#if FREQSPECTRUM_TDFSR2 < 2
 						if(neutpar[0].S > 1) {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+7][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+7][listnumbers[count0-1]]
 								= (double)neutpar[0].B1/((double)neutpar[0].S - (double)1.0);
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+8][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+8][listnumbers[count0-1]]
 								= (double)neutpar[0].Q1/((double)neutpar[0].S);
 						}
 						else {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+7][listnumbers[count0-1]] = -10000;
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+8][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+7][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+8][listnumbers[count0-1]] = -10000;
 						}
 					#endif
 					#if FREQSPECTRUM_TDFSR2 < 2		
 						if(neutpar[0].S > 1) {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] 
-							= /*-10000;*//**/(double)ZnA_(0,segsites,inputp,npops);/**//*INACTIVE*/
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]]
+							= (double)ZnA_(0,segsites,inputp,npops);/*INACTIVE*/
 						}
 						else {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
 						}
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 0
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+10][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+10][listnumbers[count0-1]]
 								= (double)Fst(neutpar[0].piw,neutpar[0].pib,(int)(*inputp)->npop);
 						
 						if(neutpar[0].nhapl > -10000)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]] 
-							= (double)neutpar[0].nhapl/*/(double)(*inputp)->config[npops]*/;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]]
+							= (double)neutpar[0].nhapl;
 						else
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]] =-10000;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+12][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+11][listnumbers[count0-1]] =-10000;
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+12][listnumbers[count0-1]]
 							= (double)testHap((*inputp)->config[npops],neutpar[0].fhapl);
 					#endif
 					#if FREQSPECTRUM_TDFSR2 < 2		
 						if(neutpar[0].S > 0)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+13][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+13][listnumbers[count0-1]]
 								= (double)R2(neutpar[0].unic,neutpar[0].k,(*inputp)->config[npops],(int)neutpar[0].S);
 						else 
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+13][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+13][listnumbers[count0-1]] = -10000;
 					#endif
 					#if FREQSPECTRUM_TDFSR2 < 3
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+14][listnumbers[count0-1]] 
-							= (double)neutpar[0].S;/*Gxi((*inputp)->config[npops],neutpar[0].freq,(double)neutpar[0].S/coef[0][0]);*//*MODIFIED*/
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+14][listnumbers[count0-1]]
+							= (double)neutpar[0].S;/*MODIFIED*/
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 0
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+15][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+15][listnumbers[count0-1]]
 							= (double)neutpar[0].k;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+16][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+16][listnumbers[count0-1]]
 							= (double)neutpar[0].pib;
 					#endif
 					#if FREQSPECTRUM_TDFSR2 < 2
 						if(neutpar[0].S > -10000)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+17][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+17][listnumbers[count0-1]]
 							= (double)neutpar[0].S/(double)coef[0][0];
 						else
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+17][listnumbers[count0-1]] = -10000;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+18][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+17][listnumbers[count0-1]] = -10000;
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+18][listnumbers[count0-1]]
 							= (double)neutpar[0].k;
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 0
 						if(neutpar[0].k > -10000)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+19][listnumbers[count0-1]] 
-							= (double)neutpar[0].k - (double)(matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+6][listnumbers[count0-1]]);
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+19][listnumbers[count0-1]]
+							= (double)neutpar[0].k - (double)(matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+6][listnumbers[count0-1]]);
 						else
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+19][listnumbers[count0-1]] = -10000;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+20][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+19][listnumbers[count0-1]] = -10000;
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+20][listnumbers[count0-1]]
 							= (double)tajima_dvsdmin(neutpar[0].k,(int)neutpar[0].S,coef[0],(*inputp)->config[npops]);
 					#endif
 					#if FREQSPECTRUM_TDFSR2 < 2
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+21][listnumbers[count0-1]] 
-							/*= (double)fay_wu_normalized((*inputp)->config[npops],neutpar[0].freq,neutpar[0].k,neutpar[0].S);*/
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+21][listnumbers[count0-1]]
 							= (double)fay_wu_normalized2((int)(*inputp)->config[npops],(double)neutpar[0].thetaL,(double)neutpar[0].S/(double)coef[0][0],(double)neutpar[0].S,coef[0],neutpar[0].k);
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 0
 						if(neutpar[0].k > -10000)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+22][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+22][listnumbers[count0-1]]
 							= (double)neutpar[0].maxhapl/(double)(*inputp)->config[npops];
 						else
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+22][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+22][listnumbers[count0-1]] = -10000;
 						if(neutpar[0].maxhapl1 != -10000)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+23][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+23][listnumbers[count0-1]]
 							= (double)neutpar[0].maxhapl1/(double)(*inputp)->config[npops];
 						else
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+23][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+23][listnumbers[count0-1]]
 							= (double)neutpar[0].maxhapl1;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+24][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+24][listnumbers[count0-1]]
 							= (double)neutpar[0].Rm;
 						if(neutpar[0].S != -10000)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+25][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+25][listnumbers[count0-1]]
 							= (double)neutpar[0].freq[1];
 						else
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+25][listnumbers[count0-1]] = -10000;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+26][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+25][listnumbers[count0-1]] = -10000;
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+26][listnumbers[count0-1]]
 						= (double)neutpar[0].thetaL;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+27][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+27][listnumbers[count0-1]]
 						= (double)E_zeng((int)(*inputp)->config[npops],(double)neutpar[0].thetaL,(double)neutpar[0].S/(double)coef[0][0],(double)neutpar[0].S,coef[0]);
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+28][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+28][listnumbers[count0-1]]
 						= (double)EWtest((int)(*inputp)->config[npops],neutpar[0].fhapl);
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+29][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+29][listnumbers[count0-1]]
 						= (double)Fst(neutpar[0].withinw,neutpar[0].pib,(int)(*inputp)->npop);
 						if(neutpar[0].S > 1) {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]] 
-							/*= (double)pwh((int)(*inputp)->config[npops],neutpar[0].pid)/(double)neutpar[0].k;*/
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]]
 							= neutpar[0].min_uiHS;
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+31][listnumbers[count0-1]] 
-							/*= (double)pwh((int)(*inputp)->config[npops],neutpar[0].pid)/(double)neutpar[0].k;*/
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+31][listnumbers[count0-1]]
 							= neutpar[0].max_uiHS;
-							/*= -10000;*/
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]]
 							= neutpar[0].max_iES;
-							/*= -10000;*/
 						}
 						else {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]] = (double)-10000;
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+31][listnumbers[count0-1]] = (double)-10000;
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]] = (double)-10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+30][listnumbers[count0-1]] = (double)-10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+31][listnumbers[count0-1]] = (double)-10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+32][listnumbers[count0-1]] = (double)-10000;
 						}
 					#endif
 					#if FREQSPECTRUM_TDFSR2 < 2
 						if((*inputp)->T_out > 0. || (*inputp)->pop_outgroup != -1) {
 							if((*inputp)->pop_outgroup != -1) (*inputp)->Sout = 0;
 							else neutpar[0].freq[0] = 0;
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+33][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+33][listnumbers[count0-1]]
 							= (double)fixoutg((*inputp)->config[npops],(*inputp)->Sout,neutpar[0].freq[0]);
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+34][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+34][listnumbers[count0-1]]
 							= (double)koutgJC((*inputp)->config[npops],(*inputp)->Sout,neutpar[0].freq,(*inputp)->nsites);
 						}
 						else {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+33][listnumbers[count0-1]] = -10000;
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+34][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+33][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+34][listnumbers[count0-1]] = -10000;
 						}
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 0
 						if((*inputp)->config[npops] > 2)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+35][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+35][listnumbers[count0-1]]
 							= (double)neutpar[0].Se1/(coef[0][0]-1.);
                         else
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+35][listnumbers[count0-1]] = -10000;
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+35][listnumbers[count0-1]] = -10000;
 						if((*inputp)->config[npops] > 3)
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+36][listnumbers[count0-1]]
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+36][listnumbers[count0-1]]
 							= (double)neutpar[0].Sn1/(coef[0][0]-((double)(*inputp)->config[npops]/((double)(*inputp)->config[npops]-1.0)));
                         else
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+36][listnumbers[count0-1]] = -10000;
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+36][listnumbers[count0-1]] = -10000;
 						if((*inputp)->config[npops] > 2)
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+37][listnumbers[count0-1]]
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+37][listnumbers[count0-1]]
 							= (double)neutpar[0].pie1 * (double)(*inputp)->config[npops]/((double)(*inputp)->config[npops]-2.0);
                         else
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+37][listnumbers[count0-1]] = -10000;
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+37][listnumbers[count0-1]] = -10000;
 						if((*inputp)->config[npops] > 3)
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+38][listnumbers[count0-1]]
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+38][listnumbers[count0-1]]
 							= (double)neutpar[0].pin1 * ((double)(*inputp)->config[npops] - 1.0)/((double)(*inputp)->config[npops] - 3.0);
 						else
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+38][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+38][listnumbers[count0-1]] = -10000;
 						
 						if((*inputp)->config[npops] > 2)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+39][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+39][listnumbers[count0-1]]
 							= (double)Y_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 						else 
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+39][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+39][listnumbers[count0-1]] = -10000;
 						if((*inputp)->config[npops] > 2)
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+40][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+40][listnumbers[count0-1]]
 							= (double)Y2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 						else 
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+40][listnumbers[count0-1]] = -10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+40][listnumbers[count0-1]] = -10000;
 					#endif
 					#if FREQSPECTRUM_TDFSR2 < 2	
                         if((*inputp)->config[npops] > 2)
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+41][listnumbers[count0-1]]
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+41][listnumbers[count0-1]]
                             = (double)neutpar[0].m_sdev;
                         else
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+41][listnumbers[count0-1]] = -10000;
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+41][listnumbers[count0-1]] = -10000;
                         if((*inputp)->config[npops] > 2)
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+42][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+42][listnumbers[count0-1]]
                                 = (double)neutpar[0].m_skew;
                         else
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+42][listnumbers[count0-1]] = -10000;
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+42][listnumbers[count0-1]] = -10000;
                         if((*inputp)->config[npops] > 3)
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+43][listnumbers[count0-1]]
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+43][listnumbers[count0-1]]
                             = (double)neutpar[0].m_kurt;
                         else
-                            matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+43][listnumbers[count0-1]] = -10000;
+                            matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+43][listnumbers[count0-1]] = -10000;
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 0
 						if(neutpar[0].S > 0) {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+44][listnumbers[count0-1]] 
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+44][listnumbers[count0-1]]
 							= (double)neutpar[0].ragg;
 						}
 						#if ZNS_ACTIVE == 1
@@ -2592,9 +2452,9 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						= matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9] [listnumbers[count0-1]] -
 						  matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
 						#else
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]]
 						= (double)-10000;
-						matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
+						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]]
 						= (double)-10000;
 						#endif
 					#endif	
@@ -2608,36 +2468,36 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					}
 					else {
 						for(nv=0;nv<NEUTVALUES2;nv++) {
-							matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+nv][listnumbers[count0-1]] = (double)-10000;
+							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+nv][listnumbers[count0-1]] = (double)-10000;
 						}
 					}
 					/*printing values*/
 					if((*inputp)->print_neuttest >/*=*/ 2 && (*inputp)->print_neuttest < 5 && (*inputp)->likelihood_line == 0) {
 						if(npops==0) {
 							if((*inputp)->print_neuttest > 2 && (*inputp)->print_neuttest < 5)
-								fprintf(output,"%ld\t",/*listnumbers[*/count0-1/*]*/);
+								fprintf(output,"%ld\t",count0-1);
 						#if SHOW_PRIORS
 							for(nv=0;nv<(*inputp)->npriors;nv++) {
 								fprintf(output,"%f\t",priors[nv].priordist[count0-1]);
 							}
 						#endif
 							if((*inputp)->max_npop_sampled > 2 || ((*inputp)->max_npop_sampled == 2 && (*inputp)->pop_outgroup == -1)) {
-								fprintf(outfstallcomp,"%ld\t",/*listnumbers[*/count0-1/*]*/);
-								fprintf(outpiwallcomp,"%ld\t",/*listnumbers[*/count0-1/*]*/);
-								fprintf(outpiaallcomp,"%ld\t",/*listnumbers[*/count0-1/*]*/);
+								fprintf(outfstallcomp,"%ld\t",count0-1);
+								fprintf(outpiwallcomp,"%ld\t",count0-1);
+								fprintf(outpiaallcomp,"%ld\t",count0-1);
 								fflush(outfstallcomp);
 								fflush(outpiwallcomp);
 								fflush(outpiaallcomp);
 								
-								fprintf(outfsthapallcomp,"%ld\t",/*listnumbers[*/count0-1/*]*/);
-								fprintf(outhapwallcomp,"%ld\t",/*listnumbers[*/count0-1/*]*/);
-								fprintf(outhapaallcomp,"%ld\t",/*listnumbers[*/count0-1/*]*/);
+								fprintf(outfsthapallcomp,"%ld\t",count0-1);
+								fprintf(outhapwallcomp,"%ld\t",count0-1);
+								fprintf(outhapaallcomp,"%ld\t",count0-1);
 								fflush(outfsthapallcomp);
 								fflush(outhapwallcomp);
 								fflush(outhapaallcomp);
 							}
 							if((*inputp)->type_ancestral) {
-								fprintf(outancestral,"%ld\t",/*listnumbers[*/count0-1/*]*/);
+								fprintf(outancestral,"%ld\t",count0-1);
 								if((*inputp)->type_ancestral > 3) {
 									for(nv=0;nv<4*(*inputp)->type_ancestral;nv++) {
 										if(neutpar[0].Sanc[nv] == (double)-10000) fprintf(outancestral,"na\t");
@@ -2671,10 +2531,10 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						if((*inputp)->print_neuttest > 2 && (*inputp)->print_neuttest < 5) {
 					#if FREQSPECTRUM_TDFSR2 == 0
 							for(nv=0;nv<NEUTVALUES2;nv++) {
-								if(matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+nv][listnumbers[count0-1]] == (double)-10000) 
+								if(matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+nv][listnumbers[count0-1]] == (double)-10000)
 									fprintf(output,"na\t");
 								else 
-									fprintf(output,"%g\t",matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+nv][listnumbers[count0-1]]);
+									fprintf(output,"%g\t",matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+nv][listnumbers[count0-1]]);
 							}
 					#endif
 					#if FREQSPECTRUM_TDFSR2 == 1 /*Tajima's D, Fu's Fs, theta and pi*/
@@ -2740,8 +2600,8 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								fprintf(output,"%g\t",matrix_test[0/*(*inputp)->nloci*/*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+43][listnumbers[count0-1]]);
 						#endif
 							fprintf(output,"%d\t",neutpar[0].mhsites);
-							for(nv=1;nv</*(int)ceil((*/(*inputp)->config[npops]/*-1)/2)*/;nv++) {
-								fprintf(output,"%d\t",neutpar[0].freq[nv]/*+neutpar[0].freq[config[npops]-nv]*/);
+							for(nv=1;nv<(*inputp)->config[npops];nv++) {
+								fprintf(output,"%d\t",neutpar[0].freq[nv]);
 							}
 							fflush(output);
 						}
@@ -2801,16 +2661,16 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					}
 				}
 			}
-			if(/*(*inputp)->print_neuttest > 2 && (*inputp)->print_neuttest < 5 &&*/ (*inputp)->likelihood_line == 0) {
+			if((*inputp)->likelihood_line == 0) {
 				if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant || (*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
-					fprintf(file_outputpost,"%ld\t",/*listnumbers[*/count0-1/*]*/);
+					fprintf(file_outputpost,"%ld\t",count0-1);
 				if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
 					fprintf(file_outputpost,"%g\t",thetae);
 				if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
 					fprintf(file_outputpost,"%g\t",rece);
 				if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant || (*inputp)->ifgammar == 1 || (*inputp)->range_rnt) {
 					fprintf(file_outputpost,"%g\t",lengtht);
-					fprintf(file_outputpost,"%g\n",postp[0][/*listnumbers[*/count0-1/*]*/].prob);
+					fprintf(file_outputpost,"%g\n",postp[0][count0-1].prob);
 				}
 			}
 		}
@@ -2859,7 +2719,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 			if((*inputp)->type_ancestral) fclose(outancestral);
 		}
 	}
-	if((*inputp)->print_neuttest >/*=*/ 2 && (*inputp)->print_neuttest < 5 && (*inputp)->likelihood_line == 0 && (*inputp)->linked) {
+	if((*inputp)->print_neuttest > 2 && (*inputp)->print_neuttest < 5 && (*inputp)->likelihood_line == 0 && (*inputp)->linked) {
 		if((*inputp)->linked == 1) {
 			x = 0;
 			for(kk=0,ll=(*inputp)->window;kk<(*inputp)->nsites;kk += (long int)(*inputp)->despl) {
@@ -2949,7 +2809,6 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 			while(s0 < segsites && posit[s0]<kk) s0++;
 			while(s1 < segsites && posit[s1]<ll) s1++;
 
-			/*psegsites += s1-s0+1;*/
             for(i=s0;i<s1;i++) {
                 if(i==s0) psegsites += 1;
 				else if(!(posit[i-1] == posit[i]))
@@ -2971,7 +2830,6 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 			while(s0 < segsites && posit[s0] < kk) s0++;
 			while(s1 < segsites && posit[s1] < ll) s1++;
 			
-			/*psegsites += s1-s0;*/
 			psegsites += 1;
             for(i=s0;i<s1;i++) {
                 if(i==s0) psegsites += 1;
@@ -2990,14 +2848,12 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 		for(y=0;y<(*inputp)->npriors;y++) {
 			if((*inputp)->pointtoprior[y]) 
 				fprintf(output,"\t%f",(float)priors[y].priordist[count0]);
-			/*printf("\nmy_rank: %d,locus: %d, count: %03ld, *((*inputp)->pointtoprior[%d]): %f",my_rank,(*inputp)->nloci,count0,y,*((*inputp)->pointtoprior[y]));*/
-		}		
+		}
         if((*inputp)->linked == 0) {
 			Ss=0;for(i=0;i<segsites;i++) if(!(posit[i-1] == posit[i])) Ss++;
 			fprintf(output,"\nsegsites: %ld",Ss);
 			if(Ss > 0) fprintf(output,"\npositions: ");
             else fprintf(output,"\n ");
-			/*for(i=0;i<segsites;i++) fprintf(output,"%ld ",posit[i]);*/
 			for(i=0;i<(int)segsites;i++) if(!(posit[i-1] == posit[i])) fprintf(output,"%g ",(double)posit[i]/(double)(*inputp)->nsites);
 			fprintf(output,"\n");
 			if(Ss > 0) {
@@ -3692,7 +3548,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 	int i,ii;
     long int nsegs,seg,ns,start,end,len,segsit,k; 
     struct segl *seglst;
-    double /*nsinv,*/tseg,tt;
+    double tseg,tt;
     double *pk,tout=0.;double tout2=0.;
     long int *ss;
     long int *len2;
@@ -3707,23 +3563,20 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
     double poissondist(double), ran1(void);
     void biggerlist(int);
     void make_gametes(int,struct node *,double,long int,long int,int,double,double);
-    void locate(long int,/*double*/long int,/*double*/ /*long int,*/ /*double **/long int *,int /*nou*/,double *,long int);
-    void locate2(long int,/*double*/long int,/*double*/ /*long int,*/ /*double **/long int *,int /*nou*/,
-        int/*,struct node *,double,long int*/,double *,long int);
+    void locate(long int,long int,long int *,int,double *,long int);
+    void locate2(long int,long int,long int *,int,int,double *,long int);
     void mnmial2(long int,long int,double *,long int *,long int *);
     void mnmial2_psel(long int,long int,double *,long int *,long int *,long int);
     /*partial selection*/
     int all_sel,*selnsam; /*number of lines under selection and the vector with the lines (the first all_sel lines)*/
     int segsit_sel=0;/*parameter for partial selection*/    
-    /*void make_gametes_psel(int,long int,int,int *);*/
-    void locate_psel(long int,long int,/*long int,*/long int *,int,long int,double *,long int);
-    void locate2_psel(long int,long int,/*long int,*/long int *,int,int/*,struct node *,double,long int*/,
-		long int,double *,long int);
+    void locate_psel(long int,long int,long int *,int,long int,double *,long int);
+    void locate2_psel(long int,long int,long int *,int,int,long int,double *,long int);
 	double wstartm1,ttt;
 	long int *len_nozero,nsites_nozero,nz;
 	int loopcount;
-	int aa/**//**/,getinto;
-	long int kk,ll/**/,mm/**/,bb,cc,dd;
+	int aa,getinto;
+	long int kk,ll,mm,bb,cc,dd;
     long int nsites_mod_recinf=nsites;
     
 	if(!(selnsam = (int *)malloc((nsam)*sizeof(int)))) perror("malloc error sel. gensam.");
@@ -3761,7 +3614,6 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
         for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
 			end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites-1); /*next és l'index, beg és el punt físic */
 			start = seglst[seg].beg;
-/**/
 			getinto = 0;
 			if(linked > 1) {/*avoid calculation of mutations in not interested regions*/
 				for(aa=0;aa<linked;aa++) {
@@ -3780,10 +3632,6 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 				getinto = 1;
 			}
 			if(getinto) {
-/**/			
-				/* part de la theta que li correspon al segment *//*
-				len = end - start + 1;
-				tseg = (double)len*(theta/(double)nsites);*/
 				/*including heterogeneity*/
 				len = end - start + 1;
 				if(start==0) wstartm1 = (double)0;
@@ -3806,27 +3654,25 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 				else *Sout = 0;
 				
 				loopcount = -1;
-				/*do {*/
-					if(len==1 && mhits==0)  {
-						if(tseg*tt > ran1()) segsit = 1;
-						else segsit = 0;
-					}
-					else {
-						segsit = (long int)poissondist((double)(tseg*tt));		/* nombre de mutacions al segment */
-					}
-					if(segsit == (long int)0 && all_sel > (int)0 && all_sel < nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end)
-						segsit = 1;/*we force the selective mut*/
-					loopcount += 1;
-					if(loopcount > 100) {
-						printf("\nSorry, the length of the sequence is too short to include so much mutations: try mhits 1.\n");
-						exit(1);
-					}
-					if(segsit > len_nozero[k] && mhits == 0) 
-						segsit = len_nozero[k];
-				/*} while(segsit > len_nozero[k] && mhits == 0);*/ /* mutacions discretes ...: afegit.. */
+                if(len==1 && mhits==0)  {
+                    if(tseg*tt > ran1()) segsit = 1;
+                    else segsit = 0;
+                }
+                else {
+                    segsit = (long int)poissondist((double)(tseg*tt));		/* nombre de mutacions al segment */
+                }
+                if(segsit == (long int)0 && all_sel > (int)0 && all_sel < nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end)
+                    segsit = 1;/*we force the selective mut*/
+                loopcount += 1;
+                if(loopcount > 100) {
+                    printf("\nSorry, the length of the sequence is too short to include so much mutations: try mhits 1.\n");
+                    exit(1);
+                }
+                if(segsit > len_nozero[k] && mhits == 0)
+                    segsit = len_nozero[k];
 				if((segsit + ns) >= maxsites) {	/* refem la matriu dels polimorfismes */
 					maxsites = segsit + ns + SITESINC;
-					posit = (/*double **/long int *)realloc(posit,(long int)maxsites*sizeof(/*double*/long int)); 
+					posit = (long int *)realloc(posit,(long int)maxsites*sizeof(long int));
 					/* canvia mida del vector dels nombres dels polimorfismes */
 					if(posit==NULL) perror("realloc error. gensam.1");
 					biggerlist(nsam);	/* refem la llista dels polimorfismes */
@@ -3834,12 +3680,11 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 				/*partial selection*//*not well debugged yet*/ 
 				if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end
                    && (sfreqend == 0.1 || sendt == 1E6)) {
-					/*make_gametes_psel(nsam,ns,all_sel,selnsam);*//*locate the sel mut in the selnsam lines*/
 					segsit_sel = 1;
 				}
 				/*partial selection*/
 				if(segsit_sel == 1) {
-					locate_psel(segsit,start,/*len,*/posit+ns,mhits,sel_nt/*-start*/,weightmut,end);
+					locate_psel(segsit,start,posit+ns,mhits,sel_nt,weightmut,end);
 					ii = (int)ns;
 					while((long int)posit[ii] != (long int)sel_nt) ii++; 
 					for(i=0;i<nsam;i++) {
@@ -3894,7 +3739,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
         len2 = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
         if((pk==NULL)||(ss==NULL)||(len2 ==NULL)) perror("malloc error. gensam.2");
 		/*multiple hits for fixed mutations*/
-		if(mhits) mmax = (3 < nsam ? (long int)3 : (long int)(nsam-1)); /* mhits per nsam petites, no accepta en nsam=1, i nomes 2 en nsam=3 */
+		if(mhits) mmax = (3 < nsam ? (long int)3 : (long int)(nsam-1));
 		else mmax = (long int)1; /*if no multiple hits available*/
         /*set time  and nsites_nozero to zero*/
 		tt = ttt = (double)0;
@@ -3903,10 +3748,6 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 		for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {		
             end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
             start = seglst[seg].beg;
-            /*homogeneity. len2[k] afegit, maxim nombre de mutacions per segment *//*
-			len = end - start + 1;
-			len2[k] = len*mmax;	
-			tseg = (double)len/(double)nsites;*/
 			/*when it is not possible to fix the specified segsites*/
 			if(nsites_nozero*mmax < segsites) {
 				printf("\n*****WARNING: It is not possible to fix %ld mutations!!. Instead used 0 mutations.*****\n",segsites);
@@ -3918,7 +3759,6 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 			else wstartm1 = weightmut[start-1];
 			tseg = (double)(weightmut[end] - wstartm1)*theta;
 			len2[k] = len_nozero[k]*mmax;
-			/**/
 			pk[k] = ttime(seglst[seg].ptree,nsam) * tseg;/*time per chromosome section (in function of mutational rate)*/
 			tt += pk[k];
 			ttt += pk[k]/tseg * (double)len/(double)nsites_mod_recinf;/*time to be counted by lengtht (not in function of mutational rate)*/
@@ -3934,7 +3774,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
         *lengtht = (double)ttt; /*afegit per Sfix_allthetas*/
         for(k=0;k<nsegs;k++) pk[k] /= tt;	/* aleshores dividir el temps proporcionalment per situar les mutacions */
         if(mhits && T_out > 0 && theta) {		/* incorporacio per mhits en especiacio, only if theta is defined*/
-            *Sout = (int)poissondist(/**/(double)(theta*tout)/**//*(double)segsites * ((double)tout/((double)tt))*/);
+            *Sout = (int)poissondist(/**/(double)(theta*tout));
         }
 		else *Sout = 0;
 		/*partial selection*/
@@ -3953,13 +3793,12 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
             /*partial selection*/
 			segsit_sel = 0;
             if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && sel_nt <= (long int)end && segsites > 0 && (sfreqend == 0.1 || sendt == 1E6)) {
-                /*make_gametes_psel(nsam,ns,all_sel,selnsam);*//*locate the sel mut in the selnsam lines*/
                 segsit_sel = 1;
             }
-            make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,/*1.0*/r_transc,/*0.0*/r_transv);/*posa a la matriu list les mutacions*/
+            make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);/*posa a la matriu list les mutacions*/
             /*partial selection*/
             if(segsit_sel == 1) {
-                locate2_psel(ss[k],start,/*len,*/posit+ns,mhits,nsam/*,seglst[seg].ptree,tt*pk[k]/tseg,ns*/,(long int)sel_nt/*-start*/,weightmut,end);
+                locate2_psel(ss[k],start,/*len,*/posit+ns,mhits,nsam,(long int)sel_nt,weightmut,end);
 				ii = (int)ns;
 				while((long int)posit[ii] != (long int)sel_nt) ii++; 
 				for(i=0;i<nsam;i++) {
@@ -3969,7 +3808,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
 				}
                 segsit_sel = 0;
             }
-            else locate2(ss[k],start,/*len,*/posit+ns,mhits,nsam/*,seglst[seg].ptree,tt*pk[k]/tseg,ns*/,weightmut,end); /* posa el nombre de les mutacions a la matriu */
+            else locate2(ss[k],start,posit+ns,mhits,nsam,weightmut,end); /* posa el nombre de les mutacions a la matriu */
             /* modificat per mhits i fix muts */
             free(seglst[seg].ptree);
             ns += ss[k];
@@ -4000,28 +3839,7 @@ double ttime(struct node *ptree, int nsam)	/* la Ttot de l'arbre */
         t += (ptree + i)->time;
     return(t);
 }
-/*
-void make_gametes_psel(int nsam,long int ns,int all_sel,int *selnsam, int mhits, double r_transc,double r_transv)
-{
-    int tip;
-	double rr;
-	double ran1();
-	char r;
-	
-	if(mhits) {
-		rr = (double)ran1();
-		if(rr < r_transc) r = '1';
-		else if (rr >= r_transc && rr < (double)1.0 - r_transv) r = '2';
-			else r = '3';
-	}
-	else r='1';
-	
-    for(tip=0;tip<nsam;tip++)
-        list[tip][ns] = '0';
-    for(tip=0;tip<all_sel;tip++)
-        list[selnsam[tip]][ns] = r; 
-}
-*/
+
 void make_gametes(int nsam, struct node *ptree, double tt,long int newsites,long int ns, int mhits, double r_transc,double r_transv)
 {					/* posa les mutacions a la matriu list */
     long int j;
@@ -4141,17 +3959,16 @@ void mnmial2_psel(long int n,long int nclass,double *p,long int *rv,long int *le
         }
     }
 }
-void locate_psel(long int n,long int beg,/*long int len,*/long int *ptr,int mhits,long int sel_nt,double *weightmut,long int end)
+void locate_psel(long int n,long int beg,long int *ptr,int mhits,long int sel_nt,double *weightmut,long int end)
 /* localitza les mutacions en un fragment */
 {
      /*long int i;*/
-     void ordran_psel(long int,long int *,/*long int,*/int,long int,long int,double *,long int);
+     void ordran_psel(long int,long int *,int,long int,long int,double *,long int);
      
      ordran_psel(n,ptr,/*len,*/mhits,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-     /*for(i=0;i<n;i++) ptr[i] = beg + ptr[i];*/	/* les escala entre inici i final del fragment */
 }
 
-void ordran_psel(long int n,long int *pbuf,/*long int len,*/int mhits,long int sel_nt,long int beg,double *weightmut,long int end)
+void ordran_psel(long int n,long int *pbuf,int mhits,long int sel_nt,long int beg,double *weightmut,long int end)
 {
     void ranvec_psel(long int,long int *,/*long int,*/int,long int,long int,double *,long int);
     void order(long int,long int *);
@@ -4159,7 +3976,7 @@ void ordran_psel(long int n,long int *pbuf,/*long int len,*/int mhits,long int s
     ranvec_psel(n,pbuf,/*len,*/mhits,sel_nt,beg,weightmut,end);
     order(n,pbuf);
 }
-void ranvec_psel(long int n,long int *pbuf,/*long int len,*/int mhits,long int sel_nt,long int beg,double *weightmut,long int end)
+void ranvec_psel(long int n,long int *pbuf,int mhits,long int sel_nt,long int beg,double *weightmut,long int end)
  /* posa un nombre entre [0,len) */
 {
     long int i,x;
@@ -4192,27 +4009,26 @@ void ranvec_psel(long int n,long int *pbuf,/*long int len,*/int mhits,long int s
     }
 }
 
-void locate(long int n,/*double*/long int beg,/*double*/ /*long int len,*/ /*double*/long int *ptr,int mhits/*nou*/,double *weightmut,long int end)
+void locate(long int n,long int beg,long int *ptr,int mhits,double *weightmut,long int end)
 /* localitza les mutacions en un fragment */
 {
      /*long int i;*/
-     void ordran(long int,/*double **/long int *,/*nou->*/ /*long int,*/int /*nou*/,long int,double *,long int);
+     void ordran(long int,long int *,int,long int,double *,long int);
      
      ordran(n,ptr,/*len,*/mhits,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-     /*for(i=0;i<n;i++) ptr[i] = beg + ptr[i]*//**len*//*;*//* les escala entre inici i final del fragment */
 }
 
-void ordran(long int n, /*double */long int *pbuf,/*nou->*/ /*long int len,*/int mhits/*nou*/,long int beg,double *weightmut,long int end)
+void ordran(long int n, long int *pbuf,int mhits,long int beg,double *weightmut,long int end)
 {
-    void ranvec(long int,/*double **/long int *,/*nou->*/ /*long int,*/int/*nou*/,long int,double *,long int);
+    void ranvec(long int,long int *,int,long int,double *,long int);
     /* posa un nombre entre [0,len) */
-    void order(long int,/*double **/long int *);/* ordena els valors */
+    void order(long int,long int *);/* ordena els valors */
 
-    ranvec(n,pbuf,/*len,*/mhits,beg,weightmut,end);
+    ranvec(n,pbuf,mhits,beg,weightmut,end);
     order(n,pbuf);
 }
 
-void ranvec(long int n, /*double */long int *pbuf,/*nou->*/ /*long int len,*/int mhits /*nou*/,long int beg,double *weightmut,long int end) /* posa un nombre entre [0,len) */
+void ranvec(long int n, /*double */long int *pbuf,int mhits,long int beg,double *weightmut,long int end) /* posa un nombre entre [0,len) */
 {
     long int i,x;
     double ran1(void);
@@ -4238,26 +4054,23 @@ void ranvec(long int n, /*double */long int *pbuf,/*nou->*/ /*long int len,*/int
         }
     }
 }
-void locate2(long int n,/*double*/long int beg,/*double*/ /*long int len,*/ /*double*/long int *ptr,int mhits/*nou*/,int nsam/*,struct node *ptree,double tt,long int ns*/,double *weightmut,long int end)/* localitza les mutacions en un fragment */
+void locate2(long int n,long int beg,long int *ptr,int mhits,int nsam,double *weightmut,long int end)/* localitza les mutacions en un fragment */
 {
      /*long int i;*/
-     void ordran2(long int,/*double **/long int *,/*nou->*/ /*long int,*/ int /*nou*/,int/*,struct node *,double,long int*/,long int,double *,long int);
+     void ordran2(long int,long int *,int,int,long int,double *,long int);
      
-     ordran2(n,ptr,/*len,*/mhits,nsam/*,ptree,tt,ns*/,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-     /*for(i=0;i<n;i++) ptr[i] = beg + ptr[i]*//**len*//*;*//* les escala entre inici i final del fragment */
+     ordran2(n,ptr,mhits,nsam,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
 }
-void ordran2(long int n, /*double */long int *pbuf,/*nou->*/ /*long int len,*/int mhits/*nou*/,int nsam/*,struct node *ptree,double tt,long int ns*/,long int beg,double *weightmut,long int end)			
+void ordran2(long int n, long int *pbuf,int mhits,int nsam,long int beg,double *weightmut,long int end)
 {
-    void ranvec2(long int,/*double **/long int *,/*nou->*/ /*long int,*/int/*nou*/,int/*,struct node *,double*/,long int,double *,long int);
+    void ranvec2(long int,long int *,int,int,long int,double *,long int);
     /* posa un nombre entre [0,len) */
-    void order(long int,/*double **/long int *);/* ordena els valors */
-    /*void change_mut(long int,long int *,int,struct node *,double,long int);*/
+    void order(long int,long int *);/* ordena els valors */
 
-    ranvec2(n,pbuf,/*len,*/mhits,nsam/*,ptree,tt*/,beg,weightmut,end);
+    ranvec2(n,pbuf,mhits,nsam,beg,weightmut,end);
     order(n,pbuf);
-    /*if(mhits) change_mut(n,pbuf,nsam,ptree,tt,ns);*/
 }
-void ranvec2(long int n, /*double */long int *pbuf,/*nou->*/ /*long int len,*/int mhits /*nou*/,int nsam/*,struct node *ptree,double tt*/,long int beg,double *weightmut,long int end)	
+void ranvec2(long int n, long int *pbuf,int mhits,int nsam,long int beg,double *weightmut,long int end)
 /* posa un nombre entre [0,len) */
 {
     long int i,x;
@@ -4322,10 +4135,10 @@ void ranvec2(long int n, /*double */long int *pbuf,/*nou->*/ /*long int len,*/in
     }
 }
 
-void order(long int n, /*double */long int *pbuf)/* ordena els valors: es molt lent per un gran nombre de polimofismes! */
+void order(long int n,long int *pbuf)/* ordena els valors: es molt lent per un gran nombre de polimofismes! */
 {
     long int gap,i,j;
-    /*double*/long int temp;
+    long int temp;
     
     for(gap= n/2; gap>0;gap /= 2)
         for(i=gap;i<(long int)n;i++)
@@ -4336,25 +4149,22 @@ void order(long int n, /*double */long int *pbuf)/* ordena els valors: es molt l
             }
 }
 
-void locate2_psel(long int n,long int beg,/*long int len,*/long int *ptr,int mhits,int nsam/*,struct node *ptree,double tt,long int ns*/,long int sel_nt,double *weightmut,long int end)/* localitza les mutacions en un fragment */
+void locate2_psel(long int n,long int beg,long int *ptr,int mhits,int nsam,long int sel_nt,double *weightmut,long int end)/* localitza les mutacions en un fragment */
 {
      /*long int i;*/
-     void ordran2_psel(long int,long int *,/*long int,*/int,int/*,struct node *,double,long int*/,long int,long int,double *,long int);
+     void ordran2_psel(long int,long int *,int,int,long int,long int,double *,long int);
      
-     ordran2_psel(n,ptr,/*len,*/mhits,nsam/*,ptree,tt,ns*/,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-     /*for(i=0;i<n;i++) ptr[i] = beg + ptr[i];*//* les escala entre inici i final del fragment */
+     ordran2_psel(n,ptr,mhits,nsam,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
 }
-void ordran2_psel(long int n,long int *pbuf,/*long int len,*/int mhits,int nsam/*,struct node *ptree,double tt,long int ns*/,long int sel_nt,long int beg,double *weightmut,long int end)			
+void ordran2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end)
 {
-    void ranvec2_psel(long int,long int *,/*long int,*/int,int/*,struct node *,double*/,long int,long int,double *,long int);/* posa un nombre entre [0,len) */
+    void ranvec2_psel(long int,long int *,int,int,long int,long int,double *,long int);/* posa un nombre entre [0,len) */
     void order(long int,long int *);/* ordena els valors */
-    /*void change_mut(long int,long int *,int,struct node *,double,long int);*/
 
-    ranvec2_psel(n,pbuf,/*len,*/mhits,nsam/*,ptree,tt*/,sel_nt,beg,weightmut,end);
+    ranvec2_psel(n,pbuf,mhits,nsam,sel_nt,beg,weightmut,end);
     order(n,pbuf);
-    /*if(mhits) change_mut(n,pbuf,nsam,ptree,tt,ns);*/
 }
-void ranvec2_psel(long int n,long int *pbuf,/*long int len,*/int mhits,int nsam/*,struct node *ptree,double tt*/,long int sel_nt,long int beg,double *weightmut,long int end)	
+void ranvec2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end)
 /* posa un nombre entre [0,len) */
 {
     long int i,x;
@@ -4447,7 +4257,6 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
     double sum,sum2;
     int numloc;
     int totalnloci=1;
-    /*int l;*/
     FILE *outputind[NEUTVALUES2];
     char *el;
     
@@ -4481,7 +4290,6 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
     c = NEUTVALUES2;
     if((*data)->linked == 1 && (*data)->despl > 0 && (*data)->window > 0) {
         totalnloci = (int)ceil(((double)(*data)->nsites[1] - (double)(*data)->window) / ((double)(*data)->despl)) + (int)1;
-        /*for(l=(*data)->window;l<(*data)->nsites[1];l += (*data)->despl) totalnloci++;*/
     }
     else {
         if((*data)->linked > 1) totalnloci = (*data)->linked;
@@ -4594,11 +4402,10 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                             numloc++;
                         }
                     }
-                    /*if((*data)->print_neuttest == 1) {*/
                     if(numloc > 1) {
                         sum  = sum/(double)numloc;
                         sum2 = (sum2/((double)numloc) - sum*sum)*((double)numloc/((double)numloc-(double)1));
-                        /**/if(sum2 <= 1E-37) sum2 = (double)0;/**/
+                        if(sum2 <= 1E-37) sum2 = (double)0;
                         fprintf(output,"%.6g\t%.6g\t",sum,sum2);
                         
                         /*observed values*/
@@ -4735,24 +4542,6 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                             if(fcount < (double)1 || fcount > (double)(total-1)) percentiles[a*(*data)->max_npop_sampled+d][b][n] = -10000;
                             else {
                                 count=(long int)floor((double)fcount);
-                                /* VERY OLD
-                                 if(fcount == (double)floor((double)fcount)) percentiles[a*(*data)->max_npop_sampled+d][b][n] = matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-1];
-                                 else percentiles[a*(*data)->max_npop_sampled+d][b][n] = (matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-1] + matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count])/(double)2;
-                                 */
-                                
-                                /* CHANGED BY FUNCTION calc_quantile
-                                if(count-2>=0 && count<validiter[a*(*data)->max_npop_sampled+d][b]) {
-                                    if(fcount < (double)validiter[a*(*data)->max_npop_sampled+d][b]/2.0)
-                                        percentiles[a*(*data)->max_npop_sampled+d][b][n] = (matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-1] + matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-2])/(double)2;
-                                    if(fcount > (double)validiter[a*(*data)->max_npop_sampled+d][b]/2.0)
-                                        percentiles[a*(*data)->max_npop_sampled+d][b][n] = (matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-1] + matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-0])/(double)2;
-                                    if(fcount == (double)validiter[a*(*data)->max_npop_sampled+d][b]/2.0)
-                                        percentiles[a*(*data)->max_npop_sampled+d][b][n] = matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-1];
-                                }
-                                else {
-                                    percentiles[a*(*data)->max_npop_sampled+d][b][n] = matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][(*data)->n_iter-total+count-1];
-                                }
-                                */
                                 percentiles[a*(*data)->max_npop_sampled+d][b][n] = calc_quantile(matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a],validiter[a*(*data)->max_npop_sampled+d][b],fcount/(double)validiter[a*(*data)->max_npop_sampled+d][b],(*data)->n_iter-total);
                                 
                             }
@@ -4845,23 +4634,6 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                         if(fcount < (double)1 || fcount > (double)(total-1)) percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = -10000;
                         else {
                             count=(long int)floor((double)fcount);
-                            /* OLD
-                             if(fcount == (double)floor((double)fcount)) percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1];
-                             else percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = (matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1] + matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count])/(double)2;
-                             */
-                            /* CHANGED BY FUNCTION calc_quantile
-                            if(count-2>=0 && count<validiter[a*(*data)->max_npop_sampled+d][totalnloci]) {
-                                if(fcount < (double)validiter[a*(*data)->max_npop_sampled+d][totalnloci]/2.0)
-                                    percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = (matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1] + matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-2])/(double)2;
-                                if(fcount > (double)validiter[a*(*data)->max_npop_sampled+d][totalnloci]/2.0)
-                                    percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = (matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1] + matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-0])/(double)2;
-                                if(fcount == (double)validiter[a*(*data)->max_npop_sampled+d][totalnloci]/2.0)
-                                    percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1];
-                            }
-                            else {
-                                percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = matrix_avg[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1];
-                            }
-                            */
                             percentiles[a*(*data)->max_npop_sampled+d][totalnloci][n] = calc_quantile(matrix_avg[a*(*data)->max_npop_sampled+d],validiter[a*(*data)->max_npop_sampled+d][totalnloci],fcount/(double)validiter[a*(*data)->max_npop_sampled+d][totalnloci],(*data)->n_iter-total);
                         }
                     }
@@ -4879,7 +4651,7 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                     if(numloc>1) {
                         average[a*(*data)->max_npop_sampled+d] /= (double)numloc;
                         variance[a*(*data)->max_npop_sampled+d] = (variance[a*(*data)->max_npop_sampled+d]/((double)numloc) - average[a*(*data)->max_npop_sampled+d]*average[a*(*data)->max_npop_sampled+d])*((double)numloc/((double)numloc-(double)1));
-                        /**/if(variance[a*(*data)->max_npop_sampled+d] <= 1E-37) variance[a*(*data)->max_npop_sampled+d] = (double)0;/**/
+                        if(variance[a*(*data)->max_npop_sampled+d] <= 1E-37) variance[a*(*data)->max_npop_sampled+d] = (double)0;
                     }
                     else {
                         variance[a*(*data)->max_npop_sampled+d] = (double)-10000;
@@ -4961,23 +4733,6 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                         if(fcount < (double)1 || fcount > (double)(total-1)) percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = -10000;
                         else {
                             count=(long int)floor((double)fcount);
-                            /* OLD
-                             if(fcount == (double)floor((double)fcount)) percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1];
-                             else percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = (matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1] + matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count])/(double)2;
-                             */
-                            /* CHANGED BY FUNCTION calc_quantile
-                            if(count-2>=0 && count<validiter[a*(*data)->max_npop_sampled+d][totalnloci+1]) {
-                                if(fcount < (double)validiter[a*(*data)->max_npop_sampled+d][totalnloci+1]/2.0)
-                                    percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = (matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1] + matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-2])/(double)2;
-                                if(fcount > (double)validiter[a*(*data)->max_npop_sampled+d][totalnloci+1]/2.0)
-                                    percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = (matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1] + matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-0])/(double)2;
-                                if(fcount == (double)validiter[a*(*data)->max_npop_sampled+d][totalnloci+1]/2.0)
-                                    percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1];
-                            }
-                            else {
-                                percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = matrix_var[a*(*data)->max_npop_sampled+d][(*data)->n_iter-total+count-1];
-                            }
-                            */
                             percentiles[a*(*data)->max_npop_sampled+d][totalnloci+1][n] = calc_quantile(matrix_var[a*(*data)->max_npop_sampled+d],validiter[a*(*data)->max_npop_sampled+d][totalnloci+1],fcount/(double)validiter[a*(*data)->max_npop_sampled+d][totalnloci+1],(*data)->n_iter-total);
                         }
                     }
@@ -5239,7 +4994,7 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                                 validiter[a*(*data)->max_npop_sampled+d][totalnloci] = (long int)total;
                                 
                                 
-                                for(y=0;y<9;y++) {/*for(n=0:n<13;n++)*/
+                                for(y=0;y<9;y++) {
                                     switch (y) {
                                         case 0: n=6;break;
                                         case 1: n=3;break;
@@ -5445,10 +5200,10 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                             fprintf(filePvalue,"\n97.5%%");
                             break;
                         case 11:
-                            fprintf(filePvalue,"\n99.5%%");/*fprintf(filePvalue,"\n99.0%%");*/
+                            fprintf(filePvalue,"\n99.5%%");
                             break;
                         case 12:
-                            fprintf(filePvalue,"\n99.95%%");/*fprintf(filePvalue,"\n99.9%%");*/
+                            fprintf(filePvalue,"\n99.95%%");
                             break;
                     }
                     for(a=0;a<c;a++) {
@@ -5465,10 +5220,10 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
             for(n=0;n<13;n++) {
                 switch(n) {
                     case 0:
-                        fprintf(filePvalue,"\n 0.05%%");/*fprintf(filePvalue,"\n 0.1%%");*/
+                        fprintf(filePvalue,"\n 0.05%%");
                         break;
                     case 1:
-                        fprintf(filePvalue,"\n 0.5%%");/*fprintf(filePvalue,"\n 1.0%%");*/
+                        fprintf(filePvalue,"\n 0.5%%");
                         break;
                     case 2:
                         fprintf(filePvalue,"\n 2.5%%");
@@ -5498,10 +5253,10 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                         fprintf(filePvalue,"\n97.5%%");
                         break;
                     case 11:
-                        fprintf(filePvalue,"\n99.5%%");/*fprintf(filePvalue,"\n99.0%%");*/
+                        fprintf(filePvalue,"\n99.5%%");
                         break;
                     case 12:
-                        fprintf(filePvalue,"\n99.95%%");/*fprintf(filePvalue,"\n99.9%%");*/
+                        fprintf(filePvalue,"\n99.95%%");
                         break;
                 }
                 for(a=0;a<c;a++) {
@@ -5516,10 +5271,10 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
             for(n=0;n<13;n++) {
                 switch(n) {
                     case 0:
-                        fprintf(filePvalue,"\n 0.05%%");/*fprintf(filePvalue,"\n 0.1%%");*/
+                        fprintf(filePvalue,"\n 0.05%%");
                         break;
                     case 1:
-                        fprintf(filePvalue,"\n 0.5%%");/*fprintf(filePvalue,"\n 1.0%%");*/
+                        fprintf(filePvalue,"\n 0.5%%");
                         break;
                     case 2:
                         fprintf(filePvalue,"\n 2.5%%");
@@ -5549,10 +5304,10 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                         fprintf(filePvalue,"\n97.5%%");
                         break;
                     case 11:
-                        fprintf(filePvalue,"\n99.5%%");/*fprintf(filePvalue,"\n99.0%%");*/
+                        fprintf(filePvalue,"\n99.5%%");
                         break;
                     case 12:
-                        fprintf(filePvalue,"\n99.95%%");/*fprintf(filePvalue,"\n99.9%%");*/
+                        fprintf(filePvalue,"\n99.95%%");
                         break;
                 }
                 for(a=0;a<c;a++) {
@@ -6030,11 +5785,9 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 							pi++;
 							if(h > 1) k_e1++;
 							if(h > 1 && h < nsam-1) k_n1++;
-							/*(ntpar)->pid[pidcount] += (double)1;*/
 							freq1[z] += 1; /*mismatch dist*/
 						}
 						z++;/*mismatch dist*/
-						/*pidcount++;*/
 					}
 				}
 				k_ += pi;
@@ -6259,11 +6012,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						}
 					}
 					else nousedD[j] = 1;
-					/*if(flagA == 0 && flagD == 0) {
-						memset(nousedA+j,1,(segsit-j)*sizeof(int));
-						memset(nousedD+j,1,(segsit-j)*sizeof(int));
-						break;
-					}*/
 				}
 				flagA = flagD = 1;
 				for(j=k-1;j>0;j--) {
@@ -6340,10 +6088,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					nousedA[j] = 0;
 					nousedD[j] = 0;
 				}
-				/*
-				memset(nousedA,'\0',segsit*sizeof(int));
-				memset(nousedD,'\0',segsit*sizeof(int));
-				*/
 			}
 			free(fhap1);
 			free(fhap2);
@@ -6454,8 +6198,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						}
 					}
 					else {
-						/*memset(nousedM+k*segsit+j,1,(segsit-j)*sizeof(int));
-						break;*/
 						nousedM[k][j] = 1;
 					}
 				}
@@ -6540,11 +6282,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		#else
 		(ntpar)->maxhapl1 = -10000;
 		#endif
-/*
-        b = 0;
-        for(a=0;a<nsam;a++) if(haplotype[b] < haplotype[a]) b=a;
-        printf("%d\r",haplotype[b]);
-*/
         free(hapl);
         free(haplotype);
 
@@ -6601,14 +6338,9 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
 							hapl[(a)*segsit+S] = list[a][j];
-						/*	for(b=a+1;b<inits1+(*inputp)->config[h];b++)
-								if(list[a][j] != list[b][j]) piw[h]++;
-						*/
 						}
-						/**/
 						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
 						piw[h] += (c * ((*inputp)->config[h] - c));
-						/**/
 						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
 					}
@@ -6620,16 +6352,9 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
 						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam)>=0) 
 						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam)>=0))) {
-							/**/
 							for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 								for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
 									if(list[a][j] != list[b][j]) pib[h]++;
-							/**/
-							/*
-							a = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
-							b = ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam);
-							pib[h] += ((a * ((*inputp)->config[npopa] - b)) + (((*inputp)->config[h] - a) * b));
-							*/
 						}
 						inits1 += (*inputp)->config[h];
 					}
@@ -6665,7 +6390,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			inits1 = 0;
 			inits2 = inits;
 			for(h=0;h<(*inputp)->npop_sampled;h++) {
-				if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h/**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
+				if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
 					for(a=inits1;a<inits1+(*inputp)->config[h];a++) {
 						for(b=inits2;b<inits2+(*inputp)->config[npopa];b++) {
 							if(memcmp(hapl+a*segsit,hapl+b*segsit,S) == 0) { 
@@ -6680,7 +6405,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			/*weighting piw and pib*/
 			for(h=0;h<(*inputp)->npop_sampled;h++) {
 				if((*inputp)->config[h]>1) (ntpar)->piwallcomp[h] = piw[h] / (double)(((*inputp)->config[h] * ((*inputp)->config[h] - 1))/2);
-				/*else (ntpar)->piwallcomp[h] = -10000.;*/
 			}
             for(h=0;h<(*inputp)->npop_sampled;h++) {
 				if((*inputp)->config[h] && (*inputp)->config[npopa] && npopa != h/**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
@@ -6739,7 +6463,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				if((*inputp)->config[h]>1 /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
 					comb = (int)((double)(*inputp)->config[h] * ((double)(*inputp)->config[h] - (double)1.0)/(double)2.0);
 					(ntpar)->piw += (double)piw[h]/(double)comb; 
-					/*(ntpar)->withinw += (double)(*inputp)->config[h] * (double)piw[h]/(double)comb;*/
 					comb2++;
 				}
 			}			
@@ -6748,7 +6471,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				(ntpar)->piw = (ntpar)->piw/(double)comb2;
 				npw=0;
 				for(h=0;h<(*inputp)->npop_sampled;h++) npw += (*inputp)->config[h];
-				/*(ntpar)->withinw /= (double)npw;*/
 			}
 			
 			(ntpar)->withinw = -10000;
@@ -6868,7 +6590,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						(ntpar)->Sanc[1] += 1;/*Sx2*/
 					}
 				}
-				if(polc == 1 && (pola != -1 && polb != -1))/*(*inputp)->ancestral_pol[2][0] == 1*/ {
+				if(polc == 1 && (pola != -1 && polb != -1)) {
 					if((pola==0 && polb==0) && (list[inits1][j] == list[inits2][j])) {
 						(ntpar)->Sanc[2] += 1;/*Sxo*/
 					}
@@ -7113,7 +6835,6 @@ double Zns(int valuep,long int segsites,struct var2 **inputp,int npopa)
                 A = (double)vala/(double)nsam;
                 B = (double)valb/(double)nsam;
                 C = (double)val00/(double)nsam;
-                /*if(vala != ((double)nsam-1.0) && valb != ((double)nsam-1.0)) if only informative */
                 ZnS += ((C - (A*B)) * (C - (A*B))) / (A*(1.0 - A)*B*(1.0 - B));
                 comb++;
             }
@@ -7483,7 +7204,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			}
 		}
 	}
-    /*nsam  = (*inputp)->nsam;*/
     comb = (int)((double)nsam*((double)nsam-(double)1)/(double)2);
     
     /*define segsit first*/
@@ -7676,15 +7396,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
             (ntpar)->freq[a] = 0;
             (ntpar)->unic[a] = 0;
         }
- 		/*
-		pidcount = 0;
-		for(a=0;a<nsam-1;a++) {
-			for(b=a+1;b<nsam;b++) {
-				(ntpar)->pid[pidcount] = (double)0;
-				pidcount++;
-			}
-		}
-		*/
 		S = 0;
         nhapl = 0;                
 		nmh = 0;
@@ -7712,7 +7423,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
                 S++;
 				if(h > 1) Se1++;
 				if(h > 1 && h < nsam-1) Sn1++;
- 				/*pidcount = 0;*/
 				z = 0;/*mismatch dist*/
                 for(a=inits;a<inits+nsam-1;a++) {
                     for(b=a+1;b<inits+nsam;b++) {
@@ -7720,11 +7430,9 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 							pi++;
 							if(h > 1) k_e1++;
 							if(h > 1 && h < nsam-1) k_n1++;
-							/*(ntpar)->pid[pidcount] += (double)1;*/
 							freq1[z] += 1; /*mismatch dist*/
 						}
 						z++;/*mismatch dist*/
-						/*pidcount++;*/
 					}
 				}
                 k_ += pi;
@@ -7952,11 +7660,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						}
 					}
 					else nousedD[j] = 1;
-					/*if(flagA == 0 && flagD == 0) {
-					 memset(nousedA+j,1,(segsit-j)*sizeof(int));
-					 memset(nousedD+j,1,(segsit-j)*sizeof(int));
-					 break;
-					 }*/
 				}
 				flagA = flagD = 1;
 				for(j=k-1;j>0;j--) {
@@ -8002,11 +7705,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						}
 					}
 					else nousedD[j] = 1;
-					/*if(flagA == 0 && flagD == 0) {
-					 memset(nousedA+0,1,(j)*sizeof(int));
-					 memset(nousedD+0,1,(j)*sizeof(int));
-					 break;
-					 }*/
 				}
 				/*integrate and obtain uiHS, calculate max value*/
 				uiHS = iHHA = iHHD = (double)0;
@@ -8033,10 +7731,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					nousedA[j] = 0;
 					nousedD[j] = 0;
 				}
-				/*
-				 memset(nousedA,'\0',segsit*sizeof(int));
-				 memset(nousedD,'\0',segsit*sizeof(int));
-				 */
 			}
 			free(fhap1);
 			free(fhap2);
@@ -8237,11 +7931,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		#else
 		(ntpar)->maxhapl1 = -10000;
 		#endif
-/*
-        b = 0;
-        for(a=0;a<nsam;a++) if(haplotype[b] < haplotype[a]) b=a;
-        printf("%d\r",haplotype[b]);
-*/
         free(hapl);
         free(haplotype);
 
@@ -8298,14 +7987,9 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
 							hapl[(a)*segsit+S] = list[a][j];
-							/*	for(b=a+1;b<inits1+(*inputp)->config[h];b++)
-							 if(list[a][j] != list[b][j]) piw[h]++;
-							 */
 						}
-						/**/
 						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
 						piw[h] += (c * ((*inputp)->config[h] - c));
-						/**/
 						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
 					}
@@ -8314,19 +7998,12 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					inits1 = 0;
 					inits2 = inits;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
-						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
+						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
 						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam)>=0) 
 						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam)>=0))) {
-						   /**/
 						   for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 							   for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
 								   if(list[a][j] != list[b][j]) pib[h]++;
-						   /**/
-						   /*
-							a = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
-							b = ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam);
-							pib[h] += ((a * ((*inputp)->config[npopa] - b)) + (((*inputp)->config[h] - a) * b));
-							*/
 					    }
 						inits1 += (*inputp)->config[h];
 					}
@@ -8377,7 +8054,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			/*weighting piw and pib*/
 			for(h=0;h<(*inputp)->npop_sampled;h++) {
 				if((*inputp)->config[h]>1) (ntpar)->piwallcomp[h] = piw[h] / (double)(((*inputp)->config[h] * ((*inputp)->config[h] - 1))/2);
-				/*else (ntpar)->piwallcomp[h] = -10000.;*/
 			}
 			for(h=0;h<(*inputp)->npop_sampled;h++) {
 				if((*inputp)->config[h] && (*inputp)->config[npopa] && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
@@ -8405,7 +8081,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			/*weighting hapw and hapb*/
 			for(h=0;h<(*inputp)->npop_sampled;h++) {
 				if((*inputp)->config[h]>1) (ntpar)->hapwallcomp[h] = 1.0 - hapw[h] / (double)(((*inputp)->config[h] * ((*inputp)->config[h] - 1))/2);
-				/*else (ntpar)->hapwallcomp[h] = -10000.;*/
 			}
 			for(h=0;h<(*inputp)->npop_sampled;h++) {
 				if((*inputp)->config[h] && (*inputp)->config[npopa] && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
@@ -8436,7 +8111,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				if((*inputp)->config[h]>1) {
 					comb = (int)((double)(*inputp)->config[h] * ((double)(*inputp)->config[h] - (double)1.0)/(double)2.0);
 					(ntpar)->piw += (double)piw[h]/(double)comb; 
-					/*(ntpar)->withinw += (double)(*inputp)->config[h] * (double)piw[h]/(double)comb;*/
 					comb2++;
 				}
 			}
@@ -8445,7 +8119,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				(ntpar)->piw = (ntpar)->piw/(double)comb2;
 				npw=0;
 				for(h=0;h<(*inputp)->npop_sampled;h++) /*if((*inputp)->config[h]>1) npw +=1;*/ npw +=(*inputp)->config[h]>1;
-				/*(ntpar)->withinw /= (double)npw;*/
 			}
 			
 			comb2 = 0;
@@ -8802,7 +8475,6 @@ double Zns_window(struct var2 **inputp, long int s0, long int s1,int npopa)
                 A = (double)vala/(double)nsam;
                 B = (double)valb/(double)nsam;
                 C = (double)val00/(double)nsam;
-                /*if(vala != ((double)nsam-1.0) && valb != ((double)nsam-1.0)) if only informative */
                 ZnS += ((C - (A*B)) * (C - (A*B))) / (A*(1.0 - A)*B*(1.0 - B));
                 comb++;
             }
@@ -8877,7 +8549,6 @@ double ZnA_window(struct var2 **inputp, long int s0, long int s1,int npopa)
             A = (double)vala/(double)nsam;
             B = (double)valb/(double)nsam;
             C = (double)val00/(double)nsam;
-            /*if(vala != ((double)nsam-1.0) && valb != ((double)nsam-1.0)) if only informative */
             ZnA += ((C - (A*B)) * (C - (A*B))) / (A*(1.0 - A)*B*(1.0 - B));
             comb++;
         }
@@ -8983,7 +8654,7 @@ int print_matrix_sfixalltheta(struct var **data,FILE *file_thetap,FILE *file_tto
 	}
 	return 0;
 }
-int print_matrix_rmfix(struct var **data,FILE *file_recp,FILE *file_ttotp/*,FILE *file_recrange */,int Sfix,struct prob_par **postp) 
+int print_matrix_rmfix(struct var **data,FILE *file_recp,FILE *file_ttotp,int Sfix,struct prob_par **postp)
 {
 	int x;
 	long int j;
@@ -9274,11 +8945,7 @@ long int localize_positiontop(double *categories,double valuer,long int start,lo
 		if((double)valuer < categories[half]) return half;
 		else return half+1;
 	}	
-	/*
-	if((double)valuer < categories[half]) half = localize_positiontop(categories,valuer,start,half);
-	else if((double)valuer > categories[half]) half = localize_positiontop(categories,valuer,half,end);
-	*/
-	
+
 	return half;
 }
 
@@ -9289,16 +8956,13 @@ double correction_recabs(double f,double sexratio,int m) /*ABSOLUTE value of rec
 		if(f == (double)1.0) {
 			if(m==1) {
 				return(4.*sexratio/((1.+sexratio)*(1.+sexratio)));
-				/*return((1.+sexratio)/4.);*/
 			}
 			else { 
 				return((sexratio/(1.+sexratio))/2.);
-				/*return(1.);*/
 			}
 		}
 		if(f == (double)0.75) {
 			return((sexratio/(1.+sexratio))/2.);
-			/*return((2.*sexratio+4)/9.);*/
 		}
 		if(f == (double)0.25) 
 			return(0.);
@@ -9310,16 +8974,13 @@ double correction_recabs(double f,double sexratio,int m) /*ABSOLUTE value of rec
 		if(f == (double)1.0) {
 			if(m==1) {
 				return(4.*sexratio/((1.+sexratio)*(1.+sexratio)));
-				/*return((1.+sexratio)/4.);*/
 			}
 			else { 
 				return((sexratio/(1.+sexratio))/2.);
-				/*return(1.);*/
 			}
 		}
 		if(f == (double)0.75) {
 			return((sexratio/(1.+sexratio))/2.);
-			/*return((2.*sexratio+4)/9.);*/
 		}
 		if(f == (double)0.25) 
 			return(0.);
@@ -9330,16 +8991,13 @@ double correction_recabs(double f,double sexratio,int m) /*ABSOLUTE value of rec
 		if(f == (double)1.33) {
 			if(m==1) {
 				return(4.*sexratio/((1.+sexratio)*(1.+sexratio)));
-				/*return((1.+sexratio)/4.);*/
 			}
 			else { 
 				return((sexratio/(1.+sexratio))/2.);
-				/*return(1.);*/
 			}
 		}
 		if(f == (double)1.00) {
 			return((sexratio/(1.+sexratio))/2.);
-			/*return((2.*sexratio+4)/9.);*/
 		}
 		if(f == (double)0.33) 
 			return(0.);
@@ -9351,16 +9009,13 @@ double correction_recabs(double f,double sexratio,int m) /*ABSOLUTE value of rec
 		if(f == (double)1.33) {
 			if(m==1) {
 				return(4.*sexratio/((1.+sexratio)*(1.+sexratio)));
-				/*return((1.+sexratio)/4.);*/
 			}
 			else { 
 				return((sexratio/(1.+sexratio))/2.);
-				/*return(1.);*/
 			}
 		}
 		if(f == (double)1.00) {
 			return((sexratio/(1.+sexratio))/2.);
-			/*return((2.*sexratio+4)/9.);*/
 		}
 		if(f == (double)0.33) 
 			return(0.);

@@ -24,7 +24,6 @@
 void getpars_fix(struct var **data, struct var2 **inputp)
 {    
     int x,y,z,ap;
-	/*double maxtpast;*/
     double ran1(void);
 	double tmax;
 
@@ -88,7 +87,7 @@ void getpars_fix(struct var **data, struct var2 **inputp)
 		}
 		else {
 			(*inputp)->despl = (*data)->nsites[1];
-			(*inputp)->window = (*data)->nsites[1]/*-1*/;
+			(*inputp)->window = (*data)->nsites[1];
 			
 			(*inputp)->linked_segsites_nregion = -1;
 			(*inputp)->linked_rm_nregion = -1;
@@ -175,8 +174,7 @@ void getpars_fix(struct var **data, struct var2 **inputp)
     (*inputp)->nrec  = (double **)malloc((*inputp)->npop*sizeof(double *));
     (*inputp)->tpast = (double **)malloc((*inputp)->npop*sizeof(double *));
     (*inputp)->tpastS = (double **)malloc((*inputp)->npop*sizeof(double *));
-	
-	/*maxtpast = 0.;*/
+
 	for(x=0;x<(*inputp)->npop;x++) {
 		(*inputp)->nrec[x] = (double *)malloc((2+(*inputp)->nintn[x])*sizeof(double));
 		(*inputp)->tpast[x] = (double *)malloc((2+(*inputp)->nintn[x])*sizeof(double));
@@ -413,8 +411,7 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
 		}
 	}
  	for(x=0;x<(*inputp)->npop;x++) (*inputp)->nintn[x] = (*data)->nintn[x+1];
-	
-	/*maxtpast = 0.;*/
+
 	for(x=0;x<(*inputp)->npop;x++) {
 		(*inputp)->nrec[x][0] = (double)1;
 		(*inputp)->nrec[x][1] = (double)1;
@@ -494,7 +491,6 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
 	if((*data)->factor_anc>=REFNUMBER && (*data)->factor_anc < REFNUMBER + PLUSPRIOR) {
 		z = (int)((*data)->factor_anc- REFNUMBER1);
 		(*inputp)->pointtoprior[z] = &((*inputp)->factor_anc);
-		/*printf("\nlocus: %d, z: %d, (*inputp)->pointtoprior[z]: %ld",p1,z,(*inputp)->pointtoprior[z]);*/
 	}
 
     if((*data)->split_pop) {
@@ -632,7 +628,6 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
 					z = (int)((*data)->r[0+1] - REFNUMBER1);
 					(*inputp)->pointtoprior[z] = &((*inputp)->r);
 				}
-				/*(*inputp)->Rm = -1;*/
 			}
 			else {
 				(*inputp)->r = (*data)->r[p1+1];
@@ -642,10 +637,6 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
 				}
 			}
 		}
-		/*
-		else 
-			(*inputp)->Rm = (double)-1;
-		*/
 	}
 
     (*inputp)->npop_sampled = (*data)->npop_sampled[p1+1];    
@@ -660,60 +651,20 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
     (*inputp)->recnt_min   = (*data)->recnt_min[x] * (double)(*data)->nsites[p1+1];
     (*inputp)->recnt_max   = (*data)->recnt_max[x] * (double)(*data)->nsites[p1+1];
 	
-	/*if((*inputp)->ifgamma) {*/
-		(*inputp)->p_gamma = (*data)->p_gamma[p1+1];
-		(*inputp)->alpha_gamma = (*data)->alpha_gamma[p1+1];
-		(*inputp)->correct_gamma = (*data)->correct_gamma[p1+1];
-	/*}*/
-	/*if((*inputp)->ifgammar) {*/
-		(*inputp)->p_gammar = (*data)->p_gammar[p1+1];
-		(*inputp)->alpha_gammar = (*data)->alpha_gammar[p1+1];
-		(*inputp)->correct_gammar = (*data)->correct_gammar[p1+1];
-	/*}*/
-	
-	/*(*inputp)->factor_chrn = (double)1/(double)(*data)->factor_chrn[p1+1];*/
+    (*inputp)->p_gamma = (*data)->p_gamma[p1+1];
+    (*inputp)->alpha_gamma = (*data)->alpha_gamma[p1+1];
+    (*inputp)->correct_gamma = (*data)->correct_gamma[p1+1];
+    (*inputp)->p_gammar = (*data)->p_gammar[p1+1];
+    (*inputp)->alpha_gammar = (*data)->alpha_gammar[p1+1];
+    (*inputp)->correct_gammar = (*data)->correct_gammar[p1+1];
+
     if((*data)->factor_chrn[0] == 1) {
 		(*inputp)->factor_chrn = (*data)->factor_chrn[1];
-		/*
-		if((*data)->factor_chrn[1] >=REFNUMBER && (*data)->factor_chrn[1] < REFNUMBER + PLUSPRIOR) {
-			z = (int)((*data)->factor_chrn[1] - REFNUMBER1);
-			(*inputp)->pointtoprior[z] = &((*inputp)->factor_chrn);
-		}
-		*/
 	}
 	else {
 		(*inputp)->factor_chrn = (*data)->factor_chrn[p1+1];
-		/*
-		if((*data)->factor_chrn[p1+1] >=REFNUMBER && (*data)->factor_chrn[p1+1] < REFNUMBER + PLUSPRIOR) {
-			z = (int)((*data)->factor_chrn[p1+1] - REFNUMBER1);
-			(*inputp)->pointtoprior[z] = &((*inputp)->factor_chrn);
-		}
-		*/
 	}
-/*
-	if((*data)->event_sexratio[0] == 2) {
-		(*inputp)->event_forsexratio = (int)(*data)->event_sexratio[1];
-		(*inputp)->event_sexratio = (*data)->event_sexratio[2];
-		if((*data)->event_sexratio[2] >=REFNUMBER && (*data)->event_sexratio[2] < REFNUMBER + PLUSPRIOR) {
-			z = (int)((*data)->event_sexratio[2] - REFNUMBER1);
-			(*inputp)->pointtoprior[z] = &((*inputp)->event_sexratio);
-		}
-	}
-	else {
-		if((*data)->event_sexratio[0] < 2) {
-			(*inputp)->event_forsexratio = -1;
-			(*inputp)->event_sexratio = 1.0;
-		}
-		else {
-			(*inputp)->event_forsexratio = (int)(*data)->event_sexratio[1];
-			(*inputp)->event_sexratio = (*data)->event_sexratio[p1+2];
-			if((*data)->event_sexratio[p1+2] >=REFNUMBER && (*data)->event_sexratio[p1+2] < REFNUMBER + PLUSPRIOR) {
-				z = (int)((*data)->event_sexratio[p1+2] - REFNUMBER1);
-				(*inputp)->pointtoprior[z] = &((*inputp)->event_sexratio);
-			}
-		}
-	}	
-*/	
+
     (*inputp)->heter_theta_alphag = (*data)->heter_theta_alphag[p1+1];
     (*inputp)->invariable_mut_sites = (*data)->invariable_mut_sites[p1+1];
     (*inputp)->heter_rm_alphag = (*data)->heter_rm_alphag[p1+1];

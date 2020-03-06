@@ -605,14 +605,7 @@ double ai(int i)
     for(j=1;j<i;j++) a += (double)1/(double)j;
     return a;
 }
-/*
-double bn(int i,int sample_size)
-{
-    double ai(int);
-    return ((double)2*(double)sample_size * (ai(sample_size + 1) - ai(i))) / (((double)sample_size - (double)i + (double)1) * ((double)sample_size - (double)i)) - 
-            (double)2/((double)sample_size - (double)i);
-}
-*/
+
 /*Gximod (outgroup) test from Fu(1995) based on frequency of segregating sites, but using theta from watterson,
  and not variance...*/
 double Gximod(int sample_size,int *fr, double thetaw) /* with outgroup */
@@ -819,73 +812,7 @@ double freqtestn_achaz(int sample_size,int *fr,int singleton,double *w1,double *
 	
     return Test;
 }
-/*
-double an(int n)
-{
-    static double *an_m=0;
-    static int m=0;
-    double ani = 0.;
-	int i;
-    if(an_m==0) {
-        m = n+1;
-        an_m = (double *)calloc(m,sizeof(double));
-    }
-    if(m < n) {
-        m = n+1;
-        an_m = (double *)realloc(an_m,m*sizeof(double));
-    }
-    if(an_m[n] != 0.0) ani = an_m[n];
-    else {
-        for(i=1;i<n;i++)
-            ani += 1.0/(double)i;
-        an_m[n] = ani;
-    }
-	return ani;
-}
-double a2n(int n)
-{
-    static double *a2n_m=0;
-    static int m=0;
-	double a2ni = 0.;
-	int i;
-    if(a2n_m==0) {
-        m = n+1;
-        a2n_m = (double *)calloc(m,sizeof(double));
-    }
-    if(m < n) {
-        m = n+1;
-        a2n_m = (double *)realloc(a2n_m,m*sizeof(double));
-    }
-    if(a2n_m[n] != 0.0) a2ni = a2n_m[n];
-    else {
-        for(i=1;i<n;i++)
-            a2ni += (1.0/((double)i*(double)i));
-        a2n_m[n] = a2ni;
-    }
-	return a2ni;
-}
-double bn(int n,int i)
-{
-	double an(int);
-	double bni;
-    static double *bn_m=0;
-    static int m=0;
-    if(bn_m==0) {
-        m = n+1;
-        bn_m = (double *)calloc(m,sizeof(double));
-    }
-    if(m < n) {
-        m = n+1;
-        bn_m = (double *)realloc(bn_m,m*sizeof(double));
-    }
-    if(bn_m[n] != 0.0) bni = bn_m[n];
-    else {
-        bni = (2.0*(double)n)/((double)(n-i+1)*(double)(n-i)) * (an(n+1) - an(i)) - 2.0/((double)(n-i));
-        bn_m[n] = bni;
-    }
-	return bni;
-}
-*/
+
 double an(int n)
 {
     static double *an_m=0;

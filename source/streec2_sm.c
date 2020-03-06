@@ -172,8 +172,6 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
     double correction_rec(double,double,int);
     double correction_theta(double,double);
 	double factor_chrnall;
-	/*long int lirec;*/
-	/*double *weightrec;*/
 	double sumfreq,pip,spip;			/*refugia*/
     
     #if FSTFROMNODIVISION == 1
@@ -220,12 +218,6 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 	/*correcting recombination according the sexratio and the chromosome*/
 	r *= correction_rec(factor_chrn,sex_ratio,no_rec_males);
 	
-	/*values of the recombination for each position*/
-	/*
-	weightrec = (double *)calloc(nsites,sizeof(double));
-	for(lirec=0;lirec<nsites;lirec++) weightrec[lirec] = weightrec2[lirec] * correction_rec(factor_chrn,sex_ratio,no_rec_males) * r;
-	*/	  	  
-    
 	sel_nts_glob = sel_nt;			/*for selection*/
     ifsel_glob = ifselection;			/*for selection*/
 
@@ -386,16 +378,13 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 					clefta = cleft * rft;       /* prob. cleft event*/
 					prect = prec + cin + clefta;/* prob. recombinació + cin + cleft */
 					
-					/*mig = nchrom * mig_rate;*/	/* prob. migració. Cada ind. té una probabilitat de migrar */
 					mig = 0.;
-					/*if(t < time_scoal) {*/
-						for(a=0;a<npop;a++) {
-							for(b=0;b<npop;b++) {
-								mig += config[a] * migm[a][b] /* * factpop[b] weighting for the popsize of the source?NO*/;
-							}
-						}
-					/*}*/
-					
+                    for(a=0;a<npop;a++) {
+                        for(b=0;b<npop;b++) {
+                            mig += config[a] * migm[a][b] /* * factpop[b] weighting for the popsize of the source?NO*/;
+                        }
+                    }
+
 					if(prect+mig > (double)0) {
 						while((rdum = (double)ran1()) == 1.0);/* de fet, mai pot ser 1, es [0.1) en ran1 ... */
 						trm = -(double)log((double)1-(double)rdum)/(prect+mig);/* temps a la recombinació, (conversió), migració o extincio*/
@@ -677,7 +666,6 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 								for(j=0;j<nchrom;j++) chrom[j].pop = 0;
 								config[0] = nchrom;
 								for(pop=1;pop<npop;pop++) config[pop] = 0;
-								/*printf("config[0]=%d\tconfig[1]=%d\n",config[0],config[1]);*/
 							}
 							else {
 								t += ttemp;
@@ -765,7 +753,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
             /*in case selection type 2 it is considered always under selection but drift is more powerful*/
             #endif
             
-            if(sfreqend > /*0.*/eps) freqend = sfreqend;/*modification for stopping the selective process at freqend given!!!!*/
+            if(sfreqend > eps) freqend = sfreqend;/*modification for stopping the selective process at freqend given!!!!*/
             else freqend = eps;/*in case selective mutation is a new mutation*/
             if(sfreqinit < 1.0) freqinit = sfreqinit;/*modification for starting the selective process at freqinit given!!!!*/
             else freqinit = 1.0;/*in case selective mutation finishing normally*/
@@ -1053,8 +1041,8 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 					r = (double)0; 
 					nlinksr = (double)0;
 				}				
-				prect = (double)/*nlinks*/nlinksr /* * r*/;        /* 'tot_rec' is r in all region.*/
-				tot_rec = (double)/*total_nts*/total_ntsr /* * r*/;   /*like prect but for all the region*/      
+				prect = (double)nlinksr /* * r*/;        /* 'tot_rec' is r in all region.*/
+				tot_rec = (double)total_ntsr /* * r*/;   /*like prect but for all the region*/
 				
                 /*selection process finish for a given custom freqend*/
                 /*for freqend == eps continue the selection with drift*/
@@ -1070,8 +1058,6 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
                         }
                     }
                     xdt = 0.0;
-                    /*#else*/
-                    /*pop_sel = 1e-3;*//*like erasing selection force*/
                     #endif
                 }
                 
@@ -1090,7 +1076,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 					if(nevent < npop_events) {
 						if((t <= pop_event[nevent].time_event) && (t+ttemp > pop_event[nevent].time_event)) { /*CHANGES IN POPULATION SIZE: TO CHECK!!*/
 							t = pop_event[nevent].time_event /*+1E-17*//*precission error*/;/*modify time*/
-							factpop[pop_event[nevent].npop1/*0*/] = pop_event[nevent].factor_pop;/*modify factor_pop*/
+							factpop[pop_event[nevent].npop1] = pop_event[nevent].factor_pop;/*modify factor_pop*/
 							flagintn = 1;
 							nevent += 1;
 						}
@@ -1447,15 +1433,12 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 			#endif
 			free(factpop);
 		}    
-		/*printf("\n%f\t%f",-log((double)ran1())/2.,t);*//*time under coalescent 2 indiv and total time under selection*/
 		/************************ End of making tree *********************************/
 		tr++;
 	}
 	*pnsegs = nsegs;
     
     free(config);
-	/*free(weightrec);*/
-	/*printf("\n%f",t);*/
     return(seglst);
 }
 /*************************************************** Hudson routine *******************************************/
@@ -1481,16 +1464,14 @@ int re(int nsam,double *weightrec,long int nsites,double r)
         lsg = (int)chrom[ic].nseg;	/* el nombre de segments a l'individu ic */
         lsgm1 = lsg - 1;	/* de fet lsg-1 conté la informació de l'ultim segment */
         pseg = chrom[ic].pseg;	/* punter al primer segment de l'individu ic */
-        /*el = ((pseg+lsgm1)->end) - (pseg->beg); */
 		elr = (weightrec[((pseg+lsgm1)->end)] - weightrec[(pseg->beg)])*r;/* mida del segments (max-min) a l'individu ic*/
-        if(spotr/*spot*/ <= /*el*/elr) break; 	/* anem restant 'el' fins trobar l'individu */
+        if(spotr <= /*el*/elr) break; 	/* anem restant 'el' fins trobar l'individu */
 		if(ic==nchrom-1) {/*precission problem?*/
-			/*printf("%f\n",spotr-elr);*/
 			nlinksr -= spotr-elr;
 			spotr = elr;
 			break;
 		}
-		spotr/*spot*/ -= /*el*/elr;
+		spotr -= elr;
     }
     isr = weightrec[pseg->beg]*r + spotr; 	/* posició dins l'individu ic */
 	is  = localize_positionrec(weightrec,(double)isr,pseg->beg,(pseg+lsgm1)->end,r);
@@ -1834,17 +1815,15 @@ int cinr(int nsam, long int nsites,double *weightrec,double r,long int tr)
     double ran1(void);
 	long int localize_positionrec(double *,double,long int,long int,double);
 
-    spotr = /*(long int)floor*/((double)(/*nlinks*/nlinksr * ran1()));
+    spotr = ((double)(nlinksr * ran1()));
     /* get chromosome number (ic) */
     for(ic=0;ic<nchrom;ic++) { 	/* Busca els valors MÀXIM i MÍNIM de l'individu escollit. (Què nt. segment i individu) */
         lsg = (int)chrom[ic].nseg; /* el nombre de segments a l'individu ic */
         lsgm1 = lsg - 1;/* de fet lsg-1 conté la informació de l'ultim segment */
         pseg = chrom[ic].pseg;/* punter al primer segment de l'individu ic */
-        /*el = ((pseg+lsgm1)->end) - (pseg->beg);*//* mida dels segments (max-min) a l'individu ic*/
 		elr = (weightrec[((pseg+lsgm1)->end)] - weightrec[(pseg->beg)])*r;/* mida de tots els segments (max-min) a l'individu ic*/
         if(spotr <= elr) break;/* anem restant 'el' fins trobar l'individu */
 		if(ic==nchrom-1) {/*precission problem?*/
-			/*printf("%f\n",spotr-elr);*/
 			nlinksr -= spotr-elr;
 			spotr = elr;
 			break;
@@ -1881,11 +1860,6 @@ double functiont_freqp_sel(double x,double tcoal,double tt,double ts,double sini
 	}
 	else fdT = 1E07;
 
-	/*
-	fdT  = ((eps*(double)exp((double)(pop_sel*(tt+(double)x-sinit-(ts))))/pop_sel)+(tt+(double)x)*((double)1-eps))/((double)1-eps);
-	fdT -= ((eps*(double)exp((double)(pop_sel*(tt+(double)0-sinit-(ts))))/pop_sel)+(tt+(double)0)*((double)1-eps))/((double)1-eps);
-	fdT -= tcoal;
-	*/
 	return fdT;
 }
 
@@ -1899,11 +1873,6 @@ double functiont_freqq_nsel(double x,double tcoal,double tt,double ts,double sin
 		fdT = ((eps-(double)1)/pop_sel)/eps *(double)exp((-pop_sel*(tt+(double)x-sinit-(ts))) - (-pop_sel*(tt+(double)0-sinit-(ts)))) + x - tcoal;
 	}
 	else fdT = 1E07;
-	/*
-	fdT  = (((eps-(double)1)*(double)exp((double)(-pop_sel*(tt+(double)x-sinit-(ts))))/pop_sel)+(tt+(double)x)*eps)/eps;
-	fdT -= (((eps-(double)1)*(double)exp((double)(-pop_sel*(tt+(double)0-sinit-(ts))))/pop_sel)+(tt+(double)0)*eps)/eps;
-	fdT -= tcoal;
-	*/
 	return fdT;
 }
 
@@ -2019,16 +1988,13 @@ double correction_rec(double f,double sexratio,int m) /*relative to theta, becau
 	/*I am not sure*/
 		if(f == (double)1.0) {
 			if(m==1) {
-				/*return(4.*sexratio/((1.+sexratio)*(1.+sexratio)));*/
 				return((1.+sexratio)/4.);
 			}
 			else { 
-				/*return((sexratio/(1.+sexratio))/2.);*/
 				return(1.);
 			}
 		}
 		if(f == (double)0.75) {
-			/*return((sexratio/(1.+sexratio))/2.);*/
 			return((2.*sexratio+4)/9.);
 		}
 		if(f == (double)0.25) 
@@ -2038,16 +2004,13 @@ double correction_rec(double f,double sexratio,int m) /*relative to theta, becau
 	#elif SEXRATIOX1 == 1 && SEXRATIOA1 == -1
 		if(f == (double)1.33) {
 			if(m==1) {
-				/*return(4.*sexratio/((1.+sexratio)*(1.+sexratio)));*/
 				return((1.+sexratio)/4.);
 			}
 			else { 
-				/*return((sexratio/(1.+sexratio))/2.);*/
 				return(1.);
 			}
 		}
 		if(f == (double)1.00) {
-			/*return((sexratio/(1.+sexratio))/2.);*/
 			return((2.*sexratio+4)/9.);
 		}
 		if(f == (double)0.33) 
@@ -2058,16 +2021,13 @@ double correction_rec(double f,double sexratio,int m) /*relative to theta, becau
 	/*I am not sure*/
 		if(f == (double)1.33) {
 			if(m==1) {
-				/*return(4.*sexratio/((1.+sexratio)*(1.+sexratio)));*/
 				return((1.+sexratio)/4.);
 			}
 			else { 
-				/*return((sexratio/(1.+sexratio))/2.);*/
 				return(1.);
 			}
 		}
 		if(f == (double)1.00) {
-			/*return((sexratio/(1.+sexratio))/2.);*/
 			return((2.*sexratio+4)/9.);
 		}
 		if(f == (double)0.33) 

@@ -53,7 +53,7 @@ int main (int argc,char *argv[])
     void free_getpars_fix(struct var **, struct var2 **);
     void free_inputdata(struct var **,struct var_priors *,int);
 	int print_matrix_sfixalltheta(struct var **,FILE *,FILE *,struct prob_par **);
-	int print_matrix_rmfix(struct var **,FILE *,FILE * /*,FILE * */,int,struct prob_par **);
+	int print_matrix_rmfix(struct var **,FILE *,FILE *,int,struct prob_par **);
 	int make_priord(struct var_priors *,long int);
 	double ran1(void);
     
@@ -98,11 +98,8 @@ int main (int argc,char *argv[])
     double jc2=0.;
     double mc2=0.;
 	int windows;
-	/**/
 	long int x0,x1;
 	int totalnloci,n,m;
-	/**/
-	/*long int xx;*/
 
 	int a,b,c,d;
 
@@ -152,8 +149,7 @@ int main (int argc,char *argv[])
 #if inMPI == 1
 	if(my_rank == 0) { 
 		/*WARNING: this is open for inMPI == 1!!*/
-#endif		
-		/*if inMPI == 1 && my_rank == 0 or if inMPI == 0*/
+#endif
 		#ifndef __DNASP__
 		puts(MLCOALSIM);
 		#endif
@@ -323,7 +319,6 @@ int main (int argc,char *argv[])
 		#if SHOWPROGRESS == 1
 		#ifndef __DNASP__
 		printf("\n Starting coalescent simulations...");
-		/*printf("\n Warning: in case conditioning for mutation parameter, the first dot may take long time.");*/
 		printf("\n Each dot indicate that aproximately 2%% of the simulation is done.");
 		printf("\n         1    2    3    4    5    6    7    8    9  100%%");
 		printf("\n RUN ");
@@ -340,9 +335,7 @@ int main (int argc,char *argv[])
 	}
 	MPI_Bcast(file_out,400,MPI_CHAR,0,MPI_COMM_WORLD);
 #endif
-	/***************** init seed **********************/
-	/*init_seed1((*data).seed1[1]);*//*it is already defined in input_data()!*/
-	/*********** DEFINING VARIABLES FOR MS **************************************/	
+	/*********** DEFINING VARIABLES FOR MS **************************************/
 	if(!(inputp = (struct var2 *)calloc(1,sizeof(struct var2)))) perror("calloc error.main.0");		
 	getpars_fix(&data,&inputp);
 	/*********** define the number of regions *******************/
@@ -648,12 +641,8 @@ int main (int argc,char *argv[])
 
 		for(x=nppr[my_rank];x<nppr[my_rank+1];x++) {
 			/*change the seed for each loci:*/
-			/*if(x)*/ init_seed1((*data).seed1[x+1]);/*init_seed1((long int)-(21474*x+(*data).seed1));*//*modify seeds. the user has to give the seed for each locus*/
-			getpars_mod(&data,&inputp,x);			
-
-			/*rankprint_inputp(&inputp,my_rank,x);
-			fflush(stdout);*/
-			/*exit(1);*/
+			init_seed1((*data).seed1[x+1]);/*modify seeds. the user has to give the seed for each locus*/
+			getpars_mod(&data,&inputp,x);
 			
 			/*****In case MHMCMC/MCMCRA (inactivated).*******/
 			for(jcount=0;jcount<(*inputp).howmany + (*inputp).mc_jump;jcount++) {
@@ -678,9 +667,9 @@ int main (int argc,char *argv[])
 
 			
 			if((*inputp).Sfix_alltheta == 1) 
-				postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].thetap = postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)/*(*inputp).howmany*/mcount2/(double)jcount2;
+				postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].thetap = postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)mcount2/(double)jcount2;
 			if((*inputp).rmfix == 1) 
-				postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].recp = postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)/*(*inputp).howmany*/mcount2/(double)jcount2;
+				postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].recp = postp[(x-nppr[my_rank])][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)mcount2/(double)jcount2;
 		}
 		free(listnumbers);
 #if inMPI == 1
@@ -757,7 +746,7 @@ int main (int argc,char *argv[])
 				free(nppr);
 				free(niterpr);
 				MPI_Finalize(); /*shut down MPI*/
-				return 0; /*exit(0);*/
+				return 0;
 			}
 			else {
 				/*flag to rank=0 to indicate the process has finished*/
@@ -800,7 +789,7 @@ int main (int argc,char *argv[])
 				free(nppr);
 				free(niterpr);
 				MPI_Finalize(); /*shut down MPI*/
-				return 0; /*exit(0);*/
+				return 0;
 			}
 		}
 #endif
@@ -823,16 +812,7 @@ int main (int argc,char *argv[])
 		
 		x1 = niterpr[my_rank+1]-niterpr[my_rank];
 		for(x0=niterpr[my_rank];x0<niterpr[my_rank+1];x0+=x1) {
-			/*debug*//*
-			printf("\nx0=%ld\tx1=%ld\tmy_rank=%d",niterpr[my_rank],niterpr[my_rank+1],my_rank);
-			fflush(stdout);
-			*/
 			jcount2 = mcount2 = 0;
-			
-			/*rankprint_inputp(&inputp,my_rank,0);*/
-			/*printf("\nmy_rank: %d, x0: %ld",my_rank,x0);*/
-			/*fflush(stdout);*/
-			/*exit(1);*/
 #if BENCHMARK_ENABLED && !inMPI
             add_memory_metric_point(&memory_stats);
 #endif
@@ -851,24 +831,6 @@ int main (int argc,char *argv[])
 #if BENCHMARK_ENABLED && !inMPI
             add_memory_metric_point(&memory_stats);
 #endif
-			/*
-			for(xx=x0;xx<x0+x1;xx++) {
-				printf("\nORIGINAL: %f\t%d",postp[0][xx].thetap,my_rank);
-			}
-			*/
-			/*
-			for(xx=x0;xx<x0+x1;xx++) {
-				if((*inputp).ifgamma == 1 || (*inputp).range_thetant || (*inputp).ifgammar == 1 || (*inputp).range_rnt) {
-					postp[0][listnumbers[xx]].thetap = postp2[0][listnumbers[xx]].thetap;
-					postp[0][listnumbers[xx]].recp = postp2[0][listnumbers[xx]].recp;
-					postp[0][listnumbers[xx]].Ttotp = postp2[0][listnumbers[xx]].Ttotp;
-				}
-				if((*inputp).neutral_tests && matrix_test)
-					for(n=0;n<windows;n++)
-						for(m=0;m<NEUTVALUES2*(*data).max_npop_sampled;m++)
-							matrix_test[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[xx]] = matrix_test2[n*(NEUTVALUES2*(*data).max_npop_sampled)+m][listnumbers[xx]];
-			}
-			*/
 			if((*inputp).Sfix_alltheta == 1 || (*inputp).rmfix == 1) {
 				postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap += (double)mcount2; 
 				postp[0][(*inputp).howmany + (*inputp).mc_jump].recp  += (double)mcount2;
@@ -926,11 +888,6 @@ int main (int argc,char *argv[])
 								}
 								if((*inputp).ifgamma == 1 || (*inputp).range_thetant || (*inputp).ifgammar == 1 || (*inputp).range_rnt) {
 									MPI_Recv(&(postp[0][listnumbers[x0]]),4*x1,MPI_DOUBLE,source,windows*NEUTVALUES2*(*data).max_npop_sampled,MPI_COMM_WORLD,&status);
-									/* 
-									 for(xx=x0;xx<x0+x1;xx++) {
-									 printf("\nRECEIVED: %f\t%d\tx0:%ld\tx1:%ld\txx:%ld",postp[0][xx].thetap,source,x0,x1,xx);
-									 }
-									 */
 									MPI_Recv(&(jc2),1,MPI_DOUBLE,source,windows*NEUTVALUES2*(*data).max_npop_sampled+1,MPI_COMM_WORLD,&status);
 									postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp += jc2;
 									if((*inputp).Sfix_alltheta == 1 || (*inputp).rmfix == 1) {
@@ -943,8 +900,8 @@ int main (int argc,char *argv[])
 								jc2 = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp;
 								if((*inputp).Sfix_alltheta == 1 || (*inputp).rmfix == 1) 
 									mc2 = postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap;
-								postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)/*((*inputp).howmany + (*inputp).mc_jump)*/mc2/(double)jc2;
-								postp[0][(*inputp).howmany + (*inputp).mc_jump].recp = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)/*((*inputp).howmany + (*inputp).mc_jump)*/mc2/(double)jc2;
+								postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)mc2/(double)jc2;
+								postp[0][(*inputp).howmany + (*inputp).mc_jump].recp = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)mc2/(double)jc2;
 							}
 						}
 					}
@@ -1004,11 +961,6 @@ int main (int argc,char *argv[])
 					MPI_Send(&(postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp),1,MPI_DOUBLE,0,windows*NEUTVALUES2*(*data).max_npop_sampled+1,MPI_COMM_WORLD);
 					if((*inputp).Sfix_alltheta == 1 || (*inputp).rmfix == 1)
 						MPI_Send(&(postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap),1,MPI_DOUBLE,0,windows*NEUTVALUES2*(*data).max_npop_sampled+2,MPI_COMM_WORLD);
-					/*
-					for(xx=x0;xx<x0+x1;xx++) {
-						printf("\nSENT: %f\t%d\tx0:%ld\tx1:%ld\txx:%ld",postp[0][xx].thetap,my_rank,x0,x1,xx);
-					}
-					*/
 					
 					/*EXIT of the process 'my_rank'*/
 					for(x=0;x<windows;x++) free(postp[x]);

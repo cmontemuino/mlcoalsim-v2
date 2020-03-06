@@ -67,13 +67,7 @@ double factln(long int x)
 	/*do the log(n!)*/
 	double gammalogn(double);
 	static double factlog[120];
-		
-	/*
-	if(x < 0) { 
-		puts("Error factln");
-		return (double)-10000.;
-	}
-	*/
+
 	if(x == 0) return 0.;
 	
 	if(x < 120) {
@@ -188,22 +182,14 @@ double poissondist(double lambda)
 	if(lambda == (double)0) return (double)0;
 	if(lambda <= (double)20) {
 		/*included for having not biased small values with mhits=0...*/
-		/*if(lambda < 0.25) {
-			r = 1. - lambda;
-			s = ran1();
-			if(s >= r) N = (int)1;
-			else N = (int)0;
-		}
-		else {
-		*/	r = (double)exp(-(double)lambda);
-			N = (int)0;
-			s = (double)1;
-			do {
-				s *= ran1();
-				if(s >= r) N += (int)1;
-				else break;
-			}while(1);
-		/*}*/
+		r = (double)exp(-(double)lambda);
+        N = (int)0;
+        s = (double)1;
+        do {
+            s *= ran1();
+            if(s >= r) N += (int)1;
+            else break;
+        }while(1);
 	}
 	else {
 		beta = (double)PI * (double)1./(double)sqrt((double)3*(double)lambda);
@@ -601,7 +587,7 @@ int make_priord(struct var_priors *priorx,long int niter)
 			}
 			if((*priorx).kind_var == 0) {
 				j = (long int)value;
-				(*priorx).priordist[i] = (double)j/*(double)lround((double)value)*/;
+				(*priorx).priordist[i] = (double)j;
 			}
 			if((*priorx).kind_var == 1) (*priorx).priordist[i] = value;
 		}	
