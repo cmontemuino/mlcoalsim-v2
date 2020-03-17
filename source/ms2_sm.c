@@ -24,6 +24,8 @@
 #include <string.h>
 
 #include "print_helper.h"
+#include "neut_tests.h"
+#include "neutpar_common.h"
 
 #define FACTOR (double)1.5
 /*please, NIT_PRIOR no more than 32000*/
@@ -133,45 +135,19 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     double logp(double);
     double ran1(void);
 	void init_seed1(long int);
-    
-    void init_coef(double *,int);
+
     void calc_neutpar(int,long int,struct var2 **,struct dnapar *,double,int);
     void calc_neutparSRH(int,long int,struct var2 **,struct dnapar *,double,int,int);
-    double tajima_d(double,int, double *);
-    double Fs(int,double,int);
-    double fay_wu(int,int *,double);
-    double fay_wu_normalized2(int,double,double,double,double *,double);
-    double Fst(double,double,int);
     double Zns(int,long int,struct var2 **,int);
     double Zns_window(struct var2 **,long int,long int,int);
     double ZnA_(int,long int,struct var2 **,int);
     double ZnA_window(struct var2 **,long int,long int,int);
-    double testHap(int, int *);
-    double R2(long int *,double,int,int);
-    double Gxi(int ,int *, double);
-    double Gximod(int ,int *, double);
-    double frabs(int ,int *, double);
-    double tajima_dvsdmin(double,int, double *,int);
-	double E_zeng(int,double,double,double,double *);
     double Fstw(double *, int *,double,int);
-    double EWtest(int, int *);
-	double pwh(int,double *);
-    /*canviat per debug*/
-    double estnm(int,int,int *,long int,char **);
-    /*double gst1,gst2;*/
     double logPPoisson2(long int, double);
     double koutg(int,int,int *);
 	double koutgJC(int,int,int *,unsigned long);
 	double fixoutg(int,int,int);
- 	
-	double fl_f_achaz(int,int *,long int);
-	double fl_f2_achaz(int,int *,long int);
-	double fl_d_achaz(int,int *,long int);
-	double fl_d2_achaz(int,int *,long int);
-	double Y_achaz(int,int *,long int);
-	double Y2_achaz(int,int *,long int);
-	
-   
+
     double thetae=0.;
 	double thetaemin=0.;
 	double thetaemax= 0.;
@@ -4788,7 +4764,6 @@ void calc_neutparSRH(int valuep,long int segsit,struct var2 **inputp, struct dna
     int a,b,h,x;
 	long int comb;
     char *hapl=0;
-    int ispolnomhit(long int,int,int,int);	
 	int Min_rec(int,int,int,int,int);
 	
 	if(npopa == (*inputp)->npop) {
@@ -4838,7 +4813,7 @@ void calc_neutparSRH(int valuep,long int segsit,struct var2 **inputp, struct dna
 	nhapl = 0;                
 	for(j=0;j<segsit;j++) {
 		while(j < segsit) {
-			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 			else j++;
 		}            
 		if(j<segsit) {
@@ -4895,7 +4870,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
     long int *hapb = 0;
     long int segsitesm1;
 	int /*pidcount,*/npw;
-	double testHap(int, int *);
 	
 	#if iHStest == 1
 	int *fhap1,*fhap2,*nsam1,*nsam2;
@@ -4913,7 +4887,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 	#endif
 	
 	#if iEtest == 1 || iHStest == 1
-	double testHap(int, int *);
 	long int l;
 	#endif
 
@@ -4925,7 +4898,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
     int a,b,c,d,i,comb2,x; int h=0;
 	long int comb;
     char *hapl;
-    int ispolnomhit(long int,int,int,int);
 	int **veca;
 	
 	#if MAXHAP1
@@ -4941,7 +4913,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 	double *freq1,*freq2,*freq3,*freq4,s,s2,g1,g2,moment;
 	long int z;
 	
-	double raggadeness(long int *,long int,long int);
 	long int *Pwd;
 	long int maxpwd;
 		
@@ -5019,7 +4990,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			   (ntpar)->fhapl[a] = 0;
 			}
 			for(j=0;j<segsit;j++) { /*all valid positions are invariant positions in nsam=1*/
-				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) == 0) (ntpar)->freq[0] += 1;
+				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) == 0) (ntpar)->freq[0] += 1;
 			}		
 			(ntpar)->fhapl[0] = nsam;
 			(ntpar)->maxhapl = nsam;
@@ -5083,14 +5054,14 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
         for(j=0;j<(long int)segsitesm1;) {
             k = j;
             while(k+1 < segsit) { /*calcular k*/
-                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else {
 					k++;
 				}
             }
             j = k+1;
             while(j < segsit) { /*calcular j*/
-                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else j++;
             }
             if(j < segsit) {                
@@ -5183,7 +5154,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
         for(j=0;j<segsit;j++) {
             pi = 0;
             while(j < segsit) {
-                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
                 else {
 					j++;
 					if(h == -2) nmh += 1;
@@ -5352,7 +5323,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				ehhr = (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -5539,7 +5510,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				ehhr =  (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -5754,7 +5725,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			S = 0;
 			for(j=0;j<segsit;j++) {
 				while(j < segsit) {
-					if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+					if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 					else j++;
 				}                    
 				if(j<segsit) {
@@ -5763,7 +5734,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
 							hapl[(a)*segsit+S] = list[a][j];
 						}
-						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
+						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit);
 						piw[h] += (c * ((*inputp)->config[h] - c));
 						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
@@ -5774,8 +5745,8 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					inits2 = inits;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
-						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam)>=0) 
-						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam)>=0))) {
+						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit)>=0)
+						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit)>=0))) {
 							for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 								for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
 									if(list[a][j] != list[b][j]) pib[h]++;
@@ -5789,13 +5760,13 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			for(j=0;j<segsit;j++) {
 				inits1 = 0;
 				for(h=0;h<(*inputp)->pop_outgroup;h++) inits1 += (*inputp)->config[h];
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 &&
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) == 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) == 0) {
 					if(list[inits2][j] == list[inits1][j]) 
 						(ntpar)->freq[0] -= 1;
 				}
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 && 
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) < 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) < 0) {
 					(ntpar)->freq[0] -= 1;
 				}
 			}			
@@ -5923,7 +5894,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		}
 		for(j=0;j<segsit;j++) {
 			while(j < segsit) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<segsit) {					
@@ -6097,7 +6068,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		}
 		for(j=0;j<segsit;j++) {
 			while(j < segsit) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<segsit) {
@@ -6194,8 +6165,7 @@ double Zns(int valuep,long int segsites,struct var2 **inputp,int npopa)
 	int na=0;
 	int nb=0;
     double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-    
+
     if(valuep == 0) {
 		inits = 0;
 		for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -6223,13 +6193,13 @@ double Zns(int valuep,long int segsites,struct var2 **inputp,int npopa)
     comb = 0;
     while(j+1 < (long)segsites) {
         while(j < (long)segsites) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
+            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
             else j++;
         }
         k = j+1;
         while(k < (long)segsites) {
             while(k < (long)segsites) {
-                if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
+                if(ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
                 else k++;
             }
             if(k < (long)segsites) {
@@ -6281,8 +6251,7 @@ double ZnA_(int valuep,long int segsites,struct var2 **inputp,int npopa)
 	int na=0;
 	int nb=0;
     double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-    
+
     if(valuep == 0) {
 		inits = 0;
 		for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -6310,12 +6279,12 @@ double ZnA_(int valuep,long int segsites,struct var2 **inputp,int npopa)
     comb = 0;
     while(j+1 < (long)segsites) {
         while(j < (long)segsites) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
+            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
             else j++;
         }
         k = j+1;
         while(k < (long)segsites) {
-            if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
+            if(ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
             else k++;
         }
         if(k < (long)segsites) {
@@ -6354,40 +6323,6 @@ double ZnA_(int valuep,long int segsites,struct var2 **inputp,int npopa)
     if(comb) ZnA = ZnA/(double)comb;
     else return(-10000.);
     return(ZnA);
-}
-
-int ispolnomhit(long int j,int init, int nsam, int totalsam)
-{
-    int i,h,g;
-    int a0,a1;
-    
-    if(j) if(posit[j-1] == posit[j]) 
-		return(-1);/*estem a la segona mutació o més*/
-    
-	/*mhit, including outgroup*//**/
-    h = g = a1 = 0;
-	a0 = '0';
-    for(i=0;i<totalsam;i++) {
-        if((int)list[i][j] != a0) {
-            if(!a1) a1 = (int)list[i][j];
-            if((int)list[i][j] != a1) 
-				return(-2);
-        }
-    }
-	/**/
-    h = g = a1 = 0;
-	a0 = '0';
-    for(i=init;i<init+nsam;i++) {
-        if((int)list[i][j] == a0) h++;
-        else {
-            if(!a1) a1 = (int)list[i][j];
-            if((int)list[i][j] == a1) g++;
-            else 
-				return(-2);/*en el cas de la primera mutacio hagin almenys tres variants*/
-        }
-    }
-    if(h==nsam || h == 0) return(0); /*invariant intrapop*/
-    return(nsam-h); /*gives the frequency of the variant that is different of '0'*/
 }
 
 double fixoutg(int nsam, int Sout, int freq0)
@@ -6454,7 +6389,6 @@ void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  
     int a,b,h,x;
 	long int comb;
     char *hapl=0;
-    int ispolnomhit(long int,int,int,int);
 	int Min_rec(int,int,int,int,int);
 	
 	if(npopa == (*inputp)->npop) {
@@ -6507,7 +6441,7 @@ void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  
 	nhapl = 0;                
 	for(j=s0;j<s1;j++) {
 		while(j < s1) {
-			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 			else j++;
 		}            
 		if(j<s1) {
@@ -6571,7 +6505,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
     long int j,k;
     int a,b,c,d,i,comb,comb2,x; int h=0;
     char *hapl;
-    int ispolnomhit(long int,int,int,int);
 	int **veca;
 	
 	#if MAXHAP1
@@ -6606,11 +6539,9 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 	#endif
 	
 	#if iEStest == 1 || iHStest == 1
-	double testHap(int, int *);
 	long int l;
 	#endif
 	
-	double raggadeness(long int *,long int,long int);
 	long int *Pwd;
 	long int maxpwd;
 	
@@ -6674,7 +6605,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				(ntpar)->fhapl[a] = 0;
 			}
 			for(j=0;j<segsit;j++) { /*all valid positions are invariant positions in nsam=1*/
-				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) == 0) (ntpar)->freq[0] += 1;
+				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) == 0) (ntpar)->freq[0] += 1;
 			}		
 			(ntpar)->fhapl[0] = nsam;
 			(ntpar)->piw = (double)0;
@@ -6739,14 +6670,14 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
         for(j=s0;j<s1;) {
             k = j;
             while(k+1 < s1) { /*calcular k*/
-                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else {
 					k++;
 				}
             }
             j = k+1;
             while(j < s1) { /*calcular j*/
-                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else j++;
             }
             if(j < s1) {                
@@ -6829,7 +6760,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
         for(j=s0;j<s1;j++) {
             pi = 0;
             while(j < s1) {
-                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
                 else {
 					j++;
 					if(h == -2) nmh += 1;
@@ -7000,7 +6931,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				ehhr =  (long int)1e7;
 				for(j=s0;j<s1;j++) {
 					while(j < s1) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<s1) {
@@ -7185,7 +7116,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				ehhr =  (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -7403,7 +7334,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			S = 0;
 			for(j=s0;j<s1;j++) {
 				while(j < s1) {
-					if((c=ispolnomhit(j,0,nsamallpop,nsamallpop)) > 0) break;
+					if((c=ispolnomhit(j,0,nsamallpop,nsamallpop, list, posit)) > 0) break;
 					else j++;
 				}                    
 				if(j<s1) {
@@ -7412,7 +7343,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
 							hapl[(a)*segsit+S] = list[a][j];
 						}
-						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
+						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit);
 						piw[h] += (c * ((*inputp)->config[h] - c));
 						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
@@ -7423,8 +7354,8 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					inits2 = inits;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
-						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam)>=0) 
-						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam)>=0))) {
+						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit)>=0)
+						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit)>=0))) {
 						   for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 							   for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
 								   if(list[a][j] != list[b][j]) pib[h]++;
@@ -7438,13 +7369,13 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			for(j=0;j<segsit;j++) {
 				inits1 = 0;
 				for(h=0;h<(*inputp)->pop_outgroup;h++) inits1 += (*inputp)->config[h];
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 &&
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) == 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) == 0) {
 					if(list[inits2][j] == list[inits1][j]) 
 						(ntpar)->freq[0] -= 1;
 				}
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 && 
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) < 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) < 0) {
 					(ntpar)->freq[0] -= 1;
 				}
 			}			
@@ -7602,7 +7533,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		
 		for(j=s0;j<s1;j++) {
 			while(j < s1) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<s1) {					
@@ -7750,7 +7681,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		}
 		for(j=s0;j<s1;j++) {
 			while(j < s1) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<s1) {
@@ -7845,8 +7776,7 @@ double Zns_window(struct var2 **inputp, long int s0, long int s1,int npopa)
 	int na=0;
 	int nb=0;
     double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-    
+
     nsam  = (*inputp)->nsam;
 	inits = 0;
 	for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -7863,13 +7793,13 @@ double Zns_window(struct var2 **inputp, long int s0, long int s1,int npopa)
     comb = 0;
     while(j+1 < (long)s1) {
         while(j < (long)s1) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
+            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
             else j++;
         }
         k = j+1;
         while(k < (long)s1) {
             while(k < (long)s1) {
-                if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
+                if(ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
                 else k++;
             }
             if(k < (long)s1) {
@@ -7920,8 +7850,7 @@ double ZnA_window(struct var2 **inputp, long int s0, long int s1,int npopa)
 	int na=0;
 	int nb=0;
     double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-    
+
     nsam  = (*inputp)->nsam;
 	inits = 0;
 	for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -7938,12 +7867,12 @@ double ZnA_window(struct var2 **inputp, long int s0, long int s1,int npopa)
     comb = 0;
     while(j+1 < (long)s1) {
         while(j < (long)s1) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
+            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
             else j++;
         }
         k = j+1;
         while(k < (long)s1) {
-            if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
+            if(ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit) > 0) break;
             else k++;
         }
         if(k < (long)s1) {
@@ -8206,19 +8135,18 @@ int Min_rec(int x, int segsit, int nsam, int inits,int totalsam)
   int a, b, c, e, gtest, flag = 0;
   int h;
   int t11,t12,t21,t22;
-  int ispolnomhit(long int,int,int,int);
-  
+
 	if (segsit<2 || x >= (segsit-1)) return (0);
 	
 	for (a=x+1; a<segsit; ++a) {
 		while(a < segsit) {
-			if((h=ispolnomhit((long int)a,inits,nsam,totalsam)) > 0) break; /*h is the frequency of the new mutation*/
+			if((h=ispolnomhit((long int)a,inits,nsam,totalsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 			else a++;
 		}            
 		if(a < segsit) {
 			for (b=x; b<a; ++b) {
 				while(b < a) {
-					if((h=ispolnomhit((long int)b,inits,nsam,totalsam)) > 0) break; /*h is the frequency of the new mutation*/
+					if((h=ispolnomhit((long int)b,inits,nsam,totalsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 					else b++;
 				}
 				if(b < a) {

@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef MLCOALSIM_PRINT_HELPER_H
 #define MLCOALSIM_PRINT_HELPER_H
 
