@@ -16,7 +16,7 @@ is by setting the environment variable `WITH_MPI`. You just need to provide what
 *Note: what I do is setting the environment variable inside the IDE, so that I do not have problems
 with building the project.* 
 
-## Building
+## How to Build
 
 First we need to build the project. In the following script we are creating a `build` folder in
 the root of this project (which by the way is already git-ignored). Please feel free to
@@ -47,7 +47,7 @@ If you want to generate one executable only, then just reference it when calling
 make -C build mlcoalsimX_ZnS
 ```
 
-## Running the Examples
+## How to Run the Examples
 
 Several examples are provided in the `examples` folder. You can run most of them in the following way:
 
@@ -74,8 +74,56 @@ Other examples you might want to run:
 * `build/mlcoalsimX_ZnS examples/example00/Example1locus_1pop_mhit0_rec100_S20_n100.txt build/Example1locus_1pop_mhit0_rec100_S20_n100.out`
 * `mpirun -np 4 build/mlcoalsimXmpi_ZnS examples/example00/Example1locus_1pop_mhit0_rec100_S20_n100.txt build/Example1locus_1pop_mhit0_rec100_S20_n100.out`
 
+## How to Verify the Results
+
+Source code form this project considerably diverged from the [original mlcoalsimv2][mlcoalsimv2-original]. Therefore, we need to
+verify the results are still valid.
+
+For percentiles files we can directly compare them with the [cmp Linux tool][cmp], but for output files we use the [sha256sum Linux tool][sha256sum].
+Output files can grow very large (in the order of hundreds of megabytes) depending on the .
+
+### Generating the Checksum
+
+We need to massage the output files a bit before creating the SHA256 checksum. More specifically, we need to remove the first 6 lines that contain
+data related to the version of the program, date when the file was created, and the input file. Then we can create the checksum:
+
+**Important Note for Mac OSX users**: I have GNU sed installed and linked to `gsed`. If don't have it installed, then you will need to provide the
+extension for backup files when using the "in-place replacement" feature. See more details [here][sed-macosx-issue].
+
+```shell script
+build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0.txt build/Example1locus_1pop_mhit0A.txt
+pushd build
+gsed -i '1,6d' Example1locus_1pop_mhit0A.txt
+sha256sum Example1locus_1pop_mhit0A.txt | tee ../validation/Example1locus_1pop_mhit0A_SHA256SUMS
+mv Example1locus_1pop_mhit0A_PPercentiles.out ../validation/.
+popd 
+```
+
+### Validate the Output is as Expected
+
+Now we need to generate the outputs with the new executable and perform the verifications:
+
+```shell script
+build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0.txt build/Example1locus_1pop_mhit0A.txt
+pushd build
+gsed -i '1,6d' Example1locus_1pop_mhit0A.txt
+grep Example1locus_1pop_mhit0A.txt ../validation/Example1locus_1pop_mhit0A_SHA256SUMS | tee /dev/fd/2 | sha256sum --check --strict  -
+# 3176b276d45244dbe4f98760b1ca3fdd939e0580bd82198848c495d86471b603  Example1locus_1pop_mhit0A.txt
+# Example1locus_1pop_mhit0A.txt: OK
+
+cmp Example1locus_1pop_mhit0A_PPercentiles.out ../validation/Example1locus_1pop_mhit0A_PPercentiles.out
+# Output should be empty!!!
+popd 
+```
+
+
+
 [clion]: https://www.jetbrains.com/clion/
 [cmake]: https://cmake.org
+[cmp]: https://linux.die.net/man/1/cmp
 [homebrew]: https://brew.sh
 [homebrew-custom-openmpi]: https://github.com/cmontemuino/homebrew-custom
+[mlcoalsimv2-original]: https://github.com/CRAGENOMICA/mlcoalsim-v2
 [openmpi]: https://www.open-mpi.org
+[sed-macosx-issue]: https://stackoverflow.com/questions/4247068/sed-command-with-i-option-failing-on-mac-but-works-on-linux/4247319#4247319
+[sha256sum]: https://linux.die.net/man/1/sha256sum/
