@@ -15,6 +15,11 @@
 /* along with this program; if not, write to the Free Software                      */
 /* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  */
 /************************************************************************************/
+#pragma once
+
+#ifndef MLCOALSIM_MLSP_SM_H
+#define MLCOALSIM_MLSP_SM_H
+
 /*20150705*/
 #define MLCOALSIM "mlcoalsim version 2.0.0 (20200220)\n"
 
@@ -365,3 +370,5 @@ struct events { /*events occured, split, mig and factor_pop changes*/
 	double *mig_rv;/*mi of the rest with the new pop*/
 	double sex_ratio; /*NOW IS FOR ALL POPS*/
 };
+
+#endif //MLCOALSIM_MLSP_SM_H
