@@ -67,6 +67,16 @@ mpirun -np 4 ../build/mlcoalsimXmpi  Example10loci.txt ../../build/Example10loci
 popd
 ```
 
+**Note**
+
+There's a bug in the OpenMPI 4.0.3 (see [here](https://github.com/open-mpi/ompi/issues/7516)). If you're using such version,
+then you will need to do the following first:
+
+```shell script
+export PMIX_MCA_gds=^ds12
+```
+
+
 Other examples you might want to run:
 
 * `build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0_rec100.txt build/Example1locus_1pop_mhit0_rec100.out`
