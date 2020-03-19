@@ -1,1 +1,0 @@
-8d94ff5e7c0d36ce8e998f2d38114ab97532ce24be7de3bf6083ef7a32102d02  1locus_1pop_mhit0_n100_S200A_linkedlocus__rank000.out

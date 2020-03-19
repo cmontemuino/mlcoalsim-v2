@@ -1,1 +1,0 @@
-54eac8c21cdb6774c26db475c7558d7c1dfc28d79a7c802176360839a766ca7d  1locus_1pop_mhit0_obsA_linkedlocus__rank000.out
