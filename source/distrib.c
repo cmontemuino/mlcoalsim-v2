@@ -19,9 +19,10 @@
 #include <math.h>
 #define PI 3.14159265359
 
-#include "mlsp_sm.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "mlsp_sm.h"
+#include "ran1.h"
 
 /*Routines based on Numerical Recipes in C*/
 
@@ -43,19 +44,19 @@ double gammalogn(double zz)
 	static double c6 =  0.000005363820;
 	
 	if(zz <= 0.) {
-		puts("Error gamma");
-		return (double)-10000.;
+		puts("Error gammalogn");
+		return -10000.;
 	}
 	
-	z = (double)zz;
-	h = (double)sqrt(2. * PI);
+	z = zz;
+	h = sqrt(2. * PI);
 	sumc = c0 + c1/(z+1.) - c2/(z+2.) + c3/(z+3.)  - c4/(z+4.) + c5/(z+5.) - c6/(z+6.);
-	logg = (z + 0.5)*(double)log((double)(z + gamma + 0.5)) - (z + gamma + 0.5);
-	loggammaz = log((double)h);
-	loggammaz += logg + log((double)sumc);
-	loggammaz -= log((double)z);
+	logg = (z + 0.5)*log((z + gamma + 0.5)) - (z + gamma + 0.5);
+	loggammaz = log(h);
+	loggammaz += logg + log(sumc);
+	loggammaz -= log(z);
 	
-	return (double)loggammaz;
+	return loggammaz;
 }
 
 double factln(long int x)
@@ -65,19 +66,17 @@ double factln(long int x)
 	
 	/*G(n+1) = n!*/
 	/*do the log(n!)*/
-	double gammalogn(double);
-	static double factlog[120];
 
-	if(x == 0) return 0.;
-	
-	if(x < 120) {
-		if(factlog[x] == (double)0) {
-			factlog[x] = gammalogn((double)x+(double)1.0);
+    if(x == 0) return 0.;
+
+    if(x < 120) {
+        static double factlog[120];
+        if(factlog[x] == 0.) {
+			factlog[x] = gammalogn((double)x + 1.0);
 			return factlog[x];
-		}
-		else return factlog[x];
+		} else return factlog[x];
 	}
-	return (gammalogn((double)x+(double)1.0));
+	return (gammalogn((double) x+ 1.0));
 }
 
 double gammadist(double alfa) 
@@ -86,28 +85,28 @@ double gammadist(double alfa)
 	Cheng anf Feast 1979, Appl. Statist. 28, No. 3, pp. 290-295, and on
 	PSeq-Gen v1.1. Nicholas C. Grassly, Jun Adachi and Andrew Rambaut*/
 	
-	double ran1(void);
 	double rndgamma1 (double);
 	double rand0,rand1,rand2;
 	double a,b,c,d,f,W;
 	
-	if(alfa <= (double)0) {
-		return (double)-10000.0;
+	if(alfa <= 0.) {
+        puts("Error gammadist");
+		return -10000.0;
 	}
-	if(alfa < (double)1) {
+	if(alfa < 1.) {
 		a = rndgamma1(alfa);
 		return a;
 	}
-	if(alfa == (double)1.) return (-(double)log((double)ran1()));
+	if(alfa == 1.) return (-log(ran1()));
 	
-	a = (double)alfa - (double)1.0;
-	b = (alfa - (double)1./((double)6.*(double)alfa))/a;
-	c = (double)2./a;
-	d = c + (double)2.0;
-	f = (double)sqrt((double)alfa);
+	a = alfa - 1.0;
+	b = (alfa - 1./(6.*alfa))/a;
+	c = 2./a;
+	d = c + 2.0;
+	f = sqrt(alfa);
 		
 	do {
-		if(alfa < (double)3) {
+		if(alfa < 3.) {
 			rand1 = ran1();
 			rand2 = ran1();
 		}
@@ -115,12 +114,12 @@ double gammadist(double alfa)
 			do {
 				rand0 = ran1();
 				rand1 = ran1();
-				rand2 = rand1 + (double)1/f * ((double)1-(double)1.86*rand0);
-			}while(rand2 < (double)0 || rand2 > (double)1.0);
+				rand2 = rand1 + 1./f * (1.-1.86*rand0);
+			}while(rand2 < 0. || rand2 > 1.0);
 		}
 		W = b * rand1/rand2;
-		if(c*rand2-d+W+(double)1./W <= (double)0.) break;
-	}while(c*log((double)rand2)-log((double)W)+W-(double)1. >= (double)0.);
+		if(c*rand2-d+W+1./W <= 0.) break;
+	}while(c*log(rand2)-log(W)+W-1. >= 0.);
 	
 	return a*W;
 }
@@ -128,8 +127,6 @@ double gammadist(double alfa)
 /*From PSeq-Gen v1.1. Nicholas C. Grassly, Jun Adachi and Andrew Rambaut */
 double rndgamma1 (double s)
 {
-
-	double ran1(void);
 	double			r, x=0.0, small=1e-37, w;
 	static double	a, p, uf, ss=10.0, d;
 	
@@ -141,7 +138,7 @@ double rndgamma1 (double s)
 		ss = s;
 	}
 	for (;;) {
-		r = (double)ran1();
+		r = ran1();
 		if (r > p) {
 			x = a-log((1.0-r)/(1.0-p));
 			w=a*log(x)-d;
@@ -151,9 +148,9 @@ double rndgamma1 (double s)
 				x = a*pow(r/p,1/s);
 				w=x;
 			}
-			else return ((double)0.0);
+			else return (0.0);
 		}
-		r = (double)ran1();
+		r = ran1();
 		if (1.0-r <= w && r > 0.0)
 			if (r*(w+1.0) >= 1.0 || -log(r) <= w)  
 				continue;
@@ -165,7 +162,6 @@ double rndgamma1 (double s)
 double poissondist(double lambda) 
 {
 	/*Based on Atkinson 1979 Appl. Statist. 28: No. 1, pp, 29-35.*/
-	double ran1(void);	
 	double r,s;
 	int N;
 	
@@ -174,36 +170,36 @@ double poissondist(double lambda)
 	double rand1,rand2;
 	static double c = (double)0.6;
 	
-	if(lambda < (double)0) {
+	if(lambda < 0.) {
 		puts("Error poissondist");
-		return (double)-10000.;
+		return -10000.;
 	}
 	
-	if(lambda == (double)0) return (double)0;
-	if(lambda <= (double)20) {
+	if(lambda == 0.) return 0.;
+	if(lambda <= 20.) {
 		/*included for having not biased small values with mhits=0...*/
-		r = (double)exp(-(double)lambda);
-        N = (int)0;
-        s = (double)1;
+		r = exp(-lambda);
+        N = 0;
+        s = 1.;
         do {
             s *= ran1();
-            if(s >= r) N += (int)1;
+            if(s >= r) N += 1;
             else break;
         }while(1);
 	}
 	else {
-		beta = (double)PI * (double)1./(double)sqrt((double)3*(double)lambda);
+		beta = (double)PI * 1./sqrt(3.*lambda);
 		alfa = beta * (double)lambda;
-		k = (double)log((double)c) - (double)lambda - (double)log((double)beta);
+		k = log(c) - lambda - log(beta);
 		do{
 			rand1 = ran1();
-			X = (alfa-(double)log(((double)1-(double)rand1)/(double)rand1))/beta;
-			if(X >= (double)-0.5) {
-				N = (int)(X + (double)0.5);
+			X = (alfa-log((1.-rand1)/rand1))/beta;
+			if(X >= -0.5) {
+				N = (int)(X + 0.5);
 				rand2 = ran1();
 				if(alfa - beta*X +
-				  (double)log((double)(rand2/(((double)1+(double)exp((double)(alfa-beta*X)))*((double)1+(double)exp((double)(alfa-beta*X)))))) 
-				  <= k + (double)N*(double)log((double)lambda) - (double)factln((long int)N)) 
+				  log((rand2/((1.+exp((alfa-beta*X)))*(1.+exp((alfa-beta*X))))))
+				  <= k + (double)N*log(lambda) - factln((long int)N))
 					break;
 			}
 		}while(1);
@@ -215,8 +211,6 @@ double binomialdist(double pp, int n)
 {
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	Fishman 1979 J. American Statistical Association Vol. 74, No. 366, pp 418-423*/
-	
-	double ran1(void);	
 	double p,np;
 	int N;
 	int nn;
@@ -253,11 +247,11 @@ double binomialdist(double pp, int n)
 	
 	if(n==0) {
 		puts("Error bindist");
-		return (double)-10000.;
+		return -10000.;
 	}
 	if(p==(double)0) {
 		if(pp > 0.5) return (double)n;
-		return (double)0;
+		return 0.;
 	}
 	
 	if(n < 20) {
@@ -309,7 +303,6 @@ double largebinomialdist(double pp, double n)
 	/*Based on Numerical Recipes in C, Press et al. 1992 and on
 	 Fishman 1979 J. American Statistical Association Vol. 74, No. 366, pp 418-423*/
 	
-	double ran1(void);	
 	double p,np;
 	int N;
 	double A,B,C,D,V,s;
@@ -323,11 +316,11 @@ double largebinomialdist(double pp, double n)
 	
 	if(n==0) {
 		puts("Error bindist");
-		return (double)-10000.;
+		return -10000.;
 	}
 	if(p==(double)0) {
 		if(pp > 0.5) return (double)n;
-		return (double)0;
+		return 0.;
 	}
 	
 	if(np < (double)10) {
@@ -468,7 +461,6 @@ int make_priord(struct var_priors *priorx,long int niter)
 	double arg[6];
 	double gammadist(double);
 	double betai(double,double,double);
-	double ran1(void);
 	void init_seed1(long int);
 	
 	double val1;
@@ -491,13 +483,13 @@ int make_priord(struct var_priors *priorx,long int niter)
 		for(i=0;i<niter;i++) {
 			x = 0;
 			while(c!=0 && c!=10 && c!=13) {
-				number[x] = c;
+				number[x] = (char)c;
 				x++;
 				c = getc(read_prior);
 				if(x==99) break;
 			}
 			number[x] = '\0';
-			(*priorx).priordist[i] = (double)atof(number);
+			(*priorx).priordist[i] = strtod(number, NULL);
 			if(c==0 && i<niter-1) perror("Error reading the prior file: not enough values\n");
 			c = getc(read_prior);
 		}
@@ -618,11 +610,11 @@ double gammln(double zz)
 	
 	if(zz <= 0.) {
 		puts("Error gamma");
-		return (double)-10000.;
+		return -10000.;
 	}
 	
 	z = (double)zz;
-	h = (double)sqrt(2. * PI);
+	h = sqrt(2. * PI);
 	sumc = c0 + c1/(z+1.) - c2/(z+2.) + c3/(z+3.)  - c4/(z+4.) + c5/(z+5.) - c6/(z+6.);
 	logg = (z + 0.5)*(double)log((double)(z + gamma + 0.5)) - (z + gamma + 0.5);
 	loggammaz = log((double)h);
@@ -670,7 +662,7 @@ double betacf(double a, double b, double x)
     }
     if(m > MAXIT)  {
 		puts("Error in betacf. MAXIT is too small.");
-		return (double)-10000;
+		return -10000;
 	}
     return h;
 }

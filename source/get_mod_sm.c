@@ -16,15 +16,15 @@
 /* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  */
 /************************************************************************************/
 
-#include "mlsp_sm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "mlsp_sm.h"
+#include "ran1.h"
 
 /* fer una nova estructura que contingui totes les variables en proces */
 void getpars_fix(struct var **data, struct var2 **inputp)
 {    
     int x,y,z,ap;
-    double ran1(void);
 	double tmax;
 
 	(*inputp)->includeEHHrel = (*data)->includeEHHrel;
@@ -141,9 +141,9 @@ void getpars_fix(struct var **data, struct var2 **inputp)
         (*inputp)->same_factorpop = (*data)->same_factorpop;
 		
         if((*inputp)->ran_factorpop == 1) {
-            (*inputp)->factor_pop[0] = (double)1;
+            (*inputp)->factor_pop[0] = 1.;
             for(x=1;x<(*inputp)->npop;x++) {
-                (*inputp)->factor_pop[x] = (double)ran1()*(double)9 + (double)1;
+                (*inputp)->factor_pop[x] = ran1()*(double)9 + (double)1;
                 if((double)ran1() < 0.5) (*inputp)->factor_pop[x] = (double)1/(*inputp)->factor_pop[x];
             }
         }
@@ -734,6 +734,4 @@ void free_getpars_fix(struct var **data, struct var2 **inputp)
 		}
 		free((*inputp)->ancestral_pol);
 	}
-
-    return;
 }

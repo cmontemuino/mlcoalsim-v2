@@ -275,16 +275,16 @@ double fay_wu_normalized(int n,int *fr,double pi) /* Fay and Wu H nomes outgroup
     int i;
     double TL,H,varpiTL,thetaw,an,bn,S;
     
-    if(pi == (double)0.0 || n < 2) return(-10000);
+    if(pi == 0.0 || n < 2) return(-10000);
     
-    TL = thetaw = an = bn = (double)0;
+    TL = thetaw = an = bn = 0.;
 	for(i=1;i<n;i++) {
 		TL += ((double)*(fr+i))*((double)i);
 		thetaw += (double)*(fr+i); 
-		an += (double)1/(double)i;
-		bn += (double)1.0/((double)i*(double)i);
+		an += 1./(double)i;
+		bn += 1.0/((double)i*(double)i);
 	}
-    TL *= (double)1.0/((double)(n-(double)1));
+    TL *= 1.0/((double)(n-(double)1));
     S = thetaw;
 	thetaw = thetaw/an;
 	varpiTL = thetaw * ((double)(n-(double)2))/((double)6*((double)(n-(double)1))) + 
@@ -292,7 +292,7 @@ double fay_wu_normalized(int n,int *fr,double pi) /* Fay and Wu H nomes outgroup
 			  ((double)18*(double)n*(double)n*((double)3*(double)n+(double)2)*(bn+(double)1.0/((double)n*(double)n)) - 
 			  ((double)88*(double)n*(double)n*(double)n + (double)9*(double)n*(double)n - 13*(double)n + (double)6)) ;
 	
-	H = (pi - TL)/(double)sqrt(varpiTL);
+	H = (pi - TL)/sqrt(varpiTL);
 
     return H;
 }

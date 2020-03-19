@@ -63,7 +63,7 @@ For example:
 
 ```shell script
 pushd examples/example10
-mpirun -np 4 ../../build/mlcoalsimXmpi  Example10loci.txt ../../build/Example10loci.out
+mpirun -np 4 ../build/mlcoalsimXmpi  Example10loci.txt ../../build/Example10loci.out
 popd
 ```
 

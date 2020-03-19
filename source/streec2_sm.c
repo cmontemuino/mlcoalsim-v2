@@ -17,6 +17,7 @@
 /*Hudson streec file modified*/
 
 #include "mlsp_sm.h"
+#include "ran1.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -33,11 +34,18 @@
 /*PARAMETER_FREQINIT=2 means the parameter used for the frequency of current selected alleles at past is the SAMPLE     frequency*/
 /*PARAMETER_FREQINIT=1 means the parameter used for the frequency of current selected alleles at past is the POPULATION frequency and not the sampled*/
 
-long int nchrom;
+int ca(int nsam,long int nsites,long int c1, long int c2,double *weightrec,double r,long int tr, struct segl *seglst);
+struct segl * cinr(int nsam, long int nsites,double *weightrec,double r,long int tr, struct segl *seglst, long *out_ic);
+struct segl * cleftr(int nsam,double *weightrec,long int nsites,double r, struct segl *seglst, long *out_ic);
+void pick2_chrom(long int pop,long int *config,long int *pc1,long int *pc2);
+struct segl * re(int nsam,double *weightrec,long int nsites, double r, struct segl *seglst, long *out_ic);
+struct segl * xover(int nsam, long ic, long int is, double *weightrec, long int nsites, double r, struct segl *seglst);
+
+long int nchrom; // initially set to `nsam`. It is increased by 1 in `xover`and decreased by 1 in `ca`
+
 long int begs;
 long int nsegs;
 long int nlinks;
-static long int *nnodes = NULL;
 double t, cleft,pc,lnpc;
 
 long int total_nts,sel_nts_glob,new_chrom;	/*in case selection*/
@@ -56,24 +64,14 @@ struct seg {
     int desc;
 };
 struct chromo {
-    long int nseg;
+    long int nseg; // number of segments of the chromosome
     long int pop;
-    struct seg *pseg;
+    struct seg *pseg; // pointer to the first segment of the chromosome
 };
 static struct chromo *chrom = NULL;
-/*Els arbres estan fets en nodes (contenen el temps de coalescencia i el nombre del node amb el que conecta per dalt)*/
-/*tambe tenim els segments-length que contenen l'inici nt(eg 10-500, es 10) del segment, la direccio al nodes (arbre) al qual esta conectat, i el nombre del següent segment (eg seria el segment que conte des del 501). Hi ha un segl per cada fragment produit per recombinacio que te un arbre associat.*/
-struct node {
-    int abv;
-    int ndes;
-    double time;
-} *ptree1,*ptree2;
-struct segl {
-    long int beg;
-    struct node *ptree;
-    long int next;
-};
-static struct segl *seglst = NULL;
+static long int *nnodes = NULL;
+
+struct node *ptree1,*ptree2;
 
 /* El resultat és la matriu de segments-length, que té associat tots els arbres per a cada segment. */
 /* Les matrius chrom i pseg només són neccesàries per fer la coalescència, però després ja no són necessàries. */
@@ -109,13 +107,12 @@ static struct segl *seglst = NULL;
 **************************************************************************/
 
 struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,double r,double f,double track_len,
-    double mig_rate,long int *pnsegs,long int iteration,
-    double *factor,int ifselection, 
-    double pop_sel, double sinit,double pop_size,long int sel_nt,int *all_sel,int *selnsam,
-    int *nintn,double **nrec,double **npast, double **tpast,
-    int split_pop, double time_split, double time_scoal, double factor_anc, double *freq,
-    double tlimit,int iflogistic,double *Tts,double factor_chrn,double *weightrec, double **migrate_matrix,int my_rank,
-	int npop_events,struct events *pop_event,int event_forsexratio,double event_sexratio,double sex_ratio,int no_rec_males, double sendt, double sfreqend,double sfreqinit)
+                        double mig_rate,long int *pnsegs,long int iteration, double *factor,int ifselection, double pop_sel, double sinit,
+                        double pop_size,long int sel_nt,int *all_sel,int *selnsam, int *nintn,double **nrec,double **npast, double **tpast,
+                        int split_pop, double time_split, double time_scoal, double factor_anc, double *freq, double tlimit,int iflogistic,
+                        double *Tts,double factor_chrn,double *weightrec, double **migrate_matrix,int my_rank, int npop_events,
+                        struct events *pop_event,int event_forsexratio, double event_sexratio, double sex_ratio, int no_rec_males,
+                        double sendt, double sfreqend,double sfreqinit)
 {
     long int j,dec,c1,c2,ind,rchrom;
     long int migrant,*config;
@@ -124,11 +121,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
     double trm,ttemp,rft,clefta;
 	double tcoal = 0.;
     double prec,cin,prect,mig,ran,coal_prob,rdum; 
-    int re(int,double *,long int,double),ca(int,long int,long int,long int,double *,double,long int);
-    void pick2_chrom(long int,long int *,long int *,long int *);/*modificat a long int*/
-    int cinr(int,long int,double *,double,long int),cleftr(int,double *,long int,double); 
 
-    double ran1(void);
     double binomialdist(double,int);
 	double largebinomialdist(double,double);
     
@@ -155,10 +148,10 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 	
     double poissondist(double xm); /*finding the time xdt reach to eps (before the deterministic selective event starts)*/
 	
-	static double *nref=NULL;
-	static double *alphag;
-	static double *Ts;
-	static int *intn;
+	double *nref=NULL;
+	double *alphag;
+	double *Ts;
+	int *intn;
 	double tpop;
 	int coalpop,flagintn;
 	
@@ -227,15 +220,17 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
         if((chrom = (struct chromo *)malloc((unsigned)(maxchr*sizeof(struct chromo)))) == NULL)
             perror("malloc error. segtre_mig.1");
     }
+
     if(nnodes == NULL) {
         if((nnodes = (long int *)malloc((unsigned)(seglimit*sizeof(long int)))) == NULL)
             perror("malloc error. segtre_mig.2");
     }
+
+    struct segl *seglst = NULL;
     if(seglst == NULL) {
         if((seglst = (struct segl *)malloc((unsigned)(seglimit*sizeof(struct segl)))) == NULL)
             perror("malloc error. segtre_mig.3");
     }
-    
 	
 	if(nref == NULL) {
 		if((intn = (int *)malloc((unsigned)(npop*sizeof(int)))) == NULL)
@@ -511,41 +506,36 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 						if(((prect+mig ) > (double)0) && (trm < tcoal)) {
 							if((ran = (double)ran1()) < (prec/(prect + mig))) {
 								/* recombination */
-								rchrom = re(nsam,weightrec,nsites,r);	/* rchrom és l'individu a on té lloc la recombinació */		
+								seglst = re(nsam,weightrec,nsites,r, seglst, &rchrom);	/* rchrom és l'individu a on té lloc la recombinació */
 								config[chrom[rchrom].pop] += 1;  /* aumenta 1 la població on pertany l'individu */
 							}
 							else {
 								/**/
 								if(ran  < ((prec + clefta)/(prect + mig))) {
 									/* cleft event*/
-									rchrom = cleftr(nsam,weightrec,nsites,r);
+                                    seglst = cleftr(nsam,weightrec,nsites,r, seglst, &rchrom);
 									config[chrom[rchrom].pop] += 1;
 								}
 								else {
 									if(ran < (prect/(prect + mig))) {
 										/* cin event*/
-										rchrom = cinr(nsam,nsites,weightrec,r,tr);
+                                        seglst = cinr(nsam,nsites,weightrec,r,tr, seglst, &rchrom);
 										if(rchrom >= 0) config[chrom[rchrom].pop] += 1;
 									}
-									else /*if (ran < ((prect + mig)/(prect + mig)))*/{
+									else {
 										/* migration event */
-										/*
-										migrant = (int)((double)nchrom*ran1());
-										while((source_pop = (int)((double)npop*ran1())) == chrom[migrant].pop);
-										*//*new code*/
 										migran = mig*ran1();
 										migsum = 0.;
 										a = b = 0;
-										migppop = config[a] * migm[a][b] /* * factpop[b] weighting for the popsize of the source?NO*/;
+										migppop = (double)config[a] * migm[a][b] /* * factpop[b] weighting for the popsize of the source?NO*/;
 										while(migsum + migppop < migran) {
 											migsum += migppop;
 											b++;
 											if(b==npop) {
 												b=0;
 												a++;
-												/*if(a==npop) break;*//*error*/
 											}
-											migppop = config[a] * migm[a][b] /* * factpop[b] weighting for the popsize of the source?NO*/;
+											migppop = (double)config[a] * migm[a][b] /* * factpop[b] weighting for the popsize of the source?NO*/;
 										}
 										migppop = migm[a][b];
 										for(j=0;j<nchrom;j++) {
@@ -556,7 +546,6 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 										}
 										migrant = j;
 										source_pop = b;
-										/*end new code*/
 										config[chrom[migrant].pop] -= 1;
 										config[source_pop] += 1;
 										chrom[migrant].pop = source_pop;
@@ -564,20 +553,15 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 								}
 							}
 						}
-						else /*if(((prect+mig) > 0.0 && tcoal <= trm) || (prect+mig) == 0.0)*/ {
+						else {
 							/* coalescent event */
 							/* pick the two, c1, c2 */						
 							pick2_chrom(coalpop,config,&c1,&c2);	/* escull c1 i c2 */
-							/*printf("\nmy_rank: %d,nchrom: %ld,c1: %d,c2: %d,begs: %ld,nsegs: %ld,nlinks: %ld,*nnodes; %ld,t: %f,nlinksr: %f,total_ntsr: %f,nsam %d,nsites: %ld,r :%f,weightrec: %p",my_rank,nchrom,c1,c2,begs,nsegs,nlinks,*nnodes,t,nlinksr,total_ntsr,nsam,nsites,r,weightrec);
-							fflush(stdout);*/
-							dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);	/* dec és el nombre de fragments a restar */
+							dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);	/* dec és el nombre de fragments a restar */
 							config[coalpop] = config[coalpop] - dec;			/* si hi ha MRCA aleshores és més d'un */
 						}/*coal event*/
 					}/*event*/
 				}/*en cas chrom > 1*/
-				/*printf("\nmy_rank:%d. Exit streec2_sm. nchrom:%ld",my_rank,nchrom);
-				fflush(stdout);
-				exit(1);*/
 				for(a=0;a<npop;a++) free(migm[a]);
 				free(migm);
 				free(factpop);
@@ -637,20 +621,20 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 						if(t<time_split || t>=time_scoal) mig = 0.;
 						else mig = nchrom * mig_rate;	/* prob. migració. Cada ind. té una probabilitat de migrar */
 						
-						if(prect+mig > (double)0) {
-							while((rdum = (double)ran1()) == (double)1.0);	
-							trm = -(double)log((double)1.0-(double)rdum)/(prect+mig);	
+						if(prect+mig > 0.) {
+							while((rdum = ran1()) == 1.0);
+							trm = -log(1.0 - rdum)/(prect+mig);
 						}
 						
-						if((prect) > (double)0) ttemp = ((trm < tcoal) ? trm : tcoal);
+						if(prect > 0.) ttemp = ((trm < tcoal) ? trm : tcoal);
 						else ttemp = tcoal;
 						if((t < time_split) && (t+ttemp >= time_split)) {
 							t = time_split /*+1E-17*//*precission error*/;
 							/* From one to npop pops */
 							for(j=0;j<nchrom;j++) {
-								if((double)ran1() <= ((double)1.0/*sumfreq*/ - freq[0])) {
-									pip = (double)ran1()*((double)1.0/*sumfreq*/ - freq[0]);
-									spip = (double)0;
+								if(ran1() <= (1.0/*sumfreq*/ - freq[0])) {
+									pip = ran1()*(1.0/*sumfreq*/ - freq[0]);
+									spip = 0.;
 									for(pop=1;pop<npop;pop++)
 										if((spip += freq[pop]) > pip) break;
 									chrom[j].pop = pop;
@@ -670,28 +654,28 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 							else {
 								t += ttemp;
 															
-								if(((prect+mig) > (double)0) && (trm < tcoal)) {
-									if((ran = (double)ran1()) < (prect/(prect + mig))) {
+								if((prect+mig > 0.) && (trm < tcoal)) {
+									if((ran = ran1()) < (prect/(prect + mig))) {
 										/* recombination */
-										rchrom = re(nsam,weightrec,nsites,r);		
+										seglst = re(nsam,weightrec,nsites,r, seglst, &rchrom);
 										config[chrom[rchrom].pop] += 1;
 									}
 									else {
 										if(ran  < ((prec + clefta)/(prect + mig))) {
 											/* cleft event*/
-											rchrom = cleftr(nsam,weightrec,nsites,r);
+                                            seglst = cleftr(nsam,weightrec,nsites,r, seglst, &rchrom);
 											config[chrom[rchrom].pop] += 1;
 										}
 										else {
 											if(ran < (prect/(prect + mig))) {
 												/* cin event*/
-												rchrom = cinr(nsam,nsites,weightrec,r,tr);
+                                                seglst = cinr(nsam,nsites,weightrec,r,tr, seglst, &rchrom);
 												if(rchrom >= 0) config[chrom[rchrom].pop] += 1;
 											}
 											else {
 												/* migration event */
 												migrant = (int)((double)nchrom*ran1());
-												while((source_pop = (int)(npop*ran1())) == chrom[migrant].pop);
+												while((source_pop = (int)((double)npop*ran1())) == chrom[migrant].pop);
 												config[chrom[migrant].pop] -= 1;
 												config[source_pop] += 1;
 												chrom[migrant].pop = source_pop;
@@ -703,7 +687,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 									/* coalescent event */
 									/* pick the two, c1, c2 */
 									pick2_chrom(coalpop,config,&c1,&c2);
-									dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);
+									dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
 									config[coalpop] -= dec;
 								}
 							}
@@ -882,7 +866,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 							if(((prect) > (double)0) && (trm < tcoal)) {
 								#if SELECTION_RECW_ALLOWED
 								/* recombination */
-								rchrom = re(nsam,weightrec,nsites,r);		
+								seglst = re(nsam,weightrec,nsites,r, seglst, &rchrom);
 								config[chrom[rchrom].pop] += 1;
 								#endif
 							}
@@ -892,7 +876,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 								else pop = 0;
 								/* pick the two, c1, c2 */
 								pick2_chrom(pop,config,&c1,&c2);	
-								dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);		
+								dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
 								config[pop] -= dec;
 							}
 						}
@@ -961,7 +945,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 									while((rdum = (double)ran1()) == 1.0);
 									if(rdum < (double)/*nlinks*/nlinksr/(double)/*total_nts*/total_ntsr) { /*recombination is only effective within nlinks*/
 										#if SELECTION_RECW_ALLOWED
-										rchrom = re(nsam,weightrec,nsites,r);
+										seglst = re(nsam,weightrec,nsites,r, seglst, &rchrom);
 										while((rdum = (double)ran1()) == 1.0);
 										rdum = freqend+rdum*((double)1-(double)eps-freqend);/*rdum goes from freqend to 1-eps*/
 										if(rdum < xdt) chrom[new_chrom].pop = 0;
@@ -988,7 +972,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 									else pop = 1; 
 									/* pick the two, c1, c2 */
 									pick2_chrom(pop,config,&c1,&c2);	
-									dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);	
+									dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
 									config[pop] -= dec;
 								}
 							}
@@ -999,7 +983,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
                             if(xdt <= eps) {
                                 while(config[0] > 1) {
                                     pick2_chrom(pop=0,config,&c1,&c2);
-                                    dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);	
+                                    dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
                                     config[pop] -= dec;
                                     t += 1E-17;
                                 }
@@ -1087,7 +1071,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 							if(((prect) > (double)0) && (trm < tcoal)) {
 								#if SELECTION_RECW_ALLOWED
 								/* recombination */
-								rchrom = re(nsam,weightrec,nsites,r);		
+								seglst = re(nsam,weightrec,nsites,r, seglst, &rchrom);
 								config[chrom[rchrom].pop] += 1;
 								#endif
 							}
@@ -1097,7 +1081,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 								else pop = 0;
 								/* pick the two, c1, c2 */
 								pick2_chrom(pop,config,&c1,&c2);	
-								dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);		
+								dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
 								config[pop] -= dec;
 							}
 						}
@@ -1158,13 +1142,13 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
                         /*do all coalescences at the same time?*/
                         ttemp = ttemp/(config[0]-1);
                         t += ttemp;
-                        while((ran = (double)ran1()) == 1.0);
+                        while((ran = ran1()) == 1.0);
                         prob = coal_prob0/coal_prob;
                         if(ran < prob) pop = 0;
                         else pop = 1;
                         /* pick the two, c1, c2 */
                         pick2_chrom(pop,config,&c1,&c2);
-                        dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);	
+                        dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
                         config[pop] -= dec;
                         #if PRINT_TRACE_SELECTION == 1
                             fprintf(filexdt,"\n%.7f\t%f\t%ld\t%ld",t,xdt,config[0],config[1]);
@@ -1201,26 +1185,26 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 					}
 					if(flagintn == 0) {/*no change in Ne*/
 						t += ttemp;
-						if((rdum = (double)ran1()) < (coal_prob + rec_prob)) { /*then we have one event, otherwise nothing*/
-							if((rdum = (double)ran1()) >= coal_prob/(coal_prob + rec_prob)) {/*rec or coal?*/
+						if((rdum = ran1()) < (coal_prob + rec_prob)) { /*then we have one event, otherwise nothing*/
+							if((rdum = ran1()) >= coal_prob/(coal_prob + rec_prob)) {/*rec or coal?*/
 								/* recombination */
-								while((rdum = (double)ran1()) == 1.0);
-								if(rdum < (double)/*nlinks*/nlinksr/(double)/*total_nts*/total_ntsr) { /*recombination is only effective within nlinks*/
+								while((rdum = ran1()) == 1.0);
+								if(rdum < nlinksr/total_ntsr) { /*recombination is only effective within nlinks*/
 									#if SELECTION_RECW_ALLOWED
-									rchrom = re(nsam,weightrec,nsites,r);
-									while((rdum = (double)ran1()) == 1.0);
-									rdum = freqend+rdum*((double)1-(double)eps-freqend);/*rdum goes from freqend to 1-eps*/
+									seglst = re(nsam,weightrec,nsites,r, seglst, &rchrom);
+									while((rdum = ran1()) == 1.0);
+									rdum = freqend+rdum*(1. - eps - freqend);/*rdum goes from freqend to 1-eps*/
 									if(rdum < xdt) chrom[new_chrom].pop = 0;
 									else chrom[new_chrom].pop = 1;
 									config[chrom[new_chrom].pop] += 1;
 									#endif
 								}
 								else {/*recombination in one chrom outside studied region.We do changes only some times.Slow*/
-									while((rdum = (double)ran1()) == 1.0);
-									new_chrom = (long int)(rdum * nchrom);	/*find the chrom*/
+									while((rdum = ran1()) == 1.0);
+									new_chrom = (long int)(rdum * (double)nchrom);	/*find the chrom*/
 									config[chrom[new_chrom].pop] -= 1;/*we check the pop. We erase that from the former pop*/
-									while((rdum = (double)ran1()) == 1.0);
-									rdum = freqend+rdum*((double)1-(double)eps-freqend);/*rdum goes from freqend to 1-eps*/
+									while((rdum = ran1()) == 1.0);
+									rdum = freqend+rdum*(1. - eps - freqend);/*rdum goes from freqend to 1-eps*/
 									if(rdum < xdt) chrom[new_chrom].pop = 0;
 									else chrom[new_chrom].pop = 1;
 									config[chrom[new_chrom].pop] += 1;
@@ -1228,14 +1212,13 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 								}
 							}
 							else { /*coalescent*/
-								while((ran = (double)ran1()) == 1.0);
-								/*prob = (ttemp*((double)config[0])*(config[0]-(double)1)*factor_chrnall/xdt)/coal_prob;*/
+								while((ran = ran1()) == 1.0);
 								prob = coal_prob0/coal_prob;
 								if(ran < prob) pop = 0;
 								else pop = 1; 
 								/* pick the two, c1, c2 */
 								pick2_chrom(pop,config,&c1,&c2);	
-								dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);	
+								dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
 								config[pop] -= dec;
 							}
 						}
@@ -1367,7 +1350,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
                         if(t+ttemp >= sinit + (pop_sel*(ts)+(double)log((double)((1.-freqend-eps+eps*eps)/(eps*eps))))/(pop_sel)) {
                             while(config[0] > 1) {
                                 pick2_chrom(pop=0,config,&c1,&c2);
-                                dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);
+                                dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
                                 config[pop] -= dec;
                                 t += 1E-17;
                             }
@@ -1389,12 +1372,12 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 					
 					if(ttemp == trm){
 						/* recombination */
-						while((rdum = (double)ran1()) == 1.0);
+						while((rdum = ran1()) == 1.0);
 						if(rdum < (double)/*nlinks*/nlinksr/(double)/*total_nts*/total_ntsr || (t < sinit + ts || t >= sinit + tf)) { 
 							/*recombination is only effective within nlinks*/
 							#if SELECTION_RECW_ALLOWED
-							rchrom = re(nsam,weightrec,nsites,r);
-							while((rdum = (double)ran1()) == 1.0);
+							seglst = re(nsam,weightrec,nsites,r, seglst, &rchrom);
+							while((rdum = ran1()) == 1.0);
 							rdum = freqend+rdum*((double)1-(double)eps-freqend);/*rdum goes from freqend to 1-eps*/
 							if(rdum < xdt) chrom[new_chrom].pop = 0;
 							else chrom[new_chrom].pop = 1;
@@ -1402,11 +1385,11 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 							#endif
 						}
 						else {/*recombination in one chrom outside studied region.We do changes only some times.Slow*/
-							while((rdum = (double)ran1()) == 1.0);
+							while((rdum = ran1()) == 1.0);
 							new_chrom = (long int)((double)rdum * (double)nchrom);	/*find the chrom*/
 							config[chrom[new_chrom].pop] -= 1;/*we check the pop. We erase that from the former pop*/
-							while((rdum = (double)ran1()) == 1.0);
-							rdum = freqend+rdum*((double)1-(double)eps-freqend);/*rdum goes from freqend to 1-eps*/
+							while((rdum = ran1()) == 1.0);
+							rdum = freqend+rdum*(1.-(double)eps-freqend);/*rdum goes from freqend to 1-eps*/
 							if(rdum < xdt) chrom[new_chrom].pop = 0;
 							else chrom[new_chrom].pop = 1;
 							config[chrom[new_chrom].pop] += 1;
@@ -1417,7 +1400,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 						pop = ((tcoal0 < tcoal1) ? 0 : 1);
 						/* pick the two, c1, c2 */
 						pick2_chrom(pop,config,&c1,&c2);	
-						dec = ca(nsam,nsites,c1,c2,weightrec,r,tr);	
+						dec = ca(nsam,nsites,c1,c2,weightrec,r,tr, seglst);
 						config[pop] -= dec;
 					}
 				}
@@ -1443,81 +1426,76 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 }
 /*************************************************** Hudson routine *******************************************/
 /* recombination */
-int re(int nsam,double *weightrec,long int nsites,double r)
+struct segl * re(int nsam,double *weightrec,long int nsites, double r, struct segl * seglst, long *out_ic)
 {
-    struct seg *pseg=0;
-    long int /*el,spot,*/is;
-    int lsg,ic;
-	int lsgm1=0;
-	double ran;
-	double elr,isr,spotr;
-    
-    double ran1(void);
-    void xover(int,int,long int,double *,long int,double);
-	long int localize_positionrec(double *,double,long int,long int,double);
-    
+    struct seg *pseg;
+    long is, lsg, lsgm1;
+    long ic;
+    double elr,isr,spotr;
+
+    long int localize_positionrec(double *categories,double valuer,long int start,long int end,double r);
+
     /* First generate a random x-over spot, then locate it as to chrom and seg */
-    ran = (double)ran1();
-	spotr/*spot*/ = /*(long int)floor*/((double)/*nlinks*/nlinksr * (double)ran);
-	/* get chromosome number (ic) */
+    spotr = nlinksr * ran1();
+    /* get chromosome number (ic) */
     for(ic=0;ic<nchrom;ic++) { 	/* Busca els valors MÀXIM i MÍNIM de l'individu escollit. (Què nt. segment i individu) */
-        lsg = (int)chrom[ic].nseg;	/* el nombre de segments a l'individu ic */
+        lsg = chrom[ic].nseg;	/* el nombre de segments a l'individu ic */
         lsgm1 = lsg - 1;	/* de fet lsg-1 conté la informació de l'ultim segment */
         pseg = chrom[ic].pseg;	/* punter al primer segment de l'individu ic */
-		elr = (weightrec[((pseg+lsgm1)->end)] - weightrec[(pseg->beg)])*r;/* mida del segments (max-min) a l'individu ic*/
-        if(spotr <= /*el*/elr) break; 	/* anem restant 'el' fins trobar l'individu */
-		if(ic==nchrom-1) {/*precission problem?*/
-			nlinksr -= spotr-elr;
-			spotr = elr;
-			break;
-		}
-		spotr -= elr;
+        elr = (weightrec[((pseg+lsgm1)->end)] - weightrec[(pseg->beg)])*r;/* mida del segments (max-min) a l'individu ic*/
+        if(spotr <= elr) break; 	/* anem restant 'el' fins trobar l'individu */
+        if(ic==nchrom-1) {/*precission problem?*/
+            nlinksr -= spotr-elr;
+            spotr = elr;
+            break;
+        }
+        spotr -= elr;
     }
+
     isr = weightrec[pseg->beg]*r + spotr; 	/* posició dins l'individu ic */
-	is  = localize_positionrec(weightrec,(double)isr,pseg->beg,(pseg+lsgm1)->end,r);
-    xover(nsam,ic,is,weightrec,nsites,r);
-    return(ic);
+    is  = localize_positionrec(weightrec,isr,pseg->beg,(pseg+lsgm1)->end,r);
+    *out_ic = ic;
+    return xover(nsam, ic, is, weightrec, nsites, r, seglst);
 }
 
-void xover(int nsam,int ic,long int is,double *weightrec,long int nsites,double r)
+// ic: the chromosome position in chrom
+struct segl * xover(int nsam, long ic, long int is, double *weightrec, long int nsites, double r, struct segl *seglst)
 {
     struct seg *pseg,*pseg2;
     long int i,lsg,lsgm1,newsg,jseg,k,in;
     double len,lenr;
-    double ran(void);
-    
+
     pseg = chrom[ic].pseg;	/* punter al primer segment de l'individu ic */
     lsg  = chrom[ic].nseg;	/* nombre de segments de ic */
-    len  = (double)(pseg + lsg-1)->end - (double)pseg->beg;	/* max-min de l'individu ic */
-	lenr = ((double)weightrec[(pseg + lsg-1)->end] - (double)weightrec[pseg->beg])*r;	/* weighted max-min de l'individu ic */
+    len  = (double)((pseg + lsg-1)->end - pseg->beg);	/* max-min de l'individu ic */
+    lenr = (weightrec[(pseg + lsg-1)->end] - weightrec[pseg->beg])*r;	/* weighted max-min de l'individu ic */
 
-    cleft -= (double)1 - (double)pow(pc,/*len*/lenr);    /* per conversió */
-	if(cleft < 0.) cleft = 0.;
+    cleft -= 1.0 - pow(pc, lenr);    /* per conversió */
+    if(cleft < 0.) cleft = 0.;
     /* get segment number (jseg)*/
     for(jseg=0;is >= (pseg+jseg)->end;jseg++);	/* Busca el segment a on es troba la recombinació */
     if(is >= (pseg+jseg)->beg) in = (long int)1;		/* mira si la recombinació es troba entre els segments o dins el segment */
     else in = (long int)0;				/* in=0 entre segments, separació d'individus, pero no es fa un nou arbre */
     newsg = lsg - jseg; 			/* Això indica el desplaçament dels fragments de l'individu */
-    
     /* copy LAST part of chrom to nchrom */
     nchrom++; 					/* fem un individu més, variable externa, val per tot el fitxer */
-    if((long int)nchrom >= (long int)maxchr) {
+    if(nchrom >= maxchr) {
         maxchr += 50;				/* afegeix 50 independent individus cada vegada que hem d'ampliar */
-        if(!(chrom = (struct chromo *)realloc(chrom,(long int)(maxchr*sizeof(struct chromo)))))
+        if(!(chrom = realloc(chrom,maxchr*sizeof(struct chromo))))
             perror("realloc error. xover.1");
     }
-    if(!(pseg2 = chrom[nchrom-1].pseg = (struct seg *)calloc((unsigned)newsg,sizeof(struct seg))))/* pseg2 apunta a chrom */
+
+    if(!(pseg2 = chrom[nchrom-1].pseg = calloc(newsg, sizeof(struct seg))))/* pseg2 apunta a chrom */
         perror("calloc error. xover.2");	/* pseg2 apunta a chrom[nchrom-1].pseg. Són newsg segments nous */
-    chrom[nchrom-1].nseg = newsg; 		/* el nou individu te newsg segments, els de la dreta */	
+
+    chrom[nchrom-1].nseg = newsg; 		/* el nou individu te newsg segments, els de la dreta */
     chrom[nchrom-1].pop = chrom[ic].pop;	/* la mateixa població de la qual prové, es clar *//*pero no en cas de seleccio*/
     pseg2->end = (pseg+jseg)->end;		/* el primer segment pseg2->end apunta a final del segment de jseg, ok */
-    
     if(in) {					/* només al cas que haguem de fer nous arbres */
         pseg2->beg = is + (long int)1;			/* pseg2->beg és a on hi ha hagut la rec. + 1 */
         (pseg+jseg)->end = is;			/* aleshores (pseg+jseg) acaba a is, el punt de rec., clar */
     }
     else pseg2->beg = (pseg+jseg)->beg;		/* si no es fan nous arbres, l'inici de pseg2 és a l'inici del segment */
-    
     pseg2->desc = (pseg+jseg)->desc;		/* el nombre del desc és el mateix que el de pseg+jseg. */
     for(k=1;k<newsg;k++) {
         (pseg2+k)->beg = (pseg+jseg+k)->beg;	/* creant tots els segments per la dreta del nou individu */
@@ -1526,80 +1504,85 @@ void xover(int nsam,int ic,long int is,double *weightrec,long int nsites,double 
     }
     lsg = chrom[ic].nseg = lsg - newsg + in;	/* el nombre de segments de ic és jseg més in (1 o 0) */
     lsgm1 = lsg - 1;				/* l'últim fragment és lsgm1 */
-    nlinksr/*nlinks*/ -= (weightrec[pseg2->beg] - weightrec[(pseg+lsgm1)->end])*r;
-	if(nlinksr < (double)1E-07)nlinksr =(double)0;
-    /* posicions a recombinar: restem el principi d'un segment amb el final de l'altre: normalment resta només un nt. pero 
+    nlinksr -= (weightrec[pseg2->beg] - weightrec[(pseg+lsgm1)->end])*r;
+    if(nlinksr < (double)1E-07)nlinksr =0.0;
+    /* posicions a recombinar: restem el principi d'un segment amb el final de l'altre: normalment resta només un nt. pero
     els max i min canvien depenent dels segments, aixi que es poden restar molts més nt. si cau entre segments */
-    
-     /*in case SELECTION*/
-	if(ifsel_glob) {
-        total_ntsr/*total_nts*/ -= (weightrec[(long int)pseg2->beg] - weightrec[(long int)(pseg+lsgm1)->end])*r;/*restem entre zones recombinants*/
-        if(sel_nts_glob > (long int)(pseg+lsgm1)->end) {
-			if(sel_nts_glob >= (long int)nsites) {
-				total_ntsr += (weightrec[nsites-1] - weightrec[(pseg+lsgm1)->end])*r;
-				total_ntsr += (double)((sel_nts_glob-1) - (long int)(nsites-1))*r/(double)nsites;
-			}
-			else total_ntsr += (weightrec[sel_nts_glob] - weightrec[(pseg+lsgm1)->end])*r;
-		}
+    /*in case SELECTION*/
+    if(ifsel_glob) {
+        total_ntsr -= (weightrec[pseg2->beg] - weightrec[(pseg+lsgm1)->end])*r;/*restem entre zones recombinants*/
+        if(sel_nts_glob > (pseg+lsgm1)->end) {
+            if(sel_nts_glob >= nsites) {
+                total_ntsr += (weightrec[nsites-1] - weightrec[(pseg+lsgm1)->end])*r;
+                total_ntsr += (double)((sel_nts_glob-1) - nsites-1)*r/(double)nsites;
+            }
+            else total_ntsr += (weightrec[sel_nts_glob] - weightrec[(pseg+lsgm1)->end])*r;
+        }
         /*sumem si sel_nts dreta del chrom esquerra*/
-        if(sel_nts_glob < (long int)pseg2->beg) {
-			if(sel_nts_glob < 0) {
-				total_ntsr += (weightrec[pseg2->beg] - weightrec[0])*r;
-				total_ntsr += (double)0 - (double)sel_nts_glob*r/(double)nsites;
-			}
-			else total_ntsr += (weightrec[pseg2->beg] - weightrec[sel_nts_glob])*r;
-		}
-		if(total_ntsr < (double)1E-07)total_ntsr=(double)0;
+        if(sel_nts_glob < pseg2->beg) {
+            if(sel_nts_glob < 0) {
+                total_ntsr += (weightrec[pseg2->beg] - weightrec[0])*r;
+                total_ntsr += 0.0 - (double)sel_nts_glob*r/(double)nsites;
+            }
+            else total_ntsr += (weightrec[pseg2->beg] - weightrec[sel_nts_glob])*r;
+        }
+        if(total_ntsr < (double)1E-07)
+            total_ntsr = 0.0;
         /*sumem si sel_nts esquerra del chrom dreta*/
-        if(sel_nts_glob < (long int)is) 
+        if(sel_nts_glob < is)
             new_chrom = nchrom-1;/*quin es el chrom separat de sel_nts? assignar a 'new_chrom'*/
-        else 
+        else
             new_chrom = ic;
     }
-    
-    lenr/*len*/ = ((double)weightrec[(pseg+lsgm1)->end] - (double)weightrec[pseg->beg])*r;	/* conversió */
-    cleft += 1.0 - pow(pc,/*len*/lenr);    		/* conversió */
-	lenr/*len*/ = ((double)weightrec[(pseg2 + newsg - 1)->end] - (double)weightrec[pseg2->beg])*r;/* llargada del nou individu */
-    cleft += 1.0 - pow(pc,/*len*/lenr);   		/* conversió */
-    
-	if(!(chrom[ic].pseg = (struct seg *)realloc(chrom[ic].pseg,(long int)(lsg*sizeof(struct seg)))))
+    lenr = (weightrec[(pseg+lsgm1)->end] - weightrec[pseg->beg])*r;	/* conversió */
+    cleft += 1.0 - pow(pc,lenr);    		/* conversió */
+    lenr = (weightrec[(pseg2 + newsg - 1)->end] - weightrec[pseg2->beg])*r;/* llargada del nou individu */
+    cleft += 1.0 - pow(pc,lenr);   		/* conversió */
+
+    if(!(chrom[ic].pseg = realloc(chrom[ic].pseg, lsg*sizeof(struct seg))))
         perror("realloc error. xover.3");	/* només es deixen lsg(=jseg+in) segments a ic */
     if(in) {
-        begs = (long int)pseg2->beg;	/* inici del primer segment */
-        for(i=0,k=0;(k < (long int)nsegs-1) && (begs > (long int)seglst[seglst[i].next].beg-1);i= seglst[i].next, k++);
+        begs = pseg2->beg;	/* inici del primer segment */
+        for(i=0,k=0;(k < nsegs-1) && (begs > seglst[seglst[i].next].beg-1);i= seglst[i].next, k++);
         /* arribem a on es troba begs, i tenim el nombre del segment (i)-> o arribem al final, l'ultim segment */
-        if(begs != (long int)seglst[i].beg) {	/* en cas que no hi hagi hagut recombinació al mateix lloc */
+        if(begs != seglst[i].beg) {	/* en cas que no hi hagi hagut recombinació al mateix lloc */
             /* new tree */
-            if(nsegs >= seglimit) {	
+
+            if(nsegs >= seglimit) {
                 seglimit += SEGINC;
-                if(!(nnodes = (long int *)realloc(nnodes,(unsigned)(sizeof(long int)*seglimit))))
+                if(!(nnodes = realloc(nnodes, seglimit * sizeof(long int))))
                     perror("realloc error. xover.4");
-                if(!(seglst = (struct segl *)realloc(seglst,(unsigned)(sizeof(struct segl)*seglimit))))
+                if(!(seglst = realloc(seglst, seglimit * sizeof(struct segl))))
                     perror("realloc error. xover.5");
             }
             seglst[nsegs].next = seglst[i].next;	/* Crear un segment entre els altres segments */
             seglst[i].next = nsegs;			/* MOLT BO ! */
             seglst[nsegs].beg = (long int)begs;
-            if(!(seglst[nsegs].ptree = (struct node *)calloc((unsigned)(2*nsam),sizeof(struct node))))
+
+            if(!(seglst[nsegs].ptree = calloc(2*nsam, sizeof(struct node))))
                 perror("calloc error. xover.6");	/* crear els nodes de l'arbre del nou segment */
+
             nnodes[nsegs] = nnodes[i];			/* el nombre de nodes de nsegs és el mateix que i */
             ptree1 = seglst[i].ptree;			/* punter a l'arbre de i */
             ptree2 = seglst[nsegs].ptree;		/* punter a l'arbre de nsegs */
             nsegs++;					/* nsegs és un segment més gran */
+
+
             for(k=0;k<=nnodes[i];k++) {			/* donem els mateixos valors a i que a nsegs */
                 (ptree2+k)->abv = (ptree1+k)->abv;
                 (ptree2+k)->time = (ptree1+k)->time;
             }
         }
     }
+
+    return seglst;
 }
 /* coalescent functions */
 void pick2_chrom(long int pop,long int *config,long int *pc1,long int *pc2)
 {
     long int c1,c2,cs,cb,i,count;
     void pick2(long int,long int *,long int *);
-    double ran1(void);
-    
+
     pick2(config[pop],&c1,&c2);	/* trobar els dos individus de la població pop que tindran coalescència, nombre c1 i c2 */
     cs = (c1 > c2) ? c2 : c1;	/* Ara buscar quins individus pertanyen a pop, i trobar dins pop quin es c1 i c2 */
     cb = (c1 > c2) ? c1 : c2;	/* cs és el mínim i cb el màxim entre c1 i c2 */
@@ -1623,46 +1606,44 @@ void pick2_chrom(long int pop,long int *config,long int *pc1,long int *pc2)
 }
 void pick2(long int n, long int *i,long int *j)
 {
-    double ran1(void);
-   
     *i = (long int)floor((double)n*(double)ran1());
     while((*j = (long int)floor((double)n * (double)ran1())) == *i); /* dos valors aleatoris entre 0 i n-1 */
 }
 /* coalescent */
-int ca(int nsam,long int nsites,long int c1, long int c2,double *weightrec,double r,long int tr)
+int ca(int nsam, long int nsites, long int c1, long int c2, double *weightrec, double r, long int tr, struct segl *seglst)
 {
     int yes1,yes2,seg1,seg2;
-	long int seg;
+    long int seg;
     long int start,end;
     long int tseg,desc,k;
     struct seg *pseg;
     struct node *ptree;
-    int isseg(long int,long int,int *);
+    int isseg(long int,long int,int *, struct chromo *);
     double linksr(long int,double *,double);
     double calc_total_ntsr(long int,double *,long int,double);
-     
-	seg1=0;	/* valor de la primera posició del segment actiu de l'individu c1 */
+
+    seg1=0;	/* valor de la primera posició del segment actiu de l'individu c1 */
     seg2=0;	/* valor de la primera posició del segment actiu de l'individu c2 */
-    
-    /*if(c1==12 && c2==14 && nchrom==18 && nsam==28) {printf("\nExited in ca: nsegs: %ld\n"); exit(1);}*/	
-    if(!(pseg=(struct seg *)calloc((unsigned)nsegs,sizeof(struct seg)))) {	/* vector de segments pel nou node */
+
+    /*if(c1==12 && c2==14 && nchrom==18 && nsam==28) {printf("\nExited in ca: nsegs: %ld\n"); exit(1);}*/
+    if(!(pseg=calloc(nsegs,sizeof(struct seg)))) {	/* vector de segments pel nou node */
         printf("\nCalloc error in ca(pseg)");
-		fflush(stdout);
-		perror("calloc error. ca.1");
-		exit(1);
-	}
+        fflush(stdout);
+        perror("calloc error. ca.1");
+        exit(1);
+    }
     tseg = -1;						/* nombre de segments del nou node */
-    
-	for(seg=tr,k=tr;k<(long int)nsegs;seg=seglst[seg].next,k++) {	/* mirem tots els segments */
-        start = seglst[seg].beg;			/* 1a posició del segment que mirem */
-        yes1  = isseg(start,c1,&seg1);			/* yes1=1 si el segment es troba dins c1 */
-        yes2  = isseg(start,c2,&seg2);			/* yes2=1 si el segment es troba dins c2 */
+
+    for(seg=tr,k=tr;k<(long int)nsegs;seg=seglst[seg].next,k++) {	/* mirem tots els segments */
+        start = seglst[seg].beg;				/* 1a posició del segment que mirem */
+        yes1  = isseg(start,c1,&seg1, chrom);	/* yes1=1 si el segment es troba dins c1 */
+        yes2  = isseg(start,c2,&seg2, chrom);	/* yes2=1 si el segment es troba dins c2 */
         if(yes1 || yes2) {				/* si un dels dos té el segment */
             tseg++;					/* sumem el segment */
             (pseg+tseg)->beg = seglst[seg].beg;		/* l'inici del segment pel nou node és l'inici del segment actiu */
             end = (k < (long int)nsegs-1 ? (long int)seglst[seglst[seg].next].beg-(long int)1 : (long int)nsites-(long int)1);
             (pseg+tseg)->end = end;			/* i el final és el final del segment */
-            
+
             if(yes1 && yes2) {				/* si els dos tenen el node hi ha COALESCÈNCIA */
                 nnodes[seg]++;				/* per aquell segment sumem el nombre de nodes de l'arbre */
                 if(nnodes[seg] >= (2*nsam-2)) tseg--;	/* en cas sigui el MRCA, aleshores restem el segment */
@@ -1672,18 +1653,18 @@ int ca(int nsam,long int nsites,long int c1, long int c2,double *weightrec,doubl
                 (ptree+desc)->abv = (int)nnodes[seg];	/* el node de desc apunta a nnodes[seg], el nou node */
                 desc = (chrom[c2].pseg + seg2)->desc;	/* el node de c2 és desc */
                 (ptree+desc)->abv = (int)nnodes[seg];	/* el node de desc apunta a nnodes[seg], el nou node */
-                (ptree+nnodes[seg])->time = (double)t;		/* per últim, indicar el temps de la coalescència */
+                (ptree+nnodes[seg])->time = t;		/* per últim, indicar el temps de la coalescència */
             }
             else (pseg+tseg)->desc = (yes1 ? (chrom[c1].pseg + seg1)->desc : (chrom[c2].pseg + seg2)->desc);
         }	/* en cas només un dels individus té el segment, indicar el desc de l'individu que el té */
     }
 
-	nlinksr -= linksr(c1,weightrec,r);	/* mida de posicions de recombinació. restar els individus que tenen coal i sumar el nou */
-	if(nlinksr < (double)1E-07)nlinksr =(double)0;
+    nlinksr -= linksr(c1,weightrec,r);	/* mida de posicions de recombinació. restar els individus que tenen coal i sumar el nou */
+    if(nlinksr < (double)1E-07)nlinksr =0.0;
     if(ifsel_glob) total_ntsr -= calc_total_ntsr(c1,weightrec,nsites,r); /*in case SELECTION*/
-	if(total_ntsr < (double)1E-07)total_ntsr=(double)0;
-    cleft  -= (double)1 - pow(pc,(double)linksr(c1,weightrec,r));	/* conversió */
-	if(cleft < 0.) cleft = 0.;
+    if(total_ntsr < (double)1E-07)total_ntsr=0.0;
+    cleft  -= 1.0 - pow(pc,linksr(c1,weightrec,r));	/* conversió */
+    if(cleft < 0.0) cleft = 0.0;
     free(chrom[c1].pseg);	/* els segments de c1 ara ja no interessen */
     if(tseg < 0) {		/* en cas el nou node sigui MRCA per TOTS els segments que contenien els descendents */
         free(pseg);				/* en aquest cas tampoc interessa res de pseg */
@@ -1694,47 +1675,49 @@ int ca(int nsam,long int nsites,long int c1, long int c2,double *weightrec,doubl
         nchrom--;				/* un individu menys! */
     }
     else {			/* en cas no hi hagi MRCA per tots segments */
-        if(!(pseg = (struct seg *)realloc(pseg,(unsigned)((tseg+1)*sizeof(struct seg)))))
+        if(!(pseg = realloc(pseg,((tseg+1)*sizeof(struct seg)))))
             perror("realloc error. ca.2");
         chrom[c1].pseg = pseg;			/* ara c1 passa a tenir els valors de pseg */
         chrom[c1].nseg = tseg + 1;
         nlinksr += linksr(c1,weightrec,r);
-		if(nlinksr < (double)1E-07)nlinksr =(double)0;
+        if(nlinksr < (double)1E-07)nlinksr = 0.0;
         if(ifsel_glob) total_ntsr += calc_total_ntsr(c1,weightrec,nsites,r); /*in case SELECTION*/
-		if(total_ntsr < (double)1E-07)total_ntsr=(double)0;
-        cleft += 1.0 - pow(pc,(double)linksr(c1,weightrec,r)); /* conversió */
+        if(total_ntsr < (double)1E-07)total_ntsr = 0.0;
+        cleft += 1.0 - pow(pc,linksr(c1,weightrec,r)); /* conversió */
     }
 
-    nlinksr -= linksr(c2,weightrec,r);	
-	if(nlinksr < (double)1E-07)nlinksr =(double)0;
+    nlinksr -= linksr(c2,weightrec,r);
+    if(nlinksr < (double)1E-07)nlinksr = 0.0;
     if(ifsel_glob) total_ntsr -= calc_total_ntsr(c2,weightrec,nsites,r); 	/*in case SELECTION*/
-	if(total_ntsr < (double)1E-07)total_ntsr=(double)0;
+    if(total_ntsr < (double)1E-07) total_ntsr=0.0;
     cleft  -= 1.0 - pow(pc,(double)linksr(c2,weightrec,r)); /* conversió */
-	if(cleft < 0.) cleft = 0.;
+    if(cleft < 0.) cleft = 0.;
     free(chrom[c2].pseg);			/* eliminem c2 i apuntem a l'últim individu */
     chrom[c2].pseg = chrom[nchrom-1].pseg;
     chrom[c2].nseg = chrom[nchrom-1].nseg;
     chrom[c2].pop  = chrom[nchrom-1].pop;
     nchrom--;					/* un individu menys! */
-    if(tseg<0) return(2); /* decrease of nchrom is two */
-    else return(1);
+    if(tseg<0)
+        return 2; /* decrease of nchrom is two */
+    else
+        return 1;
 }
 
 /* isseg: does chromosome c contain the segment on seglst which starts at start? *psg is the segment of chrom[c] at wich one is to begin looking. */
-int isseg(long int start, long int c, int *psg) /**psg és inicialment 0, però varia quan anem avançant pels segments */
+int isseg(long int start, long int c, int *psg, struct chromo *chrom) /**psg és inicialment 0, però varia quan anem avançant pels segments */
 {
     int ns;
     struct seg *pseg;
-    
+
     ns = (int)chrom[c].nseg;		/* nombre de segments de l'individu c */
     pseg = chrom[c].pseg;	/* punter al primer segment de l'individu c */
-    
+
     /*Sylvain diu que es incorrecte, aleshores: for(;((*psg) < ns) && ((pseg+(*psg))->beg <= start);  ++(*psg)) */
     /*for(;((pseg+(*psg))->beg <= start) && ((*psg) < ns); ++(*psg))*//*des del segment psg fins que sigui més gran de start*/
     for(;((*psg) < ns) && ((pseg+(*psg))->beg <= start);  ++(*psg)) /*Sylvain modification*/
         if((pseg+(*psg))->end >= start) return(1);	/* psg ja és 1+ perque ++(*psg), i no (*psg)++ ?? NO POT SER */
-        /* en cas el final del segment sigui més gran o igual start, tenim el segment buscat a l'individu c */
-        /* com c pot tenir segments més grans, start ha d'estar entre o = begin i end, aleshores el segment és inclós */
+    /* en cas el final del segment sigui més gran o igual start, tenim el segment buscat a l'individu c */
+    /* com c pot tenir segments més grans, start ha d'estar entre o = begin i end, aleshores el segment és inclós */
     return(0);
 }
 double calc_total_ntsr(long int c,double *weightrec,long int nsites,double r)	/*IN CASE SELECTION*/
@@ -1772,79 +1755,78 @@ double linksr(long int c,double *weightrec,double r)
 }
 
 /* No pot encara treballar amb seleccio ni amb heterogeneuous mutation/recombination rates.... */
-int cleftr(int nsam,double *weightrec,long int nsites,double r)
+struct segl * cleftr(int nsam,double *weightrec,long int nsites,double r, struct segl *seglst, long *out_ic)
 {
-	/*conversion coming from the left region, the effect is like recombination: Warning: if no recombination rate, is not working*/
+    /*conversion coming from the left region, the effect is like recombination: Warning: if no recombination rate, is not working*/
     struct seg *pseg;
-    int ic,lsgm1;
+    long ic,lsgm1;
     double x, sum;
-    long int /*len,*/is;
-    void xover(int, int, long int,double *,long int,double);
+    long int is;
     double linksr(long int,double *,double);
-    double ran1(void);
-	double isr,lenr;
-	long int localize_positionrec(double *,double,long int,long int,double);
-	
-    while((x = (double)cleft*ran1()) == 0.0);
+    double isr,lenr;
+    long int localize_positionrec(double *,double,long int,long int,double);
+
+    while((x = cleft*ran1()) == 0.0);
     sum = 0.0;
     ic = -1;
 
     while(sum < x) {
-        sum += (double)1.0 - (double)pow((double)pc,(double)linksr((long int)++ic,weightrec,r)); /*trobem l'individu ic*/
+        sum += 1.0 - pow(pc,linksr(++ic,weightrec,r)); /*trobem l'individu ic*/
     }
     pseg = chrom[ic].pseg; 	/*pseg apunta a l'individu ic*/
-	lsgm1 = (int)chrom[ic].nseg - 1;
-    lenr/*len*/ = linksr((long int)ic,weightrec,r);		/*mirem la llargada del max al min de ic*/
-    isr = (weightrec[pseg->beg] + weightrec[(long int)floor((double)(1.0 + (double)log((double)(1.0 - (1.0- (double)pow( pc, lenr))*(double)ran1()))/lnpc))-1])*r; /*localitzem el punt de rec a is*/
-    is  = localize_positionrec(weightrec,(double)isr,pseg->beg,(pseg+lsgm1)->end,r);
-	xover(nsam,ic,is,weightrec,nsites,r);		/*recombinacio*/
-    return(ic);			/*a ic*/
+    lsgm1 = chrom[ic].nseg - 1;
+    lenr = linksr((long int)ic,weightrec,r);		/*mirem la llargada del max al min de ic*/
+    isr = (weightrec[pseg->beg] + weightrec[(long int)floor((1.0 + log((1.0 - (1.0- pow( pc, lenr))*ran1()))/lnpc))-1])*r; /*localitzem el punt de rec a is*/
+    is  = localize_positionrec(weightrec,isr,pseg->beg,(pseg+lsgm1)->end,r);
+    *out_ic = ic;		/*a ic*/
+    return xover(nsam,ic,is,weightrec,nsites,r, seglst);		/*recombinacio*/
 }
 /* No pot encara treballar amb seleccio ni amb heterogeneuous mutation/recombination rates........ */
-int cinr(int nsam, long int nsites,double *weightrec,double r,long int tr)
+struct segl * cinr(int nsam, long int nsites,double *weightrec,double r,long int tr, struct segl *seglst, long *out_ic)
 {
     /*conversion from a point to right (when is not finish inside the studied region is like recombination). Warning: if no recombination rate, is not working*/
-	struct seg *pseg=0;
-    int lsg, ic;
-	int lsgm1 = 0;
-    long int /*spot,el,*/len,is,endic;
-	double spotr,lenr,elr,isr;
-    
-    void xover(int, int, long int,double *,long int,double); 
-    int ca(int,long int,long int,long int,double *,double,long int) ;
-    double ran1(void);
-	long int localize_positionrec(double *,double,long int,long int,double);
+    struct seg *pseg=0;
+    long lsg, ic;
+    long lsgm1 = 0;
+    long int len,is,endic;
+    double spotr,lenr,elr,isr;
 
-    spotr = ((double)(nlinksr * ran1()));
+    long int localize_positionrec(double *,double,long int,long int,double);
+
+    spotr = nlinksr * ran1();
     /* get chromosome number (ic) */
     for(ic=0;ic<nchrom;ic++) { 	/* Busca els valors MÀXIM i MÍNIM de l'individu escollit. (Què nt. segment i individu) */
         lsg = (int)chrom[ic].nseg; /* el nombre de segments a l'individu ic */
         lsgm1 = lsg - 1;/* de fet lsg-1 conté la informació de l'ultim segment */
         pseg = chrom[ic].pseg;/* punter al primer segment de l'individu ic */
-		elr = (weightrec[((pseg+lsgm1)->end)] - weightrec[(pseg->beg)])*r;/* mida de tots els segments (max-min) a l'individu ic*/
+        elr = (weightrec[((pseg+lsgm1)->end)] - weightrec[(pseg->beg)])*r;/* mida de tots els segments (max-min) a l'individu ic*/
         if(spotr <= elr) break;/* anem restant 'el' fins trobar l'individu */
-		if(ic==nchrom-1) {/*precission problem?*/
-			nlinksr -= spotr-elr;
-			spotr = elr;
-			break;
-		}
+        if(ic==nchrom-1) {/*precission problem?*/
+            nlinksr -= spotr-elr;
+            spotr = elr;
+            break;
+        }
         spotr -= elr;
     }
     isr = weightrec[pseg->beg]*r + spotr; 	/* posició dins l'individu ic */
-	is  = localize_positionrec(weightrec,(double)isr,pseg->beg,(pseg+lsgm1)->end,r);
-	endic = (pseg+lsgm1)->end; 			/*posicio final de l'individu ic*/
-    xover(nsam,ic,is,weightrec,nsites,r);
+    is  = localize_positionrec(weightrec,(double)isr,pseg->beg,(pseg+lsgm1)->end,r);
+    endic = (pseg+lsgm1)->end; 			/*posicio final de l'individu ic*/
+    seglst = xover(nsam,ic,is,weightrec,nsites,r, seglst);
 
-    lenr = /*(long int)floor*/((double)(1.0 + (double)log((double)ran1())/lnpc));	/*llargada del evente de conversio...*/
-	len = localize_positionrec(weightrec,(double)lenr,(chrom[ic].pseg)->beg,((chrom[ic].pseg)+(chrom[ic].nseg - 1))->end,r);
-    if(is+len >= endic) return(ic);  		/*si es mes llarg, es igual que rec, acabem*/
-    if(is+len < (chrom[nchrom-1].pseg)->beg){	/*si es mes curt que l'inici del nou chrom*/
-        ca(nsam,nsites,(long int)ic,(long int)nchrom-1,weightrec,r,tr);			/*aleshores eliminem el nou chrom, coalescencia*/
-        return(-1);					/*i no ha passat res (...?)*/
+    lenr = 1.0 + log(ran1())/lnpc;	/*llargada del evente de conversio...*/
+    len = localize_positionrec(weightrec,(double)lenr,(chrom[ic].pseg)->beg,((chrom[ic].pseg)+(chrom[ic].nseg - 1))->end,r);
+    if(is+len < endic) { /*si no es mes llarg, es igual que rec, acabem*/
+        if(is+len < (chrom[nchrom-1].pseg)->beg){	/*si es mes curt que l'inici del nou chrom*/
+            ca(nsam,nsites,ic,nchrom-1,weightrec,r,tr, seglst);			/*aleshores eliminem el nou chrom, coalescencia*/
+            *out_ic = -1; 					/*i no ha passat res (...?)*/
+        } else {
+            seglst = xover(nsam,nchrom-1,is+len,weightrec,nsites,r, seglst);		/*tornem a recombinar el fragment a llargada is+len*/
+            ca(nsam,nsites,ic,nchrom-1,weightrec,r,tr, seglst);		/*... i fem coalescencia a l'extrem. conversio finalitzada*/
+            *out_ic = ic; /*i tenim un mes*/
+        }
     }
-    xover(nsam,(int)nchrom-1,is+len,weightrec,nsites,r);		/*tornem a recombinar el fragment a llargada is+len*/
-    ca(nsam,nsites,(long int)ic,(long int)nchrom-1,weightrec,r,tr);		/*... i fem coalescencia a l'extrem. conversio finalitzada*/
-    return(ic);					/*i tenim un mes*/
+
+    return seglst;
 }
 
 /*MORE FUNCTIONS*/
@@ -1930,13 +1912,13 @@ double correction_theta(double f,double sexratio) {
 			return((sexratio/(1.+sexratio))/2.);/*mytochondrial*/
 	#elif SEXRATIOA1 == 0 && SEXRATIOX1 == -1
 		/*theta is defined by the value of 4N when the sexratio is whatever defined (factor=1 always for A)*/
-		if(f == (double)1.0)
+		if(f == 1.0)
 			return(1.0/(4.*sexratio/((1.+sexratio)*(1.+sexratio))) * 4.*sexratio/((1.+sexratio)*(1.+sexratio)));
-		if(f == (double)0.75) 
+		if(f == 0.75)
 			return(1.0/(4.*sexratio/((1.+sexratio)*(1.+sexratio))) * 9.*sexratio/((2.*sexratio+4.)*(1.+sexratio)));
-		if(f == (double)0.25) 
+		if(f == 0.25)
 			return(1.0/(4.*sexratio/((1.+sexratio)*(1.+sexratio))) * (1./(1.+sexratio))/2.);
-		if(f == (double)-0.25) 
+		if(f == -0.25)
 			return(1.0/(4.*sexratio/((1.+sexratio)*(1.+sexratio))) * (sexratio/(1.+sexratio))/2.);/*mytochondrial*/
 	#elif SEXRATIOX1 == 1 && SEXRATIOA1 == -1
 			/*theta is defined by the value of 3N when the sexratio is 1.0*/
@@ -1997,9 +1979,9 @@ double correction_rec(double f,double sexratio,int m) /*relative to theta, becau
 		if(f == (double)0.75) {
 			return((2.*sexratio+4)/9.);
 		}
-		if(f == (double)0.25) 
+		if(f == 0.25)
 			return(0.);
-		if(f == (double)-0.25) /*mytochondrial*/
+		if(f == -0.25) /*mytochondrial*/
 			return(0.);
 	#elif SEXRATIOX1 == 1 && SEXRATIOA1 == -1
 		if(f == (double)1.33) {
