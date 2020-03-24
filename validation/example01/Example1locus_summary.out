@@ -1,0 +1,58 @@
+Print_neuttest:                  3
+Print_matrixpol:                 0
+Mhits:                           1
+N_iterations:                    100
+Seed1:                           81140
+
+N_loci:                          1
+No_rec_males:                    0
+Factorn_chr:                     1.000000
+Pevent_sexratio:                 1.000000 1230005.000000
+Fixmax_abstime_event:           
+Sex_ratio:                       1.000000
+N_sites:                         979
+N_samples:                       14
+Npop:                            2
+
+
+Thetaw:                          &6
+
+Recombination:                   &7
+
+Mig_rate_matrix:                 0 0, 0 0
+Npop_sampled:                    2
+Factor_pop:                      1 1
+Ran_factorpop:                   0
+Same_factorpop:                  0
+Ssize_pop:                       13 1
+
+
+Npop_events:                     3
+Pop_event:                       0 0 0 &1 &2 0 0 0 0, 1 0 0 &3 0.01 0 0 0 0, 2 0 1 1 &4 0 0 0 0
+
+Patcg:                           1
+
+"Prior referred to parameter pop_event"
+Nprior:                          1
+Prior_file:                     ./prior001.txt
+"Prior referred to parameter pop_event"
+Nprior:                          2
+Prior_file:                     ./prior002.txt
+"Prior referred to parameter pop_event"
+Nprior:                          3
+Prior_file:                     ./prior003.txt
+"Prior referred to parameter pop_event"
+Nprior:                          4
+Prior_file:                     ./prior004.txt
+"Prior referred to parameter pevent_sexratio"
+Nprior:                          5
+Prior_file:                     ./prior005.txt
+"Prior referred to parameter theta"
+Nprior:                          6
+Prior_file:                     ./prior006.txt
+"Prior referred to parameter recombination"
+Nprior:                          7
+Prior_file:                     ./prior007.txt
+
+
+

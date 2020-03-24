@@ -58,7 +58,7 @@ mpirun -np 4 build/mlcoalsimXmpi_ZnS  examples/example00/Example1locus_1pop_mhit
 # build/mlcoalsimX  examples/example00/Example1locus_1pop_mhit0_rec100.txt build/Example1locus_1pop_mhit0_rec100.out
 ```
 
-In the case of the `example10`, which uses a "prior" file, then you'll need to switch the directory first.
+In the case of the `example01` and `example10`, where a "prior" file is being used, you need to switch the directory first.
 For example:
 
 ```shell script
@@ -99,6 +99,19 @@ mv Example1locus_1pop_mhit0A_PPercentiles.out ../validation/.
 popd 
 ```
 
+#### Generate validations for example01
+
+In the case of the `example01` data, that is using "prior" files, we need to slightly change what we have been done so far.
+
+```shell script
+pushd examples/example01
+../../build/mlcoalsimX ./Example1locus.txt Example1locus.out
+gsed -i '1,6d' Example1locus_summary.out
+gsed -i '1,1d' Example1locus_locus_00000_rank000.out
+mv Example1locus_*.out ../../validation/example01/.
+popd
+```
+
 ### Validate the Output is as Expected
 
 Now we need to generate the outputs with the new executable and perform the verifications:
@@ -115,7 +128,6 @@ cmp Example1locus_1pop_mhit0A_PPercentiles.out ../validation/Example1locus_1pop_
 # Output should be empty!!!
 popd 
 ```
-
 
 
 [clion]: https://www.jetbrains.com/clion/
