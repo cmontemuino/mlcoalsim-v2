@@ -1,0 +1,36 @@
+Print_neuttest:                  0
+Print_matrixpol:                 1
+Mhits:                           1
+N_iterations:                    1
+Seed1:                           81140
+
+N_loci:                          1
+No_rec_males:                    0
+Factorn_chr:                     1.000000
+Pevent_sexratio:                
+Fixmax_abstime_event:           
+Sex_ratio:                       1.000000
+N_sites:                         2240
+N_samples:                       27
+Npop:                            3
+
+
+Thetaw:                          0.01
+
+Recombination:                   0
+
+Npop_sampled:                    3
+Factor_pop:                      1 0.1 1
+Ran_factorpop:                   0
+Same_factorpop:                  0
+Ssize_pop:                       9 17 1
+
+
+Npop_events:                     6
+Pop_event:                       0 0 0 0.1 0.1 0 0 0 0 0 0, 1 1 1 0.5 0.3 0 0 0 0 0 0, 2 0 0 1 0.2 0 0 0 0 0 0, 3 1 1 2 0.2 0 0 0 0 0 0, 4 0 1 1 0.5 0 0 0 0 0 0, 5 0 2 1 4 0 0 0 0 0 0
+
+Patcg:                           2
+
+
+
+

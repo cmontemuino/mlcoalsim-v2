@@ -124,11 +124,34 @@ grep Example1locus_1pop_mhit0A.txt ../validation/Example1locus_1pop_mhit0A_SHA25
 # 3176b276d45244dbe4f98760b1ca3fdd939e0580bd82198848c495d86471b603  Example1locus_1pop_mhit0A.txt
 # Example1locus_1pop_mhit0A.txt: OK
 
-cmp Example1locus_1pop_mhit0A_PPercentiles.out ../validation/Example1locus_1pop_mhit0A_PPercentiles.out
+cmp Example1locus_1pop_mhit0A_PPercentiles.out ../validation/example00/Example1locus_1pop_mhit0A_PPercentiles.out
 # Output should be empty!!!
 popd 
 ```
 
+#### Validate simulations from example01 and example02
+
+We are not using checksum files for `example01` and `example02`, hence comparison with the `cmp` command is enough:
+
+```shell script
+build/mlcoalsimX_ZnS build/mlcoalsimX_ZnS examples/example02/mlcoal_input1 build/mlcoal_output1.txt
+build/mlcoalsimX_ZnS build/mlcoalsimX_ZnS examples/example02/mlcoal_input2 build/mlcoal_output2.txt
+pushd build
+gsed -i '1,6d' mlcoal_output1.txt
+gsed -i '1,6d' mlcoal_output2.txt
+gsed -i '1,1d' mlcoal_output2_linkedlocus__rank000.out
+
+cmp mlcoal_output1.txt ../validation/example02/mlcoal_output1.txt
+# Output should be empty!!!
+cmp mlcoal_output1_PPercentiles.out ../validation/example02/mlcoal_output1_PPercentiles.out
+# Output should be empty!!!
+
+cmp mlcoal_output2.txt ../validation/example02/mlcoal_output2.txt
+# Output should be empty!!!
+cmp mlcoal_output2_linkedlocus__rank000.out ../validation/example02/mlcoal_output2_linkedlocus__rank000.out
+# Output should be empty!!!
+popd 
+```
 
 [clion]: https://www.jetbrains.com/clion/
 [cmake]: https://cmake.org
