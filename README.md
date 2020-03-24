@@ -94,8 +94,8 @@ extension for backup files when using the "in-place replacement" feature. See mo
 build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0.txt build/Example1locus_1pop_mhit0A.txt
 pushd build
 gsed -i '1,6d' Example1locus_1pop_mhit0A.txt
-sha256sum Example1locus_1pop_mhit0A.txt | tee ../validation/Example1locus_1pop_mhit0A_SHA256SUMS
-mv Example1locus_1pop_mhit0A_PPercentiles.out ../validation/.
+sha256sum Example1locus_1pop_mhit0A.txt | tee ../validation/example00/Example1locus_1pop_mhit0A_SHA256SUMS
+mv Example1locus_1pop_mhit0A_PPercentiles.out ../validation/example00/.
 popd 
 ```
 
