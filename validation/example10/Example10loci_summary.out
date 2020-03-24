@@ -1,0 +1,85 @@
+Print_neuttest:                  3
+Print_matrixpol:                 0
+Mhits:                           1
+N_iterations:                    100
+Seed1:                           81140 34377 73919 39765 3407 38921 58985 64207 25957 2042
+
+N_loci:                          10
+No_rec_males:                    0
+Factorn_chr:                     1.000000 1.000000 1.000000 1.000000 1.000000 0.750000 0.750000 0.750000 0.750000 0.750000
+Pevent_sexratio:                 1.000000 1230005.000000
+Fixmax_abstime_event:           
+Sex_ratio:                       1.000000
+N_sites:                         979 997 734 666 833 741 741 991 811 702
+N_samples:                       14 14 11 14 14 14 13 13 12 13
+Npop:                            2
+
+
+Thetaw:                          &6 &7 &8 &9 &10 &11 &12 &13 &14 &15
+
+Recombination:                   &16
+
+Mig_rate_matrix:                 0 0, 0 0
+Npop_sampled:                    2 2 2 2 2 2 2 2 2 2
+Factor_pop:                      1 1
+Ran_factorpop:                   0
+Same_factorpop:                  0
+Ssize_pop:                       13 1, 13 1, 10 1, 13 1, 13 1, 13 1, 12 1, 12 1, 11 1, 12 1
+
+
+Npop_events:                     3
+Pop_event:                       0 0 0 &1 &2 0 0 0 0, 1 0 0 &3 0.01 0 0 0 0, 2 0 1 1 &4 0 0 0 0
+
+Patcg:                           1
+
+"Prior referred to parameter pop_event"
+Nprior:                          1
+Prior_file:                     ./prior001.txt
+"Prior referred to parameter pop_event"
+Nprior:                          2
+Prior_file:                     ./prior002.txt
+"Prior referred to parameter pop_event"
+Nprior:                          3
+Prior_file:                     ./prior003.txt
+"Prior referred to parameter pop_event"
+Nprior:                          4
+Prior_file:                     ./prior004.txt
+"Prior referred to parameter pevent_sexratio"
+Nprior:                          5
+Prior_file:                     ./prior005.txt
+"Prior referred to parameter theta"
+Nprior:                          6
+Prior_file:                     ./prior006.txt
+"Prior referred to parameter theta"
+Nprior:                          7
+Prior_file:                     ./prior007.txt
+"Prior referred to parameter theta"
+Nprior:                          8
+Prior_file:                     ./prior008.txt
+"Prior referred to parameter theta"
+Nprior:                          9
+Prior_file:                     ./prior009.txt
+"Prior referred to parameter theta"
+Nprior:                          10
+Prior_file:                     ./prior010.txt
+"Prior referred to parameter theta"
+Nprior:                          11
+Prior_file:                     ./prior011.txt
+"Prior referred to parameter theta"
+Nprior:                          12
+Prior_file:                     ./prior012.txt
+"Prior referred to parameter theta"
+Nprior:                          13
+Prior_file:                     ./prior013.txt
+"Prior referred to parameter theta"
+Nprior:                          14
+Prior_file:                     ./prior014.txt
+"Prior referred to parameter theta"
+Nprior:                          15
+Prior_file:                     ./prior015.txt
+"Prior referred to parameter recombination"
+Nprior:                          16
+Prior_file:                     ./prior016.txt
+
+
+

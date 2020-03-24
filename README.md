@@ -112,6 +112,19 @@ mv Example1locus_*.out ../../validation/example01/.
 popd
 ```
 
+#### Generate validations for example10
+
+In the case of `example10` data, we have "prior" files and MPI. The generation of validation files is different here too:
+
+```shell script
+pushd examples/example10
+mpirun -np 4 ../../build/mlcoalsimXmpi Example10loci.txt Example10loci.out
+gsed -i '1,6d' Example10loci_summary.out
+for file in $(ls Example10loci_locus_*.out); do gsed -i '1,1d' $file; done
+mv Example10loci_*.out ../../validation/example10/.
+popd
+```
+
 ### Validate the Output is as Expected
 
 Now we need to generate the outputs with the new executable and perform the verifications:
@@ -150,6 +163,20 @@ cmp mlcoal_output2.txt ../validation/example02/mlcoal_output2.txt
 # Output should be empty!!!
 cmp mlcoal_output2_linkedlocus__rank000.out ../validation/example02/mlcoal_output2_linkedlocus__rank000.out
 # Output should be empty!!!
+popd 
+```
+
+#### Validate simulations from example10
+
+```shell script
+pushd examples/example10
+mpirun -np 4 ../../build/mlcoalsimXmpi Example10loci.txt Example10loci.out
+gsed -i '1,6d' Example10loci_summary.out
+for file in $(ls Example10loci_locus_*.out); do gsed -i '1,1d' $file; done
+
+for file in $(ls Example10loci_*.out); do echo "Validating |$file|" && cmp $file ../../validation/example10/$file; done
+# Output should be empty!!!
+rm -f Example10loci_*.out
 popd 
 ```
 
