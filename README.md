@@ -133,7 +133,7 @@ Now we need to generate the outputs with the new executable and perform the veri
 build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0.txt build/Example1locus_1pop_mhit0A.txt
 pushd build
 gsed -i '1,6d' Example1locus_1pop_mhit0A.txt
-grep Example1locus_1pop_mhit0A.txt ../validation/Example1locus_1pop_mhit0A_SHA256SUMS | tee /dev/fd/2 | sha256sum --check --strict  -
+grep Example1locus_1pop_mhit0A.txt ../validation/example00/Example1locus_1pop_mhit0A_SHA256SUMS | tee /dev/fd/2 | sha256sum --check --strict  -
 # 3176b276d45244dbe4f98760b1ca3fdd939e0580bd82198848c495d86471b603  Example1locus_1pop_mhit0A.txt
 # Example1locus_1pop_mhit0A.txt: OK
 
@@ -175,6 +175,7 @@ gsed -i '1,6d' Example10loci_summary.out
 for file in $(ls Example10loci_locus_*.out); do gsed -i '1,1d' $file; done
 
 for file in $(ls Example10loci_*.out); do echo "Validating |$file|" && cmp $file ../../validation/example10/$file; done
+cmp Example10loci_summary.out ../../validation/example10/Example10loci_summary.out
 # Output should be empty!!!
 rm -f Example10loci_*.out
 popd 
