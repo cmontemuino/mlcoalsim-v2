@@ -1057,8 +1057,7 @@ int main (int argc,char *argv[])
 #endif
     
     /*************************************** CLOSE FILE ***************************************/
-    if(!((*data).neutral_tests == 0 && (*data).likelihood_line == 0))
-        fclose(file_output);
+    if(!((*data).neutral_tests == 0 && (*data).likelihood_line == 0)) fclose(file_output);
 	
 	/*************************************** FREE VECTORS ***************************************/
 	/*in case inMPI, only the process my_rank = 0 arrive here*/	

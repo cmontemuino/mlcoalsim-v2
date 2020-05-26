@@ -569,8 +569,8 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
 
     for(x=0;x<(*data)->ssize_pop[p1][0];x++)
         (*inputp)->config[x] = (*data)->ssize_pop[p1][x+1];
-    for(x=(*data)->ssize_pop[p1][0];x<(*inputp)->npop;x++)
-        (*inputp)->config[x] = 0;
+
+    for(x=(*data)->ssize_pop[p1][0];x<(*inputp)->npop;x++) (*inputp)->config[x] = 0;
             
 	(*inputp)->ratio_sv = (*data)->ratio_sv[p1+1];
 	if((*data)->ratio_sv[p1+1]>=REFNUMBER && (*data)->ratio_sv[p1+1] < REFNUMBER + PLUSPRIOR) {
@@ -722,8 +722,7 @@ void free_getpars_fix(struct var **data, struct var2 **inputp)
 	}
     free((*inputp)->factor_pop);
     
-    if((*inputp)->split_pop)
-        free((*inputp)->freq);
+    if((*inputp)->split_pop) free((*inputp)->freq);
 	
 	if((*inputp)->npriors) free((*inputp)->pointtoprior);
 	if((*inputp)->npriors) free((*inputp)->locspec_prior);

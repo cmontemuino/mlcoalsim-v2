@@ -556,8 +556,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
         /*Assign the variable*/
         for(w=0;w<n_var;w++)
-            if(strcmp(name_var,var_file[w]) == 0)
-                break;
+            if(strcmp(name_var,var_file[w]) == 0) break;
 		
 		if(w < n_var) {
 			/* look for the content of the variable */                
