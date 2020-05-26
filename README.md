@@ -1,6 +1,6 @@
 # mlcoalsim-v2
 
-# Quick Start
+## Quick Start
 
 This project requires both [OpenMPI][openmpi] and [CMake][cmake].
 
@@ -14,7 +14,7 @@ notice that all the code related to MPI will not be "clickable". One way to reso
 is by setting the environment variable `WITH_MPI`. You just need to provide whatever value to it.
 
 *Note: what I do is setting the environment variable inside the IDE, so that I do not have problems
-with building the project.* 
+with building the project.*
 
 ## How to Build
 
@@ -36,6 +36,7 @@ where `<build_type>` must be some of:
 * `RelWithDebInfo`: Adds `-O2 -g -DNDEBUG` flags  **_<--- Default option if `DCMAKE_BUILD_TYPE` is not provided_**
 
 Four executables are going to be generated:
+
 * `mlcoalsimX`: application running without MPI
 * `mlcoalsimX_ZnS`: application running without MPI but including ZnS statistics
 * `mlcoalsimXmpi`: application running with MPI
@@ -76,11 +77,11 @@ Other examples you might want to run:
 
 ## How to Verify the Results
 
-Source code form this project considerably diverged from the [original mlcoalsimv2][mlcoalsimv2-original]. Therefore, we need to
-verify the results are still valid.
+Source code form this project considerably diverged from the [original mlcoalsimv2][mlcoalsimv2-original]. Therefore, we need to verify the results are still valid.
 
 For percentiles files we can directly compare them with the [cmp Linux tool][cmp], but for output files we use the [sha256sum Linux tool][sha256sum].
-Output files can grow very large (in the order of hundreds of megabytes) depending on the .
+
+We show the details about how to validate all the examples in the following sections. If you want to run the validations all together: `sh validation/validation.sh`.
 
 ### Generating the Checksum
 
@@ -96,7 +97,7 @@ pushd build
 gsed -i '1,6d' Example1locus_1pop_mhit0A.txt
 sha256sum Example1locus_1pop_mhit0A.txt | tee ../validation/example00/Example1locus_1pop_mhit0A_SHA256SUMS
 mv Example1locus_1pop_mhit0A_PPercentiles.out ../validation/example00/.
-popd 
+popd
 ```
 
 #### Generate validations for example01
@@ -130,16 +131,16 @@ popd
 Now we need to generate the outputs with the new executable and perform the verifications:
 
 ```shell script
-build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0.txt build/Example1locus_1pop_mhit0A.txt
+build/mlcoalsimX examples/example00/Example1locus_1pop_mhit0_n100_S200.txt build/Example1locus_1pop_mhit0_n100_S200A.txt
 pushd build
-gsed -i '1,6d' Example1locus_1pop_mhit0A.txt
-grep Example1locus_1pop_mhit0A.txt ../validation/example00/Example1locus_1pop_mhit0A_SHA256SUMS | tee /dev/fd/2 | sha256sum --check --strict  -
+gsed -i '1,6d' Example1locus_1pop_mhit0_n100_S200A.txt
+grep Example1locus_1pop_mhit0_n100_S200A.txt ../validation/example00/Example1locus_1pop_mhit0_n100_S200A_SHA256SUMS | tee /dev/fd/2 | sha256sum --check --strict  -
 # 3176b276d45244dbe4f98760b1ca3fdd939e0580bd82198848c495d86471b603  Example1locus_1pop_mhit0A.txt
 # Example1locus_1pop_mhit0A.txt: OK
 
-cmp Example1locus_1pop_mhit0A_PPercentiles.out ../validation/example00/Example1locus_1pop_mhit0A_PPercentiles.out
+cmp Example1locus_1pop_mhit0_n100_S200A_PPercentiles.out ../validation/example00/Example1locus_1pop_mhit0_n100_S200A_PPercentiles.out
 # Output should be empty!!!
-popd 
+popd
 ```
 
 #### Validate simulations from example01 and example02
@@ -163,7 +164,7 @@ cmp mlcoal_output2.txt ../validation/example02/mlcoal_output2.txt
 # Output should be empty!!!
 cmp mlcoal_output2_linkedlocus__rank000.out ../validation/example02/mlcoal_output2_linkedlocus__rank000.out
 # Output should be empty!!!
-popd 
+popd
 ```
 
 #### Validate simulations from example10
@@ -178,7 +179,7 @@ for file in $(ls Example10loci_*.out); do echo "Validating |$file|" && cmp $file
 cmp Example10loci_summary.out ../../validation/example10/Example10loci_summary.out
 # Output should be empty!!!
 rm -f Example10loci_*.out
-popd 
+popd
 ```
 
 [clion]: https://www.jetbrains.com/clion/
