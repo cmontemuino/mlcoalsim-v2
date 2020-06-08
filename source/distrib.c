@@ -48,14 +48,14 @@ double gammalogn(double zz)
 	}
 	
 	z = (double)zz;
-	h = (double)sqrt(2. * PI);
+	h = sqrt(2. * PI);
 	sumc = c0 + c1/(z+1.) - c2/(z+2.) + c3/(z+3.)  - c4/(z+4.) + c5/(z+5.) - c6/(z+6.);
-	logg = (z + 0.5)*(double)log((double)(z + gamma + 0.5)) - (z + gamma + 0.5);
+	logg = (z + 0.5)*log((double)(z + gamma + 0.5)) - (z + gamma + 0.5);
 	loggammaz = log((double)h);
 	loggammaz += logg + log((double)sumc);
 	loggammaz -= log((double)z);
 	
-	return (double)loggammaz;
+	return loggammaz;
 }
 
 double factln(long int x)
@@ -71,13 +71,13 @@ double factln(long int x)
 	if(x == 0) return 0.;
 	
 	if(x < 120) {
-		if(factlog[x] == (double)0) {
-			factlog[x] = gammalogn((double)x+(double)1.0);
+		if(factlog[x] == 0.0) {
+			factlog[x] = gammalogn((double)x+1.0);
 			return factlog[x];
 		}
 		else return factlog[x];
 	}
-	return (gammalogn((double)x+(double)1.0));
+	return (gammalogn((double)x+1.0));
 }
 
 double gammadist(double alfa) 
@@ -91,23 +91,23 @@ double gammadist(double alfa)
 	double rand0,rand1,rand2;
 	double a,b,c,d,f,W;
 	
-	if(alfa <= (double)0) {
+	if(alfa <= 0.0) {
 		return (double)-10000.0;
 	}
-	if(alfa < (double)1) {
+	if(alfa < 1.0) {
 		a = rndgamma1(alfa);
 		return a;
 	}
-	if(alfa == (double)1.) return (-(double)log((double)ran1()));
+	if(alfa == 1.0) return (-log(ran1()));
 	
-	a = (double)alfa - (double)1.0;
-	b = (alfa - (double)1./((double)6.*(double)alfa))/a;
-	c = (double)2./a;
-	d = c + (double)2.0;
-	f = (double)sqrt((double)alfa);
+	a = alfa - 1.0;
+	b = (alfa - 1.0/(6.0*alfa))/a;
+	c = 2.0/a;
+	d = c + 2.0;
+	f = sqrt((double)alfa);
 		
 	do {
-		if(alfa < (double)3) {
+		if(alfa < 3.0) {
 			rand1 = ran1();
 			rand2 = ran1();
 		}
@@ -115,12 +115,12 @@ double gammadist(double alfa)
 			do {
 				rand0 = ran1();
 				rand1 = ran1();
-				rand2 = rand1 + (double)1/f * ((double)1-(double)1.86*rand0);
-			}while(rand2 < (double)0 || rand2 > (double)1.0);
+				rand2 = rand1 + 1.0/f * (1.0-1.86*rand0);
+			}while(rand2 < 0.0 || rand2 > 1.0);
 		}
 		W = b * rand1/rand2;
-		if(c*rand2-d+W+(double)1./W <= (double)0.) break;
-	}while(c*log((double)rand2)-log((double)W)+W-(double)1. >= (double)0.);
+		if(c*rand2-d+W+1.0/W <= 0.0) break;
+	}while(c*log(rand2)-log(W)+W-1.0 >= 0.0);
 	
 	return a*W;
 }
@@ -151,7 +151,7 @@ double rndgamma1 (double s)
 				x = a*pow(r/p,1/s);
 				w=x;
 			}
-			else return ((double)0.0);
+			else return (0.0);
 		}
 		r = (double)ran1();
 		if (1.0-r <= w && r > 0.0)
@@ -172,38 +172,38 @@ double poissondist(double lambda)
 	double factln(long int);
 	double alfa,beta,k,X;
 	double rand1,rand2;
-	static double c = (double)0.6;
+	static double c = 0.6;
 	
-	if(lambda < (double)0) {
+	if(lambda < 0.0) {
 		puts("Error poissondist");
 		return (double)-10000.;
 	}
 	
-	if(lambda == (double)0) return (double)0;
-	if(lambda <= (double)20) {
+	if(lambda == 0.0) return 0.0;
+	if(lambda <= 20.0) {
 		/*included for having not biased small values with mhits=0...*/
-		r = (double)exp(-(double)lambda);
-        N = (int)0;
-        s = (double)1;
+		r = exp(-lambda);
+        N = 0;
+        s = 1.0;
         do {
             s *= ran1();
-            if(s >= r) N += (int)1;
+            if(s >= r) N += 1;
             else break;
         }while(1);
 	}
 	else {
-		beta = (double)PI * (double)1./(double)sqrt((double)3*(double)lambda);
-		alfa = beta * (double)lambda;
-		k = (double)log((double)c) - (double)lambda - (double)log((double)beta);
+		beta = PI * 1.0/sqrt(3.0*lambda);
+		alfa = beta * lambda;
+		k = log(c) - lambda - log(beta);
 		do{
 			rand1 = ran1();
-			X = (alfa-(double)log(((double)1-(double)rand1)/(double)rand1))/beta;
-			if(X >= (double)-0.5) {
-				N = (int)(X + (double)0.5);
+			X = (alfa-log((1.0-rand1)/rand1))/beta;
+			if(X >= -0.5) {
+				N = (int)(X + 0.5);
 				rand2 = ran1();
 				if(alfa - beta*X +
-				  (double)log((double)(rand2/(((double)1+(double)exp((double)(alfa-beta*X)))*((double)1+(double)exp((double)(alfa-beta*X)))))) 
-				  <= k + (double)N*(double)log((double)lambda) - (double)factln((long int)N)) 
+				  log((double)(rand2/((1.0+exp((alfa-beta*X)))*(1.0+exp((alfa-beta*X)))))) 
+				  <= k + (double)N*log(lambda) - factln((long int)N)) 
 					break;
 			}
 		}while(1);
@@ -232,9 +232,9 @@ double binomialdist(double pp, int n)
 			printf("Error allocation memory");
 			return -10000;
 		}
-		f[1] = (double)0;
+		f[1] = 0.0;
 		for(N=1;N<max;N++)
-			f[N+1] = f[N] + (double)log((double)N);
+			f[N+1] = f[N] + log((double)N);
 	}
 	if(n > max) {
 		if((f=(double *)realloc(f,n*sizeof(double))) == 0) {
@@ -242,11 +242,11 @@ double binomialdist(double pp, int n)
 			return -10000;
 		}
 		for(N=max;N<n;N++)
-			f[N+1] = f[N] + (double)log((double)N);
+			f[N+1] = f[N] + log((double)N);
 		max = n;
 	}
 	
-	if(pp > 0.5) p = (double)1.-pp;
+	if(pp > 0.5) p = 1.0-pp;
 	else p = pp;
 	
 	np = n * p;
@@ -255,9 +255,9 @@ double binomialdist(double pp, int n)
 		puts("Error bindist");
 		return (double)-10000.;
 	}
-	if(p==(double)0) {
+	if(p==0.0) {
 		if(pp > 0.5) return (double)n;
-		return (double)0;
+		return 0.0;
 	}
 	
 	if(n < 20) {
@@ -268,15 +268,15 @@ double binomialdist(double pp, int n)
 			if(ran1()<p) N++;		
 	}
 	else {
-		if(np < (double)10) {
+		if(np < 10.0) {
 			/*Rejection Method: BI Algorithm*/
-			s = (double)1- p;
-			A = (double)1;
+			s = 1.0- p;
+			A = 1.0;
 			B = p/s;
-			C = ((double)n+(double)1)*B;
+			C = ((double)n+1.0)*B;
 			D = A;
 			N = 0;
-			V = ran1()/(double)pow(s,(double)n);
+			V = ran1()/pow(s,(double)n);
 			while(V > A) {
 				N++;
 				D *= (C/(double)N - B);
@@ -286,17 +286,17 @@ double binomialdist(double pp, int n)
 		}
 		else {
 			/*Poisson method: BP Algorithm*/
-			mu = n - (double)floor((double)(n*((double)1 - p)));
-			if(n*((double)1-p) - (double)floor((double)(n*((double)1-p))) > p)
-				mu = p*((double)floor((double)(n*((double)1-p))) + (double)1) / ((double)1-p);
-			r = ((double)1/p - (double)1) * mu;
-			s = (double)log((double)r);
+			mu = n - (double)floor((double)(n*(1.0 - p)));
+			if(n*(1.0-p) - (double)floor((double)(n*(1.0-p))) > p)
+				mu = p*((double)floor((double)(n*(1.0-p))) + 1.0) / (1.0-p);
+			r = (1.0/p - 1.0) * mu;
+			s = log((double)r);
 			m = (double)floor((double)(r));
 			do {
 				do {
 					N = (int)poissondist(mu);
 				}while((int)N > n);
-				V = -(double)log((double)ran1());
+				V = -log((double)ran1());
 			}while(V < (m-(double)(n - N))*s - f[(int)m+1] + f[(int)(n-N)+1]);
 		}
 	}
@@ -316,29 +316,29 @@ double largebinomialdist(double pp, double n)
 	double g,plog,pclog,sq,angle,y,em,tt;
 	double gammln(double);	
 	
-	if(pp > 0.5) p = (double)1.-pp;
+	if(pp > 0.5) p = 1.0-pp;
 	else p = pp;
 	
 	np = n * p;
 	
 	if(n==0) {
 		puts("Error bindist");
-		return (double)-10000.;
+		return -10000.0;
 	}
-	if(p==(double)0) {
-		if(pp > 0.5) return (double)n;
-		return (double)0;
+	if(p==0.0) {
+		if(pp > 0.5) return n;
+		return 0.0;
 	}
 	
-	if(np < (double)10) {
+	if(np < 10.0) {
 		/*Rejection Method: BI Algorithm*/
-		s = (double)1- p;
-		A = (double)1;
+		s = 1.0- p;
+		A = 1.0;
 		B = p/s;
-		C = ((double)n+(double)1)*B;
+		C = (n+1.0)*B;
 		D = A;
 		N = 0;
-		V = ran1()/(double)pow(s,(double)n);
+		V = ran1()/pow(s,n);
 		while(V > A) {
 			N++;
 			D *= (C/(double)N - B);
@@ -348,9 +348,9 @@ double largebinomialdist(double pp, double n)
 	}
 	else { /*Rejection method with a Lorentzian comparison distribution*/
 		g = gammln(n+1.);
-		plog  = (double)log(p);
-		pclog = (double)log((1.0 - p));
-		sq = (double)sqrt(2.0*np*(1.0 - p));
+		plog  = log(p);
+		pclog = log((1.0 - p));
+		sq = sqrt(2.0*np*(1.0 - p));
 		do {
 			do {
 				angle = PI*ran1();
@@ -382,20 +382,20 @@ int zbracn(double (*func)(double,double,double,double,double,double,double,doubl
     f1 = (*func)(*x1,a0,a1,a2,a3,a4,a5,a6,a7,a8);
     f2 = (*func)(*x2,a0,a1,a2,a3,a4,a5,a6,a7,a8);
 	
-	if(f1*f2 < (double)0) return 1;
+	if(f1*f2 < 0.0) return 1;
 
     while(k--) {
         if(fabs(f1) < fabs(f2)) {
-            *x1 += (double)1.5 * (*x1 - *x2);
+            *x1 += 1.5 * (*x1 - *x2);
 			if(*x1 < 0.) 
 				*x1 = 0.;
             f1 = (*func)(*x1,a0,a1,a2,a3,a4,a5,a6,a7,a8);
         }
         else {
-            *x2 += (double)1.5 * (*x2 - *x1);
+            *x2 += 1.5 * (*x2 - *x1);
             f2 = (*func)(*x2,a0,a1,a2,a3,a4,a5,a6,a7,a8);
         }
-        if(f1*f2 < (double)0) return 1;
+        if(f1*f2 < 0.0) return 1;
     }
     
 	return 0;
@@ -416,9 +416,9 @@ double zriddrn(double (*func)(double,double,double,double,double,double,double,d
     flow  = (*func)(xlow ,a0,a1,a2,a3,a4,a5,a6,a7,a8);
     fhigh = (*func)(xhigh,a0,a1,a2,a3,a4,a5,a6,a7,a8);
 
-	if(flow  == (double)0) return xlow;
-	if(fhigh == (double)0) return xhigh;
-	if(flow*fhigh > (double)0) 
+	if(flow  == 0.0) return xlow;
+	if(fhigh == 0.0) return xhigh;
+	if(flow*fhigh > 0.0) 
 		return (double)-1e32;
 	
 	x1 = xlow;
@@ -427,29 +427,29 @@ double zriddrn(double (*func)(double,double,double,double,double,double,double,d
 	f2 = fhigh;
 		
 	while(k--) {
-		x3 = (x1+x2)/(double)2;
+		x3 = (x1+x2)/2.0;
 		f3 = (*func)(x3,a0,a1,a2,a3,a4,a5,a6,a7,a8);
-		if(f1 - f2 < (double)0) nsign = (double)-1;
-		else nsign = (double)1;
+		if(f1 - f2 < 0.0) nsign = -1.0;
+		else nsign = 1.0;
 		num = (x3-x1) * f3 * nsign;
-		den = (double)sqrt((double)f3*(double)f3 - (double)f1*(double)f2);
+		den = sqrt(f3*f3 - f1*f2);
 		if(den <= xacc && -den <= xacc) return x3;
 		x4 = x3 + num/den;
 		f4 = (*func)(x4,a0,a1,a2,a3,a4,a5,a6,a7,a8);
 		if(f4 <= xacc && -f4 <= xacc) return x4;
-		if(f3*f4<(double)0) {
+		if(f3*f4<0.0) {
 			x1 = x3;
 			f1 = f3;
 			x2 = x4;
 			f2 = f4;
 		}
 		else {
-			if(f1*f4<(double)0) {
+			if(f1*f4<0.0) {
 				x2 = x4;
 				f2 = f4;
 			}
 			else {
-				if(f2*f4<(double)0) {
+				if(f2*f4<0.0) {
 					x1 = x4;
 					f1 = f4;
 				}
@@ -564,12 +564,12 @@ int make_priord(struct var_priors *priorx,long int niter)
 					/*log10-uniform*/ /*min, max*/
 					if(arg[1] < 0 && arg[2] < 0) {
 						val1 = -1.; 
-						value = (double)pow((double)10,(double)log10((double)arg[2]*val1) + ((double)log10((double)arg[1]*val1) - (double)log10((double)arg[2]*val1)) * ran1());
+						value = pow(10.0,log10((double)arg[2]*val1) + (log10((double)arg[1]*val1) - log10((double)arg[2]*val1)) * ran1());
 						value *= val1;
 					}
 					else {
 						val1 = +1.;
-						value = (double)pow((double)10,(double)log10((double)arg[1]*val1) + ((double)log10((double)arg[2]*val1) - (double)log10((double)arg[1]*val1)) * ran1());
+						value = pow(10.0,log10((double)arg[1]*val1) + (log10((double)arg[2]*val1) - log10((double)arg[1]*val1)) * ran1());
 					}
 					break;
 				case 2:
@@ -618,18 +618,18 @@ double gammln(double zz)
 	
 	if(zz <= 0.) {
 		puts("Error gamma");
-		return (double)-10000.;
+		return -10000.0;
 	}
 	
-	z = (double)zz;
-	h = (double)sqrt(2. * PI);
+	z = zz;
+	h = sqrt(2. * PI);
 	sumc = c0 + c1/(z+1.) - c2/(z+2.) + c3/(z+3.)  - c4/(z+4.) + c5/(z+5.) - c6/(z+6.);
-	logg = (z + 0.5)*(double)log((double)(z + gamma + 0.5)) - (z + gamma + 0.5);
-	loggammaz = log((double)h);
-	loggammaz += logg + log((double)sumc);
-	loggammaz -= log((double)z);
+	logg = (z + 0.5)*log((z + gamma + 0.5)) - (z + gamma + 0.5);
+	loggammaz = log(h);
+	loggammaz += logg + log(sumc);
+	loggammaz -= log(z);
 	
-	return (double)loggammaz;
+	return loggammaz;
 }
 
 double betacf(double a, double b, double x)
@@ -642,35 +642,35 @@ double betacf(double a, double b, double x)
     double aa,c,d,del,h,qab,qam,qap;
     
     qab = a + b;
-    qap = a + (double)1.0;
-    qam = a - (double)1.0;
-    c = (double)1.0;
-    d = (double)1.0 - qab*x/qap;
+    qap = a + 1.0;
+    qam = a - 1.0;
+    c = 1.0;
+    d = 1.0 - qab*x/qap;
     if(fabs(d) < FPMIN) d = (double)FPMIN;
-    d = (double)1.0/d;
+    d = 1.0/d;
     h = d;
     for(m = 1;m <= MAXIT; m++) {
         m2 = 2*m;
         aa = m*(b-m)*x/((qam+m2)*(a+m2));
-        d = (double)1.0 + aa*d;
-        if((double)fabs(d) < FPMIN) d = (double)FPMIN;
-        c = (double)1.0 + aa/c;
-        if((double)fabs(c) < FPMIN) c = (double)FPMIN;
-        d = (double)1.0/d;
+        d = 1.0 + aa*d;
+        if(fabs(d) < FPMIN) d = (double)FPMIN;
+        c = 1.0 + aa/c;
+        if(fabs(c) < FPMIN) c = (double)FPMIN;
+        d = 1.0/d;
         h *= d*c;
         aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
-        d = (double)1.0 + aa*d;
-        if((double)fabs(d) < FPMIN) d = (double)FPMIN;
-        c = (double)1.0 + aa/c;
-        if((double)fabs(c) < FPMIN) c = (double)FPMIN;
-        d = (double)1.0/d;
+        d = 1.0 + aa*d;
+        if(fabs(d) < FPMIN) d = (double)FPMIN;
+        c = 1.0 + aa/c;
+        if(fabs(c) < FPMIN) c = (double)FPMIN;
+        d = 1.0/d;
         del = d*c;
         h *= del;
-        if((double)fabs(del-(double)1.0) < EPS) break;
+        if((double)fabs(del-1.0) < EPS) break;
     }
     if(m > MAXIT)  {
 		puts("Error in betacf. MAXIT is too small.");
-		return (double)-10000;
+		return -10000.0;
 	}
     return h;
 }
@@ -684,15 +684,15 @@ double betai(double a, double b,double x)
     double gammln(double xx);
     double bt;
     
-    if(x < (double)0.0 || x > (double)1.0) {
+    if(x < 0.0 || x > 1.0) {
         puts("Error in betai.");
-        return (double)-1.0;
+        return -1.0;
     }
-    if(x == (double)0.0 || x == (double)1.0) bt = (double)0.0;
-    else bt = (double)exp(gammln(a+b)-gammln(a)-gammln(b)+a*(double)log(x)+b*(double)log((double)1.0-x));
+    if(x == 0.0 || x == 1.0) bt = 0.0;
+    else bt = exp(gammln(a+b)-gammln(a)-gammln(b)+a*log(x)+b*log(1.0-x));
     
-    if(x < (a + (double)1.0)/(a + b + (double)2.0)) return bt*betacf(a,b,x)/a;
-    else return (double)1.0 - bt*betacf(b,a,(double)1.0-x)/b;
+    if(x < (a + 1.0)/(a + b + 2.0)) return bt*betacf(a,b,x)/a;
+    else return 1.0 - bt*betacf(b,a,1.0-x)/b;
 }
 
 /*INTEGRATION BIONOMIAL: SEARCH FOR p FOR A GIVEN CUMMULATIVE VALUE*/

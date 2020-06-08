@@ -497,7 +497,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		if(!((*data)->obs_statistics[x] = (double **)calloc((unsigned)20,sizeof(double *)))) perror("calloc error.113");
 		for(y=0;y<20;y++) {
 			if(!((*data)->obs_statistics[x][y] = (double *)calloc((unsigned)20,sizeof(double)))) perror("calloc error.113b");
-			(*data)->obs_statistics[x][y][0] = (double)0;/*redundant*/
+			(*data)->obs_statistics[x][y][0] = 0.0;/*redundant*/
 		}
 		(*data)->likelihood_error[x] = (double)1e-6;
 		(*data)->obs_statistics_used[x] = 0;
@@ -1398,7 +1398,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						exit(1);
 				}
 			}
-			if(((*data)->linked_segsites != (double)-1) &&
+			if(((*data)->linked_segsites != -1.0) &&
 			   ((*data)->sfix_allthetas == 0 )) {
 				printf("Error: Not allowed to fix segsites in linked fragments wihthout the option 'Sfix_allthetas'.\n");
 				exit(1);
@@ -1421,11 +1421,11 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 				}
 			}
 
-			if((*data)->linked_rm != (double)-1 && (*data)->rmfix == 0) {
+			if((*data)->linked_rm != -1.0 && (*data)->rmfix == 0) {
 				printf("Error: Not allowed to fix Rm in linked fragments wihthout the option 'rmfix'.\n");
 				exit(1);
 			}
-			if((*data)->linked_nhapl != (double)0 && (*data)->rmfix == 0) {
+			if((*data)->linked_nhapl != 0.0 && (*data)->rmfix == 0) {
 				printf("Error: Not allowed to fix the number of haplotypes in linked fragments wihthout the option 'rmfix'.\n");
 				exit(1);
 			}
@@ -1490,7 +1490,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		if(!((*data)->f = (double *)realloc((*data)->f,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->f[0] = (double)(*data)->n_loci;
-		for(x=1;x<(*data)->n_loci+1;x++) (*data)->f[x] = (double)0;
+		for(x=1;x<(*data)->n_loci+1;x++) (*data)->f[x] = 0.0;
 	}
 	
     if((*data)->track_len[0] > 0) {
@@ -1503,7 +1503,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		if(!((*data)->track_len = (double *)realloc((*data)->track_len,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->track_len[0] = (double)(*data)->n_loci;
-		for(x=1;x<(*data)->n_loci+1;x++) (*data)->track_len[x] = (double)0;
+		for(x=1;x<(*data)->n_loci+1;x++) (*data)->track_len[x] = 0.0;
 	}
 	
     
@@ -1517,7 +1517,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		if(!((*data)->heter_theta_alphag = (double *)realloc((*data)->heter_theta_alphag,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->heter_theta_alphag[0] = (double)(*data)->n_loci;
-		for(x=1;x<(*data)->n_loci+1;x++) (*data)->heter_theta_alphag[x] = (double)-1;
+		for(x=1;x<(*data)->n_loci+1;x++) (*data)->heter_theta_alphag[x] = -1.0;
 	}
 		
     if((*data)->invariable_mut_sites[0] > 0) {
@@ -1551,7 +1551,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		if(!((*data)->heter_rm_alphag = (double *)realloc((*data)->heter_rm_alphag,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->heter_rm_alphag[0] = (double)(*data)->n_loci;
-		for(x=1;x<(*data)->n_loci+1;x++) (*data)->heter_rm_alphag[x] = (double)-1;
+		for(x=1;x<(*data)->n_loci+1;x++) (*data)->heter_rm_alphag[x] = -1.0;
 	}
 
     if((int)(*data)->nsites[0] != (*data)->n_loci) {
@@ -1853,7 +1853,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         /**/
     }
 	
-    if((*data)->theta_1[0] == 0 || ((*data)->theta_1[0] == 1 && (*data)->theta_1[1] <= (double)0)) {
+    if((*data)->theta_1[0] == 0 || ((*data)->theta_1[0] == 1 && (*data)->theta_1[1] <= 0.0)) {
 		if((*data)->mutations[0] == 0 || ((*data)->mutations[0] == 1 && (*data)->mutations[1] == -1 && (int)(*data)->mutations[0] != (*data)->n_loci)) {
 			if((*data)->range_thetant == 0 && (*data)->ifgamma == 0) {
                 printf("Error: thetaw, mutations, range_thetant and/or ifgamma must be defined\n");
@@ -1999,12 +1999,12 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			printf("Error: alpha gamma parameter must be defined for ALL loci and be higher than 0.\n");
 			exit(1);
 		}
-		if((*data)->correct_gamma[0] == (double)0) {
+		if((*data)->correct_gamma[0] == 0.0) {
 			if(!((*data)->correct_gamma = (double *)realloc((*data)->correct_gamma,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 				perror("realloc error.155");
 			(*data)->correct_gamma[0] = (double)(*data)->n_loci;
 			for(x=1;x<=(*data)->n_loci;x++) {
-				(*data)->correct_gamma[x] = (double)1.0;
+				(*data)->correct_gamma[x] = 1.0;
 			}
 		}
 		if((*data)->correct_gamma[0] != (double)(*data)->n_loci) {
@@ -2013,58 +2013,58 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	for(x=1;x<=(*data)->n_loci;x++) {
-		if(((*data)->ifgamma == 1 && (*data)->sfix_allthetas > 0) && ((*data)->p_gamma[x] <= (double)0.0 || (*data)->alpha_gamma[x] <= (double)0. || (*data)->correct_gamma[x] <= (double)0.)) {
+		if(((*data)->ifgamma == 1 && (*data)->sfix_allthetas > 0) && ((*data)->p_gamma[x] <= 0.0 || (*data)->alpha_gamma[x] <= 0.0 || (*data)->correct_gamma[x] <= 0.0)) {
 			printf("Error: gamma parameters must be defined for ALL loci and be higher than 0.\n");
 			exit(1);
 		}
 	}
 	
-	if((*data)->factor_chrn[0] == (double)0) {
+	if((*data)->factor_chrn[0] == 0.0) {
 		if(!((*data)->factor_chrn = (double *)realloc((*data)->factor_chrn,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		(*data)->factor_chrn[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
-			(*data)->factor_chrn[x] = (double)1.0;
+			(*data)->factor_chrn[x] = 1.0;
 		}
 	}
 	if((*data)->factor_chrn[0] > 1 && (*data)->factor_chrn[0] < (*data)->n_loci) {
 		if(!((*data)->factor_chrn = (double *)realloc((*data)->factor_chrn,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->factor_chrn[0];x<=(int)(*data)->n_loci;x++) {
-			(*data)->factor_chrn[x] = (double)1.0;
+			(*data)->factor_chrn[x] = 1.0;
 		}
 		(*data)->factor_chrn[0] = (double)(*data)->n_loci;
 	}
 	
 #if SEXRATIOA1 > -1
 	for(x=1;x<=(int)(*data)->n_loci;x++) {
-		if((*data)->factor_chrn[x] != (double)1.0 && (*data)->factor_chrn[x] != (double)0.75 && (*data)->factor_chrn[x] != (double)0.25 && (*data)->factor_chrn[x] != (double)-0.25) {
+		if((*data)->factor_chrn[x] != 1.0 && (*data)->factor_chrn[x] != 0.75 && (*data)->factor_chrn[x] != 0.25 && (*data)->factor_chrn[x] != -0.25) {
 			printf("Error: factor_chr can only be 1.00 (Autosomes), 0.75 (X,Z), 0.25 (Y,W) or -0.25 (mithocondrial).\n");
 			exit(1);
 		}
 	}
 #else 
 	for(x=1;x<=(int)(*data)->n_loci;x++) {
-		if((*data)->factor_chrn[x] != (double)1.0 && (*data)->factor_chrn[x] != (double)1.33 && (*data)->factor_chrn[x] != (double)0.33 && (*data)->factor_chrn[x] != (double)-0.33) {
+		if((*data)->factor_chrn[x] != 1.0 && (*data)->factor_chrn[x] != 1.33 && (*data)->factor_chrn[x] != 0.33 && (*data)->factor_chrn[x] != -0.33) {
 			printf("Error: factor_chr can only be 1.00 (Autosomes), 1.33 (X,Z), 0.33 (Y,W) or -0.33 (mithocondrial).\n");
 			exit(1);
 		}
 	}
 #endif
 
-	if((*data)->ratio_sv[0] == (double)0) {
+	if((*data)->ratio_sv[0] == 0.0) {
 		if(!((*data)->ratio_sv = (double *)realloc((*data)->ratio_sv,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		(*data)->ratio_sv[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
-			(*data)->ratio_sv[x] = (double)0.50;
+			(*data)->ratio_sv[x] = 0.50;
 		}
 	}
 	if((*data)->ratio_sv[0] < (*data)->n_loci) {
 		if(!((*data)->ratio_sv = (double *)realloc((*data)->ratio_sv,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->ratio_sv[0];x<=(int)(*data)->n_loci;x++) {
-			(*data)->ratio_sv[x] = (double)0.50;
+			(*data)->ratio_sv[x] = 0.50;
 		}
 		(*data)->ratio_sv[0] = (double)(*data)->n_loci;
 	}
@@ -2074,14 +2074,14 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			perror("realloc error.155");
 		(*data)->p_gamma[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
-			(*data)->p_gamma[x] = (double)1.0;
+			(*data)->p_gamma[x] = 1.0;
 		}
 	}
 	if((*data)->p_gammar[0] < (*data)->n_loci) {
 		if(!((*data)->p_gammar = (double *)realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->p_gammar[0];x<=(int)(*data)->n_loci;x++) {
-			(*data)->p_gammar[x] = (double)1.0;
+			(*data)->p_gammar[x] = 1.0;
 		}
 		(*data)->p_gammar[0] = (double)(*data)->n_loci;
 	}
@@ -2091,14 +2091,14 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			perror("realloc error.155");
 		(*data)->alpha_gamma[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
-			(*data)->alpha_gamma[x] = (double)1.0;
+			(*data)->alpha_gamma[x] = 1.0;
 		}
 	}
 	if((*data)->alpha_gammar[0] < (*data)->n_loci) {
 		if(!((*data)->alpha_gammar = (double *)realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->alpha_gammar[0];x<=(int)(*data)->n_loci;x++) {
-			(*data)->alpha_gammar[x] = (double)1.0;
+			(*data)->alpha_gammar[x] = 1.0;
 		}
 		(*data)->alpha_gammar[0] = (double)(*data)->n_loci;
 	}
@@ -2108,14 +2108,14 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			perror("realloc error.155");
 		(*data)->correct_gamma[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
-			(*data)->correct_gamma[x] = (double)1.0;
+			(*data)->correct_gamma[x] = 1.0;
 		}
 	}
 	if((*data)->correct_gammar[0] < (*data)->n_loci) {
 		if(!((*data)->correct_gammar = (double *)realloc((*data)->correct_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->correct_gammar[0];x<=(int)(*data)->n_loci;x++) {
-			(*data)->correct_gammar[x] = (double)1.0;
+			(*data)->correct_gammar[x] = 1.0;
 		}
 		(*data)->correct_gammar[0] = (double)(*data)->n_loci;
 	}
@@ -2197,12 +2197,12 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			printf("Error: alpha gammar parameter must be defined for ALL loci and be higher than 0.\n");
 			exit(1);
 		}
-		if((*data)->correct_gammar[0] == (double)0) {
+		if((*data)->correct_gammar[0] == 0.0) {
 			if(!((*data)->correct_gammar = (double *)realloc((*data)->correct_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 				perror("realloc error.155");
 			(*data)->correct_gammar[0] = (double)(*data)->n_loci;
 			for(x=1;x<=(*data)->n_loci;x++) {
-				(*data)->correct_gammar[x] = (double)1.0;
+				(*data)->correct_gammar[x] = 1.0;
 			}
 		}
 		if((*data)->correct_gammar[0] != (double)(*data)->n_loci) {
@@ -2211,42 +2211,42 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	for(x=1;x<=(*data)->n_loci;x++) {
-		if(((*data)->ifgammar == 1 && (*data)->rmfix > 0) && ((*data)->p_gammar[x] <= (double)0.0 || (*data)->alpha_gammar[x] <= (double)0. || (*data)->correct_gammar[x] <= (double)0.)) {
+		if(((*data)->ifgammar == 1 && (*data)->rmfix > 0) && ((*data)->p_gammar[x] <= 0.0 || (*data)->alpha_gammar[x] <= 0.0 || (*data)->correct_gammar[x] <= 0.0)) {
 			printf("Error: gammar parameters must be defined for ALL loci and be higher than 0.\n");
 			exit(1);
 		}
 	}
 
-	if((*data)->p_gammar[0] == (double)0) {
+	if((*data)->p_gammar[0] == 0.0) {
 		if(!((*data)->p_gammar = (double *)realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.158");
 		(*data)->p_gammar[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
-			(*data)->p_gammar[x] = (double)1.0;
+			(*data)->p_gammar[x] = 1.0;
 		}
 	}
 	if((*data)->p_gammar[0] < (*data)->n_loci) {
 		if(!((*data)->p_gammar = (double *)realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.159");
 		for(x=(int)(*data)->p_gammar[0];x<=(int)(*data)->n_loci;x++) {
-			(*data)->p_gammar[x] = (double)1.0;
+			(*data)->p_gammar[x] = 1.0;
 		}
 		(*data)->p_gammar[0] = (double)(*data)->n_loci;
 	}
 
-	if((*data)->alpha_gammar[0] == (double)0) {
+	if((*data)->alpha_gammar[0] == 0.0) {
 		if(!((*data)->alpha_gammar = (double *)realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.159n");
 		(*data)->alpha_gammar[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
-			(*data)->alpha_gammar[x] = (double)1.0;
+			(*data)->alpha_gammar[x] = 1.0;
 		}
 	}
 	if((*data)->alpha_gammar[0] < (*data)->n_loci) {
 		if(!((*data)->alpha_gammar = (double *)realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.159p");
 		for(x=(int)(*data)->alpha_gammar[0];x<=(int)(*data)->n_loci;x++) {
-			(*data)->alpha_gammar[x] = (double)1.0;
+			(*data)->alpha_gammar[x] = 1.0;
 		}
 		(*data)->alpha_gammar[0] = (double)(*data)->n_loci;
 	}
@@ -2273,7 +2273,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 	if((*data)->likelihood_line) {
 		y = 0;
 		for(x=0;x<NOBS_STATISTICS;x++) {
-			if((*data)->obs_statistics_used[x] == (double)1) {
+			if((*data)->obs_statistics_used[x] == 1.0) {
 				y = 1;
 				break;
 			}
@@ -2464,14 +2464,14 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			(*data)->max_npop_sampled = (*data)->npop_sampled[x+1];
 	}
 	for(x=0;x<NOBS_STATISTICS;x++) {
-		if((*data)->obs_statistics_used[x] == (double)0) {
+		if((*data)->obs_statistics_used[x] == 0.0) {
 			if(windows >= 20) {
 				if(!((*data)->obs_statistics[x] = (double **)realloc((*data)->obs_statistics[x],(unsigned)(windows+1)*sizeof(double *)))) 
 					perror("realloc error.obs_statistics");
 			}
 		}
 		for(z=0;z<windows;z++) {
-			if((*data)->obs_statistics_used[x] == (double)0) {
+			if((*data)->obs_statistics_used[x] == 0.0) {
 				if(z >= 20) {
 					if(!((*data)->obs_statistics[x][z] = (double *)calloc((unsigned)((*data)->max_npop_sampled+1),sizeof(double)))) 
 						perror("realloc error.obs_statistics");
@@ -2481,10 +2481,10 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						perror("realloc error.obs_statistics");
 				}
 				(*data)->obs_statistics[x][z][0] = (double)(*data)->max_npop_sampled;
-				for(y=1;y<=(*data)->max_npop_sampled;y++) (*data)->obs_statistics[x][z][y] = (double)-10000;
+				for(y=1;y<=(*data)->max_npop_sampled;y++) (*data)->obs_statistics[x][z][y] = -10000.0;
 			}
 			else {
-				if((*data)->obs_statistics_used[x] == (double)1 && (*data)->obs_statistics[x][z][0] != (double)(*data)->max_npop_sampled) {
+				if((*data)->obs_statistics_used[x] == 1.0 && (*data)->obs_statistics[x][z][0] != (double)(*data)->max_npop_sampled) {
 					switch(x) {
 						case 0:
 							printf("Error: TD observed values (if defined) must have the maximum number of samped populations values for all loci. \n Please include the values for the MAXIMUM number of sampled populations defined (if not exist, include the value -10000), comma, and the next loci. \n");
@@ -2624,7 +2624,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 							break;
 					}
 				}
-				if((*data)->obs_statistics_used[x] != (double)0 && (*data)->obs_statistics_used[x] != (double)1) {
+				if((*data)->obs_statistics_used[x] != 0.0 && (*data)->obs_statistics_used[x] != 1.0) {
 					switch(x) {
 						case 0:
 							printf("Error: TD_obs_active value must be 0 when is not defined and 1 when defined\n");
@@ -2764,7 +2764,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 							break;
 					}
 				}
-				if((*data)->likelihood_error[x] <= (double)0 && (*data)->obs_statistics_used[x] == (double)1 && (*data)->likelihood_line) {
+				if((*data)->likelihood_error[x] <= 0.0 && (*data)->obs_statistics_used[x] == 1.0 && (*data)->likelihood_line) {
 					switch(x) {
 						case 0:
 							printf("Error: TD_err must be defined if likelihod_line is active\n");
@@ -2984,7 +2984,7 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
     fprintf(out," %d",(*data)->n_loci);
     print_var(65,out);
 	fprintf(out," %d",(*data)->no_rec_males);
-	if((*data)->invariable_mut_sites[1] > (double)0) {
+	if((*data)->invariable_mut_sites[1] > 0.0) {
 		print_var(74,out);        
 		for(y=1;y<(*data)->invariable_mut_sites[0]+1;y++) 
 			if((*data)->invariable_mut_sites[y]>=REFNUMBER && (*data)->invariable_mut_sites[y] < REFNUMBER + PLUSPRIOR) 
@@ -3095,14 +3095,14 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
 		print_var(76,out);
 		fprintf(out," %d",(*data)->sfix_pop);
 	}
-	if(!((*data)->theta_1[0] == (double)0 || ((*data)->theta_1[0] == (double)1 && (*data)->theta_1[1] == (double)0))) {
+	if(!((*data)->theta_1[0] == 0.0 || ((*data)->theta_1[0] == 1.0 && (*data)->theta_1[1] == 0.0))) {
         print_var(9,out);
         for(y=1;y<(*data)->theta_1[0]+1;y++) 
 			if((*data)->theta_1[y]>=REFNUMBER && (*data)->theta_1[y] < REFNUMBER + PLUSPRIOR) 
 				fprintf(out," &%d",(int)((double)(*data)->theta_1[y]-REFNUMBER));
 			else fprintf(out," %G",(*data)->theta_1[y]);
     }
-	if((*data)->heter_theta_alphag[1] > (double)0) {
+	if((*data)->heter_theta_alphag[1] > 0.0) {
 		print_var(69,out);
 		for(y=1;y<(*data)->n_loci+1;y++) 
 			if((*data)->heter_theta_alphag[y]>=REFNUMBER && (*data)->heter_theta_alphag[y] < REFNUMBER + PLUSPRIOR) 
@@ -3156,7 +3156,7 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
 		print_var(77,out);
 		fprintf(out," %d",(*data)->rmfix_pop);
 	}
-	if((*data)->heter_rm_alphag[1] > (double)0) {
+	if((*data)->heter_rm_alphag[1] > 0.0) {
 		print_var(70,out);
 		for(y=1;y<(*data)->n_loci+1;y++) 
 			if((*data)->heter_rm_alphag[y]>=REFNUMBER && (*data)->heter_rm_alphag[y] < REFNUMBER + PLUSPRIOR) 
@@ -3531,7 +3531,7 @@ void output_data(FILE *out, char *in, char *file_out, struct var **data,struct v
 	for(x=0;x<NOBS_STATISTICS;x++) {
 		if((*data)->obs_statistics_used[x]) {
 			print_var(defnumber+x,out);
-			for(y=0;y<totalnloci/*(*data)->n_loci*/;y++) {
+			for(y=0;y<totalnloci;y++) {
 				if(y>0) fputs(", ",out);
 				for(z=1;z<=(*data)->max_npop_sampled;z++) {
 					fprintf(out," %G",(*data)->obs_statistics[x][y][z]);
@@ -3817,7 +3817,7 @@ void init_data_priors(struct var **data,struct var_priors **priors)
 		if(!((*data)->obs_statistics[x] = (double **)calloc((unsigned)20,sizeof(double *)))) perror("calloc error.113");
 		for(y=0;y<20;y++) {
 			if(!((*data)->obs_statistics[x][y] = (double *)calloc((unsigned)20,sizeof(double)))) perror("calloc error.113b");
-			(*data)->obs_statistics[x][y][0] = (double)0;/*redundant*/
+			(*data)->obs_statistics[x][y][0] = 0.0;/*redundant*/
 		}
 		(*data)->likelihood_error[x] = (double)1e-6;
 		(*data)->obs_statistics_used[x] = 0;
@@ -3844,7 +3844,7 @@ void BuildBcast_derived_data(struct var **data,struct var_priors **priors,int my
 	long int npi;
 	int restl,resti;
 
-	int i,j/*,k*/;
+	int i,j;
 	void init_data_priors(struct var **,struct var_priors **);
 	void rankprint(struct var **,struct var_priors **,int);
 	
@@ -4468,7 +4468,6 @@ void rankprint(struct var **data,struct var_priors **priors,int my_rank)
 	for(i=0;i<(*data)->npop_events;i++) for(j=0;j<6+2*(*data)->npop;j++) printf("rank: %d, pop_event[%d][%d]: %f\n",my_rank,i,j,(*data)->pop_event[i][j]);
 	for(i=0;i<(*data)->npop;i++) for(j=0;j<(*data)->nintn[i+1]+2;j++) printf("rank: %d, nrec[%d][%d]: %f\n",my_rank,i,j,(*data)->nrec[i][j]);
 	for(i=0;i<(*data)->npop;i++) for(j=0;j<(*data)->nintn[i+1]+2;j++) printf("rank: %d, tpast[%d][%d]: %f\n",my_rank,i,j,(*data)->tpast[i][j]);
-	/**//*for(i=0;i<NOBS_STATISTICS;i++) for(j=0;j<(*data)->n_loci;j++) for(k=0;k<(*data)->max_npop_sampled+1;k++) printf("rank: %d, obs_statistics[%d][%d][%d]: %f\n",my_rank,i,j,k,(*data)->obs_statistics[i][j][k]);*/
 	
 	for(i=0;i<(*data)->npriors;i++) {
 		printf("rank: %d, name_pr[%d]: %s\n",my_rank,i,priors[0][i].name_pr);

@@ -194,7 +194,7 @@ int main (int argc,char *argv[])
 
 		/*TOTALNLOCI*/
 		if((*data).linked == 1 && (*data).window && (*data).despl) {
-			totalnloci = (int)ceil(((double)(*data).nsites[1] - (double)(*data).window) / ((double)(*data).despl)) + (int)1;
+			totalnloci = (int)ceil(((double)(*data).nsites[1] - (double)(*data).window) / ((double)(*data).despl)) + 1;
 		}	
 		else {
 			if((*data).linked > 1) totalnloci = (*data).linked;
@@ -845,9 +845,9 @@ int main (int argc,char *argv[])
 			jc2 = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp;
 		}
 		if((*inputp).Sfix_alltheta == 1 || (*inputp).rmfix == 1) {
-			postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap = (double)/*((*inputp).howmany + (*inputp).mc_jump)*/mc2/(double)jc2;
-			postp[0][(*inputp).howmany + (*inputp).mc_jump].recp  = (double)/*((*inputp).howmany + (*inputp).mc_jump)*/mc2/(double)jc2;
-			postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp  = (double)/*((*inputp).howmany + (*inputp).mc_jump)*/mc2/(double)jc2;
+			postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap = mc2/jc2;
+			postp[0][(*inputp).howmany + (*inputp).mc_jump].recp  = mc2/jc2;
+			postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp  = mc2/jc2;
 		}
 #else
 		/*COMMUNICATION BETWEEN PROCESSES*/		
@@ -900,8 +900,8 @@ int main (int argc,char *argv[])
 								jc2 = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp;
 								if((*inputp).Sfix_alltheta == 1 || (*inputp).rmfix == 1) 
 									mc2 = postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap;
-								postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)mc2/(double)jc2;
-								postp[0][(*inputp).howmany + (*inputp).mc_jump].recp = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = (double)mc2/(double)jc2;
+								postp[0][(*inputp).howmany + (*inputp).mc_jump].thetap = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = mc2/jc2;
+								postp[0][(*inputp).howmany + (*inputp).mc_jump].recp = postp[0][(*inputp).howmany + (*inputp).mc_jump].Ttotp = mc2/jc2;
 							}
 						}
 					}
@@ -1050,8 +1050,8 @@ int main (int argc,char *argv[])
         fprintf(file_output,"\n\nDate of completion: %s\n",s);
         fprintf(file_output,"\nDuration of the process: %.0f seconds.",difftime(end,start));
         hour =  difftime(end,start)/3600.;
-        min  = (difftime(end,start) - (double)hour*3600.)/60.;
-        sec  =  difftime(end,start) - (double)hour*3600. - (double)min*60.;
+        min  = (difftime(end,start) - hour*3600.)/60.;
+        sec  =  difftime(end,start) - hour*3600. - min*60.;
         fprintf(file_output," (%dh:%dm:%ds)\n",hour,min,sec);
     }
 #endif

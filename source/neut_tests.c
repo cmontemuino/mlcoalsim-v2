@@ -140,8 +140,7 @@ double tajima_dvsdmin(double k_, int S_, double *coef_taj,int sample_size)
         if(S_ == 0 || *(coef_taj+0) < 1.51) return(-10000); 
         
 	an = *(coef_taj+0);
-        /*kmin = (double)S_ * (2.*(double)sample_size-1.)/((double)sample_size*(double)sample_size);*/
-        kmin = (double)S_ * ((double)2/(double)sample_size);
+        kmin = (double)S_ * (2.0/(double)sample_size);
 
 	D_Dmin = (k_ - ((double)S_/an)) / (double)fabs(kmin - ((double)S_/an));
 	
@@ -186,7 +185,7 @@ double fl_d2(int sample_size,int fr1w,int S, double *coef) /* NO outgroup */
 	
 	vd2 = *(coef+4);
 	ud2 = *(coef+5);
-	D2  = ((double)S/an - (double)rs*(((double)n-(double)1)/(double)n)) /
+	D2  = ((double)S/an - (double)rs*(((double)n-1.0)/(double)n)) /
 	      sqrt(ud2*(double)S + vd2*(double)S*(double)S);
 
 	return D2;
@@ -241,7 +240,7 @@ double fay_wu(int sample_size,int *fr,double pi) /* nomes outgroup */
     
     Th = 0.;
     for(i=1;i<sample_size;i++) Th += ((double)*(fr+i))*((double)i*(double)i);
-    Th *= (double)2/((double)sample_size*(double)(sample_size-1));
+    Th *= 2.0/((double)sample_size*(double)(sample_size-1));
     
     H = pi - Th;
 
@@ -260,9 +259,8 @@ double fay_wuvsminH(int sample_size,int *fr,double pi,int S) /* nomes outgroup *
     for(i=1;i<sample_size;i++) Th += ((double)*(fr+i))*((double)i*(double)i);
     Th *= 2.0/((double)sample_size*(sample_size-1));
     
-    Thmax  = (double)S * ((double)(sample_size-1)*(double)(sample_size-1)) * ((double)2/((double)sample_size*(double)(sample_size-1)));
-    /*pimin  = (double)S * (2./((double)sample_size*(double)sample_size) * ((double)sample_size-1.);*/
-    pimin  = (double)S * ((double)2/((double)sample_size));
+    Thmax  = (double)S * ((double)(sample_size-1)*(double)(sample_size-1)) * (2.0/((double)sample_size*(double)(sample_size-1)));
+    pimin  = (double)S * (2.0/((double)sample_size));
     
     if(pimin == Thmax) return(-10000);
     else Hmin = (pi - Th)/fabs((pimin - Thmax));
@@ -275,22 +273,22 @@ double fay_wu_normalized(int n,int *fr,double pi) /* Fay and Wu H nomes outgroup
     int i;
     double TL,H,varpiTL,thetaw,an,bn,S;
     
-    if(pi == (double)0.0 || n < 2) return(-10000);
+    if(pi == 0.0 || n < 2) return(-10000);
     
-    TL = thetaw = an = bn = (double)0;
+    TL = thetaw = an = bn = 0.0;
 	for(i=1;i<n;i++) {
 		TL += ((double)*(fr+i))*((double)i);
 		thetaw += (double)*(fr+i); 
-		an += (double)1/(double)i;
-		bn += (double)1.0/((double)i*(double)i);
+		an += 1.0/(double)i;
+		bn += 1.0/((double)i*(double)i);
 	}
-    TL *= (double)1.0/((double)(n-(double)1));
+    TL *= 1.0/((double)(n-1.0));
     S = thetaw;
 	thetaw = thetaw/an;
-	varpiTL = thetaw * ((double)(n-(double)2))/((double)6*((double)(n-(double)1))) + 
-			S*(S-(double)1)/(an*an+bn) / ((double)9*((double)n*(n-(double)1)*(n-(double)1))) * 
-			  ((double)18*(double)n*(double)n*((double)3*(double)n+(double)2)*(bn+(double)1.0/((double)n*(double)n)) - 
-			  ((double)88*(double)n*(double)n*(double)n + (double)9*(double)n*(double)n - 13*(double)n + (double)6)) ;
+	varpiTL = thetaw * ((double)(n-2.0))/(6.0*((double)(n-1.0))) + 
+			S*(S-1.0)/(an*an+bn) / (9.0*((double)n*(n-1.0)*(n-1.0))) * 
+			  (18.0*(double)n*(double)n*(3.0*(double)n+2.0)*(bn+1.0/((double)n*(double)n)) - 
+			  (88.0*(double)n*(double)n*(double)n + 9.0*(double)n*(double)n - 13*(double)n + 6.0)) ;
 	
 	H = (pi - TL)/(double)sqrt(varpiTL);
 
@@ -301,14 +299,14 @@ double fay_wu_normalized2(int n,double thetaL,double thetaw,double S,double *coe
 {
     double H,varpiTL,an,bn;
     
-    if(pi == (double)0.0 || n < 4) return(-10000);
+    if(pi == 0.0 || n < 4) return(-10000);
     an = coef[0];
 	bn = coef[1];
 
-	varpiTL = thetaw * ((double)(n-(double)2))/((double)6*((double)(n-(double)1))) + 
-	          S*(S-(double)1)/(an*an+bn) / ((double)9*((double)n*(n-(double)1)*(n-(double)1))) *
-				((double)18*(double)n*(double)n*((double)3*(double)n+(double)2)*(bn+(double)1.0/((double)n*(double)n)) - 
-				((double)88*(double)n*(double)n*(double)n + (double)9*(double)n*(double)n - 13*(double)n + (double)6));
+	varpiTL = thetaw * ((double)(n-2.0))/(6.0*((double)(n-1.0))) + 
+	          S*(S-1.0)/(an*an+bn) / (9.0*((double)n*(n-1.0)*(n-1.0))) *
+				(18.0*(double)n*(double)n*(3.0*(double)n+2.0)*(bn+1.0/((double)n*(double)n)) - 
+				(88.0*(double)n*(double)n*(double)n + 9.0*(double)n*(double)n - 13*(double)n + 6.0));
 	
 	H = (pi - thetaL)/(double)sqrt(varpiTL);
 
@@ -320,14 +318,14 @@ double E_zeng(int n,double thetaL,double thetaw,double S,double *coef) /* (eq 13
 {
     double E,varLW,an,bn;
     
-    if(thetaw == (double)0.0 || n < 4) return(-10000);
+    if(thetaw == 0.0 || n < 4) return(-10000);
     an = coef[0];
 	bn = coef[1];
-	varLW = thetaw * ((double)n/((double)2*(double)(n-1)) - (double)1/an) +
-			S*(S-(double)1)/(an*an+bn) * 
-			(bn/(an*an) + (double)2*bn*((double)n/(double)(n-1))*((double)n/(double)(n-1)) - 
-			 (double)2*((double)n*bn-(double)n+(double)1)/((double)(n-1)*an) - 
-			 ((double)3*(double)n+(double)1)/((double)(n-1)));
+	varLW = thetaw * ((double)n/(2.0*(double)(n-1)) - 1.0/an) +
+			S*(S-1.0)/(an*an+bn) * 
+			(bn/(an*an) + 2.0*bn*((double)n/(double)(n-1))*((double)n/(double)(n-1)) - 
+			 2.0*((double)n*bn-(double)n+1.0)/((double)(n-1)*an) - 
+			 (3.0*(double)n+1.0)/((double)(n-1)));
 	
 	E = (thetaL - thetaw)/(double)sqrt(varLW);
 
@@ -343,7 +341,7 @@ double Fst(double piwithin, double pibetween,int ntotpop)
 	if(pibetween == 0. || pibetween == -10000. || piwithin == -10000.) 
 		return(-10000.);
     /*fst = 1. - piwithin/( piwithin/ntotpop + (1.-1./ntotpop)*pibetween);*//* eq. 6 */
-    fst = (double)1 - (piwithin/pibetween); /* eq. 3 */
+    fst = 1.0 - (piwithin/pibetween); /* eq. 3 */
     return(fst);
 }
 
@@ -359,7 +357,7 @@ double EWtest(int Nsample, int *Freqhap)
 	H = 0;
     for(i=0;i<Nsample;i++)
         H += Freqhap[i] * Freqhap[i];
-    H = (double)H/((double)Nsample*(double)Nsample);
+    H = H/((double)Nsample*(double)Nsample);
     
     return H;
 }
@@ -369,7 +367,7 @@ double pwh(int n,double *pid)
 	int ncomp;
 	int i;
 	double within,between;
-	double diff=(double)0;
+	double diff=0.0;
 	int compare_(const void *,const void *);
 	
 	ncomp = n * (n-1) / 2;
@@ -397,7 +395,7 @@ double testHap(int Nsample, int *Freqhap)
     H = 0;
     for(i=0;i<Nsample;i++)
         H += Freqhap[i] * Freqhap[i];
-    H = (double)1 - H/((double)Nsample*(double)Nsample);
+    H = 1.0 - H/((double)Nsample*(double)Nsample);
     /*and weighted: haplotype diversity*/
     H = H*(double)Nsample/(double)(Nsample-1);
     
@@ -438,14 +436,14 @@ double Fs(int Nsample, double pi, int NumAlelos)
             free(qew);
             return -10000;
         }
-        ValorFs = log((double)RestaP) - log((double)1.0-RestaP);
+        ValorFs = log(RestaP) - log(1.0-RestaP);
     }
     else {
         if(SumaP < 1E-37) {
             free(qew);
             return -10000;
         } else
-            ValorFs = log((double)1.0-(double)SumaP) - log((double)SumaP);
+            ValorFs = log(1.0-SumaP) - log(SumaP);
     }
     if (fabs(ValorFs) < 1.0E-37)
         ValorFs = 0.0;	    
@@ -575,7 +573,7 @@ double Gxi(int sample_size,int *fr, double thetaw) /* with outgroup */
     G = 0.;
     for(i=1;i<sample_size;i++) 
         G += ((fr[i] - thetaw/(double)i) * (fr[i] - thetaw/(double)i)) / varxi(i,sample_size,thetaw);
-    G /= ((double)sample_size - (double)1);
+    G /= ((double)sample_size - 1.0);
 
     return G;
 }
@@ -583,7 +581,7 @@ double Gxi(int sample_size,int *fr, double thetaw) /* with outgroup */
 double varxi(int i,int sample_size,double theta)
 {
     double sigma(int,int);
-    return (double)1/((double)i)*theta + sigma(i,sample_size)*theta*theta;
+    return 1.0/((double)i)*theta + sigma(i,sample_size)*theta*theta;
 }
 
 double sigma(int i,int sample_size)
@@ -591,9 +589,9 @@ double sigma(int i,int sample_size)
     double ai(int);
     double bn(int,int);
     
-    if(i <  (double)sample_size/(double)2) return bn(i+1,sample_size);
-    if(i == (double)sample_size/(double)2) return (double)2*(ai(sample_size) - ai(i))/((double)(sample_size - i)) - (double)1/((double)(i*i));
-    if(i >  (double)sample_size/(double)2) return bn(i,sample_size) - (double)1/((double)(i*i));
+    if(i <  (double)sample_size/2.0) return bn(i+1,sample_size);
+    if(i == (double)sample_size/2.0) return 2.0*(ai(sample_size) - ai(i))/((double)(sample_size - i)) - 1.0/((double)(i*i));
+    if(i >  (double)sample_size/2.0) return bn(i,sample_size) - 1.0/((double)(i*i));
     
     return -10000;
 }
@@ -602,7 +600,7 @@ double ai(int i)
 {
     int j;
     double a = 0;
-    for(j=1;j<i;j++) a += (double)1/(double)j;
+    for(j=1;j<i;j++) a += 1.0/(double)j;
     return a;
 }
 
@@ -674,7 +672,7 @@ double freqtesto_achaz(int sample_size,int *fr,int singleton,double *w1,double *
     for(i=1;i<sample_size;i++) {
 		if(i==1) ss = singleton;
 		else ss = 1;
-		ww[i] = (double)1/(double)i * (double)ss;
+		ww[i] = 1.0/(double)i * (double)ss;
 		Thw += (double)*(fr+i)*(double)i*ww[i];
 		sumww += ww[i];
 	}
@@ -1134,8 +1132,8 @@ double raggadeness(long int *pwd,long int max_pwd,long int num_comp)
 	
 	/*The last with 0 */
 	
-	r = r + (((double)0-((double)(*(pwd+(max_pwd-1)))/(double)num_comp)) * 
-	         ((double)0-((double)(*(pwd+(max_pwd-1)))/(double)num_comp)));
+	r = r + ((0.0-((double)(*(pwd+(max_pwd-1)))/(double)num_comp)) * 
+	         (0.0-((double)(*(pwd+(max_pwd-1)))/(double)num_comp)));
 	
 	return r;
 }

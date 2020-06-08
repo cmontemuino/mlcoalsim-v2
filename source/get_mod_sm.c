@@ -93,7 +93,7 @@ void getpars_fix(struct var **data, struct var2 **inputp)
 			(*inputp)->linked_rm_nregion = -1;
 			(*inputp)->linked_nhapl_nregion = -1;
 
-			if((*data)->theta_1[0] == (double)1 && (*data)->theta_1[1] == (double)0) {		
+			if((*data)->theta_1[0] == 1.0 && (*data)->theta_1[1] == 0.0) {		
 				if((*data)->linked_segsites != -1) (*inputp)->linked_segsites = (*data)->linked_segsites;
 				else (*inputp)->linked_segsites = (int)(*data)->mutations[1];
 				(*inputp)->linked_segsites_nregion = 0;
@@ -141,15 +141,15 @@ void getpars_fix(struct var **data, struct var2 **inputp)
         (*inputp)->same_factorpop = (*data)->same_factorpop;
 		
         if((*inputp)->ran_factorpop == 1) {
-            (*inputp)->factor_pop[0] = (double)1;
+            (*inputp)->factor_pop[0] = 1.0;
             for(x=1;x<(*inputp)->npop;x++) {
-                (*inputp)->factor_pop[x] = (double)ran1()*(double)9 + (double)1;
-                if((double)ran1() < 0.5) (*inputp)->factor_pop[x] = (double)1/(*inputp)->factor_pop[x];
+                (*inputp)->factor_pop[x] = ran1()*9.0 + 1.0;
+                if(ran1() < 0.5) (*inputp)->factor_pop[x] = 1.0/(*inputp)->factor_pop[x];
             }
         }
         if((*inputp)->same_factorpop == 1) {
             for(x=0;x<(*inputp)->npop;x++) {
-                (*inputp)->factor_pop[x] = (double)1;
+                (*inputp)->factor_pop[x] = 1.0;
             }
         }        
     }
@@ -180,12 +180,12 @@ void getpars_fix(struct var **data, struct var2 **inputp)
 		(*inputp)->tpast[x] = (double *)malloc((2+(*inputp)->nintn[x])*sizeof(double));
 		(*inputp)->tpastS[x] = (double *)malloc((2+(*inputp)->nintn[x])*sizeof(double));
 		
-		(*inputp)->nrec[x][0] = (double)1;
-		(*inputp)->nrec[x][1] = (double)1;
-		(*inputp)->tpast[x][0] = (double)0;
-		(*inputp)->tpast[x][1] = (double)1;
-		(*inputp)->tpastS[x][0] = (double)0;
-		(*inputp)->tpastS[x][1] = (double)1;
+		(*inputp)->nrec[x][0] = 1.0;
+		(*inputp)->nrec[x][1] = 1.0;
+		(*inputp)->tpast[x][0] = 0.0;
+		(*inputp)->tpast[x][1] = 1.0;
+		(*inputp)->tpastS[x][0] = 0.0;
+		(*inputp)->tpastS[x][1] = 1.0;
 		
 		for(y=1;y<=(*inputp)->nintn[x];y++) {
 			(*inputp)->nrec[x][y] = (*data)->nrec[x][y];    
@@ -413,12 +413,12 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
  	for(x=0;x<(*inputp)->npop;x++) (*inputp)->nintn[x] = (*data)->nintn[x+1];
 
 	for(x=0;x<(*inputp)->npop;x++) {
-		(*inputp)->nrec[x][0] = (double)1;
-		(*inputp)->nrec[x][1] = (double)1;
-		(*inputp)->tpast[x][0] = (double)0;
-		(*inputp)->tpast[x][1] = (double)1;
-		(*inputp)->tpastS[x][0] = (double)0;
-		(*inputp)->tpastS[x][1] = (double)1;
+		(*inputp)->nrec[x][0] = 1.0;
+		(*inputp)->nrec[x][1] = 1.0;
+		(*inputp)->tpast[x][0] = 0.0;
+		(*inputp)->tpast[x][1] = 1.0;
+		(*inputp)->tpastS[x][0] = 0.0;
+		(*inputp)->tpastS[x][1] = 1.0;
 		
 		for(y=1;y<=(*inputp)->nintn[x];y++) {
 			(*inputp)->nrec[x][y] = (*data)->nrec[x][y];    
@@ -580,7 +580,7 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
 	
 	/*theta vs S*/
 	if((*data)->theta_1[0]) {
-		if(!((*data)->theta_1[0]==1 && (*data)->theta_1[1] == (double)0)) {
+		if(!((*data)->theta_1[0]==1 && (*data)->theta_1[1] == 0.0)) {
 			if((*data)->theta_1[0] == 1) {
 				(*inputp)->theta = (*data)->theta_1[0+1];
 				if((*data)->theta_1[0+1]>=REFNUMBER && (*data)->theta_1[0+1] < REFNUMBER + PLUSPRIOR) {
@@ -600,23 +600,23 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
 		}
 		else {
 			(*inputp)->segsitesin = (*data)->mutations[p1+1];
-			(*inputp)->theta = (double)0;
+			(*inputp)->theta = 0.0;
 		}
 	}
     else {
 		(*inputp)->segsitesin = (*data)->mutations[p1+1];
-		(*inputp)->theta = (double)0;
+		(*inputp)->theta = 0.0;
 	}
 	
 	if((*inputp)->Sfix_alltheta) {
 		(*inputp)->segsitesin = (*data)->mutations[p1+1];
-		(*inputp)->theta = (double)0;
+		(*inputp)->theta = 0.0;
 	}
 	
 	if((*inputp)->rmfix) {
 		(*inputp)->Rm = (*data)->Rm[p1+1];
 		(*inputp)->nhapl = (*data)->nhapl[p1+1];
-		(*inputp)->r = (double)-1;
+		(*inputp)->r = -1.0;
 	}
 	else {
 		(*inputp)->Rm = -1;
