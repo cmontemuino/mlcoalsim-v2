@@ -54,12 +54,5 @@ double ran1(void)
 	iv[j] = idum;
 	ran = MIN((double)AM*(double)iy,(double)RNMX);
 	
-	return (double)ran;
+	return ran;
 }
-
-double randoms(void)
-{
-	int rand(void);
-	return(rand()/(RAND_MAX+1.0));
-}
-

@@ -14,7 +14,7 @@ notice that all the code related to MPI will not be "clickable". One way to reso
 is by setting the environment variable `WITH_MPI`. You just need to provide whatever value to it.
 
 *Note: what I do is setting the environment variable inside the IDE, so that I do not have problems
-with building the project.*
+with building the project (Preferences -> Build, Execution, Deployment -> CMake -> Environment: WITH_MPI=1 ZNS_ACTIVE=1).*
 
 ## How to Build
 

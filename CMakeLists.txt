@@ -10,7 +10,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Do not request compiler specific extensions
 set(CMAKE_C_EXTENSIONS OFF)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -Wextra")
 
 # MPI is required
 find_package(MPI 3 REQUIRED)

@@ -114,8 +114,9 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
     double pop_sel, double sinit,double pop_size,long int sel_nt,int *all_sel,int *selnsam,
     int *nintn,double **nrec,double **npast, double **tpast,
     int split_pop, double time_split, double time_scoal, double factor_anc, double *freq,
-    double tlimit,int iflogistic,double *Tts,double factor_chrn,double *weightrec, double **migrate_matrix,int my_rank,
-	int npop_events,struct events *pop_event,int event_forsexratio,double event_sexratio,double sex_ratio,int no_rec_males, double sendt, double sfreqend,double sfreqinit)
+    double tlimit,int iflogistic,double *Tts,double factor_chrn,double *weightrec, double **migrate_matrix,
+	int npop_events,struct events *pop_event,int event_forsexratio,double event_sexratio,double sex_ratio,int no_rec_males, double sendt,
+	double sfreqend,double sfreqinit)
 {
     long int j,dec,c1,c2,ind,rchrom;
     long int migrant,*config;
@@ -199,7 +200,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
     #endif
     
 	#if PARAMETER_FREQINIT == 2
-	double trapzd_inv(double (*distp_binom)(int,int,double),double,double,int,int,int,double *,double *);
+	double trapzd_inv(double,double,int,int,int,double *,double *);
 	double distp_binom(int n, int k, double p);
 	double distp_binom(int,int,double);
 	double cummtot;
@@ -1111,7 +1112,7 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 							xm=(double *)calloc(itm,sizeof(double));
 							psum=(double *)calloc(itm,sizeof(double));
 						}
-						cummtot=trapzd_inv(distp_binom,0.0,1.0,20,(int)config[0],*all_sel,xm,psum);
+						cummtot=trapzd_inv(0.0,1.0,20,(int)config[0],*all_sel,xm,psum);
 						ran=ran1();
 						ni=0;while(psum[ni]<ran)ni++;
 						xdt=xm[ni];

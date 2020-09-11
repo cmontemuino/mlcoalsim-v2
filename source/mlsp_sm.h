@@ -60,8 +60,6 @@
 /*0: No additional prints. 1: print theta/rec observed. 2: print treelength.*/
 /* 12: combinations*/
 
-#define TIMEDURATION 0
-
 #define iEStest 1
 #define iHStest 1
 #define MAXHAP1 0

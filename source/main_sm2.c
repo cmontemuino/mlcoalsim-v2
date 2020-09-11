@@ -17,6 +17,7 @@
 /************************************************************************************/
 
 #include "mlsp_sm.h"
+#include "ms2_sm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,8 +53,6 @@ int main (int argc,char *argv[])
     void getpars_mod(struct var **, struct var2 **,int);
     void free_getpars_fix(struct var **, struct var2 **);
     void free_inputdata(struct var **,struct var_priors *,int);
-	int print_matrix_sfixalltheta(struct var **,FILE *,FILE *,struct prob_par **);
-	int print_matrix_rmfix(struct var **,FILE *,FILE *,int,struct prob_par **);
 	int make_priord(struct var_priors *,long int);
 	double ran1(void);
     
@@ -78,14 +77,6 @@ int main (int argc,char *argv[])
 	
 	char namefile_[420];
 	char *el;
-
-#if TIMEDURATION
-    time_t start;
-    time_t end;
-    struct tm *date;
-    char s[80];
-    int hour,min,sec;
-#endif
 
 	struct prob_par **postp = NULL; /*posterior probabilities for theta and rec*/
 	double **matrix_test = NULL;/*all results*/
@@ -121,7 +112,6 @@ int main (int argc,char *argv[])
 	MPI_Request *recv;
 	int *rflag,reqcount,reqmess;
 #endif
-	void rankprint_inputp(struct var2 **,int,int);
 	int *nppr;
 	long int *niterpr;
 	int maxnppr;
@@ -185,13 +175,6 @@ int main (int argc,char *argv[])
 			}
 		}
 
-#if TIMEDURATION
-		/*Starting time*/
-		time(&start);
-		date = localtime(&start);
-		strftime(s,80,"%c",date);
-#endif
-
 		/*TOTALNLOCI*/
 		if((*data).linked == 1 && (*data).window && (*data).despl) {
 			totalnloci = (int)ceil(((double)(*data).nsites[1] - (double)(*data).window) / ((double)(*data).despl)) + 1;
@@ -225,8 +208,7 @@ int main (int argc,char *argv[])
 					 if(!(file_output = fopen(namefile_,"w"))) perror("Error in input/output");
 					 fputs(MLCOALSIM,file_output);
 					 output_data(file_output,file_in,file_out,&data,priors);
-				 }
-				 else {
+				 } else {
 					if(!(file_output = fopen (file_out,"w"))) perror("Error in input/output");
 					fputs(MLCOALSIM,file_output);
 					output_data(file_output,file_in,file_out,&data,priors);
@@ -1039,22 +1021,6 @@ int main (int argc,char *argv[])
 	/****************************** PRINT STATS IN OUTPUT FILE **********************************/
 	if((*data).print_neuttest && (*data).neutral_tests && matrix_test) 
 		if(print_neuttest(&data,file_output,file_out,file_in,matrix_test,postp)) return 1; /*exit*/
-
-    /*************************************** END FREE VECTORS ***************************************/
-#if TIMEDURATION
-    /*time and duration*/
-    if((*data).likelihood_line == 0) {
-        time(&end);
-        date = localtime(&end);
-        strftime(s,80,"%c",date);
-        fprintf(file_output,"\n\nDate of completion: %s\n",s);
-        fprintf(file_output,"\nDuration of the process: %.0f seconds.",difftime(end,start));
-        hour =  difftime(end,start)/3600.;
-        min  = (difftime(end,start) - hour*3600.)/60.;
-        sec  =  difftime(end,start) - hour*3600. - min*60.;
-        fprintf(file_output," (%dh:%dm:%ds)\n",hour,min,sec);
-    }
-#endif
     
     /*************************************** CLOSE FILE ***************************************/
     if(!((*data).neutral_tests == 0 && (*data).likelihood_line == 0)) fclose(file_output);

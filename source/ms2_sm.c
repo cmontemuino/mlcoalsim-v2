@@ -18,6 +18,7 @@
 /*ALSO INCLUDED A FUNCTION FOR RM FROM J. Wall.*/
 
 #include "mlsp_sm.h"
+#include "streec2_sm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -116,16 +117,292 @@ char names[NEUTVALUES2][20]  = {{"TD"},{"Fs"},{"FDn"},{"FFn"},{"FD"},{"FF"},{"H"
 	{"msdev"},{"mskew"},{"mkurt"},{"ragg"},{"ZnS"},{"ZZ"}
 };
 
+long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double theta,long int segsites,
+                double r,double f,double track_len,double mig_rate,int mhits,long int iteration, double *factor, double *lengtht,
+                int ifselection, double pop_sel, double sinit,double pop_size,long int sel_nt,double T_out, int *Sout,int *nintn,double **nrec,
+                double **nrec2,double **tpast,int split_pop, double time_split, double time_scoal, double factor_anc, double *freq,
+                double tlimit,int iflogistic,double *ts, double factor_chrn, double rsv,double *weightmut,double *weightrec,double **migrate_matrix,
+                int my_rank,int npop_events,struct events *pop_event,int linked,long int **loci_linked,int event_forsexratio,double event_sexratio,
+                double sex_ratio,int no_rec_males,double sendt,double sfreqend,double sfreqinit)
+{
+    int i,ii;
+    long int nsegs,seg,ns,start,end,len,segsit,k;
+    struct segl *seglst;
+    double tseg,tt;
+    double *pk,tout=0.;double tout2=0.;
+    long int *ss;
+    long int *len2;
+    long int mmax;
+    double r_transc,r_transv;
+    double ttime(struct node *, int);
+    double poissondist(double), ran1(void);
+    void biggerlist(int);
+    void make_gametes(int,struct node *,double,long int,long int,int,double,double);
+    void locate(long int,long int,long int *,int,double *,long int);
+    void locate2(long int,long int,long int *,int,int,double *,long int);
+    void mnmial2(long int,long int,double *,long int *,long int *);
+    void mnmial2_psel(long int,long int,double *,long int *,long int *,long int);
+    /*partial selection*/
+    int all_sel,*selnsam; /*number of lines under selection and the vector with the lines (the first all_sel lines)*/
+    int segsit_sel=0;/*parameter for partial selection*/
+    void locate_psel(long int,long int,long int *,int,long int,double *,long int);
+    void locate2_psel(long int,long int,long int *,int,int,long int,double *,long int);
+    double wstartm1,ttt;
+    long int *len_nozero,nsites_nozero,nz;
+    int loopcount;
+    int aa,getinto;
+    long int kk,ll,mm,bb,cc,dd;
+    long int nsites_mod_recinf=nsites;
+
+    if(!(selnsam = (int *)malloc((nsam)*sizeof(int)))) perror("malloc error sel. gensam.");
+    all_sel = 0;
+
+    seglst = segtre_mig(npop,nsam,inconfig,nsites_mod_recinf,r,f,track_len,mig_rate,&nsegs,
+                        iteration,factor,ifselection,pop_sel,sinit,pop_size,sel_nt,&all_sel,selnsam,
+                        nintn, nrec, nrec2, tpast,split_pop,time_split,time_scoal,factor_anc,freq,tlimit,
+                        iflogistic,ts,factor_chrn,weightrec,migrate_matrix,npop_events,pop_event,
+                        event_forsexratio,event_sexratio,sex_ratio,no_rec_males,sendt,sfreqend,sfreqinit);
+    r_transc = rsv/(rsv + 1.);
+    r_transv = (0.5)/(rsv + 1.); /*suma de transc + 1nt a transversio, quan sumen els 2nt es total = 1*/
+
+    /*heterogeneity*/
+    if(!(len_nozero = (long int *)malloc((nsegs)*sizeof(long int)))) perror("malloc error len. gensam.");
+    nsites_nozero = 0;
+    for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
+        end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1); /*next és l'index, beg és el punt físic */
+        start = seglst[seg].beg;
+        for(len_nozero[k]=0,nz=start;nz<=end;nz++) {
+            if(nz==0) wstartm1 = 0.0;
+            else wstartm1 = weightmut[nz-1];
+            if(((weightmut[nz]-wstartm1)*theta) != 0.0) {
+                len_nozero[k] += 1;
+                nsites_nozero += 1;
+            }
+        }
+    }
+
+    /*Include mutations*/
+    if(segsites == -1) {
+        ns = 0;
+        *Sout = 0;
+        *lengtht = 0.0;
+        for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
+            end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites-1); /*next és l'index, beg és el punt físic */
+            start = seglst[seg].beg;
+            getinto = 0;
+            if(linked > 1) {/*avoid calculation of mutations in not interested regions*/
+                for(aa=0;aa<linked;aa++) {
+                    kk=loci_linked[aa][0];
+                    ll=loci_linked[aa][1]+1;
+                    if((kk >= start && kk <  end) ||
+                       (ll >= start && ll <  end) ||
+                       (kk >= start && ll <  end) ||
+                       (kk <  start && ll >= end)) {
+                        getinto = 1;
+                        break;
+                    }
+                }
+            }
+            else {
+                getinto = 1;
+            }
+            if(getinto) {
+                /*including heterogeneity*/
+                len = end - start + 1;
+                if(start==0) wstartm1 = 0.0;
+                else wstartm1 = weightmut[start-1];
+                tseg = (double)(weightmut[end] - wstartm1)*theta;
+                tt = ttime(seglst[seg].ptree,nsam); /* Ttot pel segment, en funció de 4No respecte la pob 0*/
+                *lengtht += (double)tt*((double)len/(double)nsites); /*length in 4N generations, no matter the mutation rate*/
+                if(mhits) {/*T_out is the time to the ancestor in 4N*//*modified Jan2009*/
+                    if(T_out == 0.) {
+                        *Sout = 0;
+                    }
+                    else {
+                        tout = 2.0 * T_out;/*T_out is considered as a fixed value, not a parameter.*/
+                        tout += -1.0 *log(1.0-ran1());/*sum the time after divergence, assuming No=1*/
+                        tout -= (seglst[seg].ptree + 2*nsam-2)->time; /*substract the distance of the sample*/
+                        if(tout < 0.0) tout = 0.0;	/*Outgroup can not accumulate negative mutations*/
+                        *Sout += (int)poissondist((double)(tseg*tout));	/* Sout needed to calculate hka and mhits */
+                    }
+                }
+                else *Sout = 0;
+
+                loopcount = -1;
+                if(len==1 && mhits==0)  {
+                    if(tseg*tt > ran1()) segsit = 1;
+                    else segsit = 0;
+                }
+                else {
+                    segsit = (long int)poissondist((double)(tseg*tt));		/* nombre de mutacions al segment */
+                }
+                if(segsit == (long int)0 && all_sel > (int)0 && all_sel < nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end)
+                    segsit = 1;/*we force the selective mut*/
+                loopcount += 1;
+                if(loopcount > 100) {
+                    printf("\nSorry, the length of the sequence is too short to include so much mutations: try mhits 1.\n");
+                    exit(1);
+                }
+                if(segsit > len_nozero[k] && mhits == 0)
+                    segsit = len_nozero[k];
+                if((segsit + ns) >= maxsites) {	/* refem la matriu dels polimorfismes */
+                    maxsites = segsit + ns + SITESINC;
+                    posit = (long int *)realloc(posit,(long int)maxsites*sizeof(long int));
+                    /* canvia mida del vector dels nombres dels polimorfismes */
+                    if(posit==NULL) perror("realloc error. gensam.1");
+                    biggerlist(nsam);	/* refem la llista dels polimorfismes */
+                }
+                /*partial selection*//*not well debugged yet*/
+                if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end
+                   && (sfreqend == 0.1 || sendt == 1E6)) {
+                    segsit_sel = 1;
+                }
+                /*partial selection*/
+                if(segsit_sel == 1) {
+                    locate_psel(segsit,start,posit+ns,mhits,sel_nt,weightmut,end);
+                    ii = (int)ns;
+                    while((long int)posit[ii] != (long int)sel_nt) ii++;
+                    for(i=0;i<nsam;i++) {
+                        list[i][ns] = list[i][ii];
+                        if(all_sel>i) list[i][ii] = '1';
+                        else list[i][ii] = '0';
+                    }
+                    segsit_sel = 0;
+                }
+                else locate(segsit,start,/*len,*/posit+ns,mhits,weightmut,end);/* posa el nombre de les mutacions a la matriu */
+
+                /*begin of substracting mutations out of range (only for the regions included in the study)*/
+                /**/
+                if(linked > 1) {
+                    cc = 0;
+                    dd = 0;
+                    mm = (long int)0;
+                    for(aa=0;aa<linked;aa++) {
+                        kk=loci_linked[aa][0];
+                        ll=loci_linked[aa][1]+1;
+                        for(bb=dd+cc;bb<segsit;bb++) {
+                            if((posit[bb] < kk) && (posit[bb] >= mm)) {
+                                dd++;
+                            }
+                            else {
+                                if((posit[bb] >= kk) && (posit[bb] < ll)) {
+                                    posit[cc] = posit[bb];
+                                    cc++;
+                                }
+                            }
+                        }
+                        mm = ll;
+                    }
+                    segsit = cc;
+                }
+                /**/
+                /*end of substracting mutations out of range*/
+
+                /*changed the order of the functions!! now here down*/
+                make_gametes(nsam,seglst[seg].ptree,tt,segsit-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);	/* posa les mutacions  a list*/
+                free(seglst[seg].ptree);
+
+                ns += segsit;
+            }
+            /**/
+        }
+    }
+    else {/*THE PARTIAL SELECTION WITH SEG. SITE ARE NOT WELL DEBUGGED YET IN THE Sfix METHOD*/
+        /* en cas de S fix */
+        pk = (double *)malloc((unsigned)(nsegs*sizeof(double)));
+        ss = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
+        len2 = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
+        if((pk==NULL)||(ss==NULL)||(len2 ==NULL)) perror("malloc error. gensam.2");
+        /*multiple hits for fixed mutations*/
+        if(mhits) mmax = (3 < nsam ? (long int)3 : (long int)(nsam-1));
+        else mmax = (long int)1; /*if no multiple hits available*/
+        /*set time  and nsites_nozero to zero*/
+        tt = ttt = 0.0;
+        if(mhits) tout = 0.0;
+        /*calcular primer la mida total de tot l'arbre*/
+        for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
+            end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
+            start = seglst[seg].beg;
+            /*when it is not possible to fix the specified segsites*/
+            if(nsites_nozero*mmax < segsites) {
+                printf("\n*****WARNING: It is not possible to fix %ld mutations!!. Instead used 0 mutations.*****\n",segsites);
+                segsites = 0;
+            }
+
+            len = end - start + 1;
+            if(start==0) wstartm1 = 0.0;
+            else wstartm1 = weightmut[start-1];
+            tseg = (double)(weightmut[end] - wstartm1)*theta;
+            len2[k] = len_nozero[k]*mmax;
+            pk[k] = ttime(seglst[seg].ptree,nsam) * tseg;/*time per chromosome section (in function of mutational rate)*/
+            tt += pk[k];
+            ttt += pk[k]/tseg * (double)len/(double)nsites_mod_recinf;/*time to be counted by lengtht (not in function of mutational rate)*/
+            if(mhits && T_out > 0) {		/* incorporacio per mhits */
+                tout2 = 2.0*T_out;
+                tout2 += -1.0*log(1.0-ran1());/*time after divergence, assuming equal No*/
+                tout2 -= (seglst[seg].ptree + 2*nsam-2)->time; /*substract the distance of the sample*/
+                if(tout2 < 0.0) tout2 = 0.0;	/*Outgroup can not accumulate negative mutations*/
+                tout += tout2 * tseg;/*time to the outgroup (in function of mutational rate)*/
+            }
+            else tout = 0.;
+        }
+        *lengtht = ttt; /*afegit per Sfix_allthetas*/
+        for(k=0;k<nsegs;k++) pk[k] /= tt;	/* aleshores dividir el temps proporcionalment per situar les mutacions */
+        if(mhits && T_out > 0 && theta) {		/* incorporacio per mhits en especiacio, only if theta is defined*/
+            *Sout = (int)poissondist((theta*tout));
+        }
+        else *Sout = 0;
+        /*partial selection*/
+        if(all_sel > 0 && all_sel < nsam)
+            mnmial2_psel((long int)segsites,nsegs,pk,ss,len2,(long int)sel_nt*mmax);
+        else
+            mnmial2((long int)segsites,nsegs,pk,ss,len2);/* afegit, per evitar mes mutacions que posicions, en mhits mes de 3xpos */
+        ns = 0;/*mnmial2 distribueix segsites al llarg de la secuencia*/
+        for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
+            end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
+            start = seglst[seg].beg;
+            len = end - start + 1;
+            if(start==0) wstartm1 = 0.0;
+            else wstartm1 = weightmut[start-1];
+            tseg = (weightmut[end] - wstartm1)*theta;
+            /*partial selection*/
+            segsit_sel = 0;
+            if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && sel_nt <= (long int)end && segsites > 0 && (sfreqend == 0.1 || sendt == 1E6)) {
+                segsit_sel = 1;
+            }
+            make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);/*posa a la matriu list les mutacions*/
+            /*partial selection*/
+            if(segsit_sel == 1) {
+                locate2_psel(ss[k],start,/*len,*/posit+ns,mhits,nsam,(long int)sel_nt,weightmut,end);
+                ii = (int)ns;
+                while((long int)posit[ii] != (long int)sel_nt) ii++;
+                for(i=0;i<nsam;i++) {
+                    list[i][ns] = list[i][ii];
+                    if(all_sel>i) list[i][ii] = '1';
+                    else list[i][ii] = '0';
+                }
+                segsit_sel = 0;
+            }
+            else locate2(ss[k],start,posit+ns,mhits,nsam,weightmut,end); /* posa el nombre de les mutacions a la matriu */
+            /* modificat per mhits i fix muts */
+            free(seglst[seg].ptree);
+            ns += ss[k];
+        }
+        free(pk);
+        free(ss);
+        free(len2);
+    }
+    free(selnsam);
+    free(len_nozero);
+    return(ns);
+}
+
 int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par **postp,long int count0,long int countmax,long int *listnumbers, long int *jcount2,long int *mcount2,struct var_priors *priors,int my_rank,long int seed1)
 {
 	long int segsites=0;
     int i;
 
     char **cmatrix(int,long int);
-    long int gensam(long int,int,int *,long int,double,long int,double,double,double,double,int,
-        long int,double *,double *,int,double,double,double,long int,double,int *,int *,double **,double **,double **,
-        int, double, double, double, double *, double,int,double *,double,double,double *,double *,double **,int,int,struct events *,
-		int,long int **,int,double,double,int,double,double,double);
     void print_matrix(long int, struct var2 **,FILE *,int,long int,struct var_priors *,int);
     void mod_mhits(long int, struct var2 **,double *);
     void mod_outgroup(long int, struct var2 **,int);
@@ -159,7 +436,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     double estnm(int,int,int *,long int,char **);
     /*double gst1,gst2;*/
     double logPPoisson2(long int, double);
-    double koutg(int,int,int *);
 	double koutgJC(int,int,int *,unsigned long);
 	double fixoutg(int,int,int);
  	
@@ -1167,7 +1443,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						thetaSv = 1.0;
 					}
 					segsites = gensam((*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites,
-					thetaSv, /*(*inputp)->segsitesin*/inputS, rece, (*inputp)->f, (*inputp)->track_len,
+					thetaSv, inputS, rece, (*inputp)->f, (*inputp)->track_len,
 					(*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
 					&lengtht,(*inputp)->ifselection, 
 					(*inputp)->pop_sel,(*inputp)->sinit,(*inputp)->pop_size,(long int)(*inputp)->sel_nt,(*inputp)->T_out,&(*inputp)->Sout,
@@ -3310,8 +3586,6 @@ void function_atcg(int nsam,long int segsites,long int nsites,char **list2,doubl
 			else if(list2[i][j] == p[3]) list2[i][j] = n[3];
 		}
 	}
-			
-	return;
 }
 
 void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
@@ -3325,7 +3599,7 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
     int *mhsout;
 	double poissondist(double);
 	double valuer;
-	long int localize_positiontop(double *,double,long int,long int);
+	long int localize_positiontop(const double *,double,long int,long int);
     
 	ratio = (*inputp)->ratio_sv;
     r_transc = ratio/(ratio + 1.);
@@ -3523,289 +3797,6 @@ char **cmatrix(int nsam,long int len)	/* defineix l'espai per col.locar els poli
     return(m);
 }
 
-long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double theta,long int segsites,
-	double r,double f,double track_len,double mig_rate,int mhits,long int iteration, double *factor, double *lengtht,
-	int ifselection, double pop_sel, double sinit,double pop_size,long int sel_nt,double T_out, int *Sout,int *nintn,double **nrec,
-	double **nrec2,double **tpast,int split_pop, double time_split, double time_scoal, double factor_anc, double *freq, 
-	double tlimit,int iflogistic,double *ts, double factor_chrn, double rsv,double *weightmut,double *weightrec,double **migrate_matrix,
-	int my_rank,int npop_events,struct events *pop_event,int linked,long int **loci_linked,int event_forsexratio,double event_sexratio,double sex_ratio,int no_rec_males,double sendt,double sfreqend,double sfreqinit)
-{
-	int i,ii;
-    long int nsegs,seg,ns,start,end,len,segsit,k; 
-    struct segl *seglst;
-    double tseg,tt;
-    double *pk,tout=0.;double tout2=0.;
-    long int *ss;
-    long int *len2;
-    long int mmax;
-	double r_transc,r_transv;
-    struct segl *segtre_mig(long int ,int,int *,long int,double,double,double,
-        double ,long int *,long int,
-        double *,int,double,double,double,long int,int *,int *,int *,double **,double **,double **,
-        int, double, double, double, double *,double,int,double *,double,double *,double **,int,
-		int,struct events *,int, double,double,int, double, double,double);/* used to be: [MAXSEG]; */
-    double ttime(struct node *, int);
-    double poissondist(double), ran1(void);
-    void biggerlist(int);
-    void make_gametes(int,struct node *,double,long int,long int,int,double,double);
-    void locate(long int,long int,long int *,int,double *,long int);
-    void locate2(long int,long int,long int *,int,int,double *,long int);
-    void mnmial2(long int,long int,double *,long int *,long int *);
-    void mnmial2_psel(long int,long int,double *,long int *,long int *,long int);
-    /*partial selection*/
-    int all_sel,*selnsam; /*number of lines under selection and the vector with the lines (the first all_sel lines)*/
-    int segsit_sel=0;/*parameter for partial selection*/    
-    void locate_psel(long int,long int,long int *,int,long int,double *,long int);
-    void locate2_psel(long int,long int,long int *,int,int,long int,double *,long int);
-	double wstartm1,ttt;
-	long int *len_nozero,nsites_nozero,nz;
-	int loopcount;
-	int aa,getinto;
-	long int kk,ll,mm,bb,cc,dd;
-    long int nsites_mod_recinf=nsites;
-    
-	if(!(selnsam = (int *)malloc((nsam)*sizeof(int)))) perror("malloc error sel. gensam.");
-	all_sel = 0;
-
-    seglst = segtre_mig(npop,nsam,inconfig,nsites_mod_recinf,r,f,track_len,mig_rate,&nsegs,
-        iteration,factor,ifselection,pop_sel,sinit,pop_size,sel_nt,&all_sel,selnsam,
-        nintn, nrec, nrec2, tpast,split_pop,time_split,time_scoal,factor_anc,freq,tlimit,
-		iflogistic,ts,factor_chrn,weightrec,migrate_matrix,my_rank,npop_events,pop_event,
-		event_forsexratio,event_sexratio,sex_ratio,no_rec_males,sendt,sfreqend,sfreqinit);
-    r_transc = rsv/(rsv + 1.);
-    r_transv = (0.5)/(rsv + 1.); /*suma de transc + 1nt a transversio, quan sumen els 2nt es total = 1*/
-
-	/*heterogeneity*/
-	if(!(len_nozero = (long int *)malloc((nsegs)*sizeof(long int)))) perror("malloc error len. gensam.");
-	nsites_nozero = 0;
-	for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
-		end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1); /*next és l'index, beg és el punt físic */
-		start = seglst[seg].beg;
-		for(len_nozero[k]=0,nz=start;nz<=end;nz++) {
-			if(nz==0) wstartm1 = 0.0;
-			else wstartm1 = weightmut[nz-1];
-			if(((weightmut[nz]-wstartm1)*theta) != 0.0) {
-				len_nozero[k] += 1;
-				nsites_nozero += 1;
-			}
-		}
-	}
-	
-	/*Include mutations*/
-    if(segsites == -1) {
-        ns = 0;
-        *Sout = 0;
-		*lengtht = 0.0;
-        for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
-			end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites-1); /*next és l'index, beg és el punt físic */
-			start = seglst[seg].beg;
-			getinto = 0;
-			if(linked > 1) {/*avoid calculation of mutations in not interested regions*/
-				for(aa=0;aa<linked;aa++) {
-					kk=loci_linked[aa][0];
-					ll=loci_linked[aa][1]+1;
-					if((kk >= start && kk <  end) ||
-					   (ll >= start && ll <  end) || 
-                       (kk >= start && ll <  end) || 
-                       (kk <  start && ll >= end)) {
-						getinto = 1;
-						break;
-					}
-				}
-			}
-			else {
-				getinto = 1;
-			}
-			if(getinto) {
-				/*including heterogeneity*/
-				len = end - start + 1;
-				if(start==0) wstartm1 = 0.0;
-				else wstartm1 = weightmut[start-1];
-				tseg = (double)(weightmut[end] - wstartm1)*theta;
-				tt = ttime(seglst[seg].ptree,nsam); /* Ttot pel segment, en funció de 4No respecte la pob 0*/
-				*lengtht += (double)tt*((double)len/(double)nsites); /*length in 4N generations, no matter the mutation rate*/
-				if(mhits) {/*T_out is the time to the ancestor in 4N*//*modified Jan2009*/
-					if(T_out == 0.) {
-						*Sout = 0;
-					}
-					else {
-						tout = 2.0 * T_out;/*T_out is considered as a fixed value, not a parameter.*/
-						tout += -1.0 *log(1.0-ran1());/*sum the time after divergence, assuming No=1*/
-						tout -= (seglst[seg].ptree + 2*nsam-2)->time; /*substract the distance of the sample*/
-						if(tout < 0.0) tout = 0.0;	/*Outgroup can not accumulate negative mutations*/
-						*Sout += (int)poissondist((double)(tseg*tout));	/* Sout needed to calculate hka and mhits */
-					}
-				}
-				else *Sout = 0;
-				
-				loopcount = -1;
-                if(len==1 && mhits==0)  {
-                    if(tseg*tt > ran1()) segsit = 1;
-                    else segsit = 0;
-                }
-                else {
-                    segsit = (long int)poissondist((double)(tseg*tt));		/* nombre de mutacions al segment */
-                }
-                if(segsit == (long int)0 && all_sel > (int)0 && all_sel < nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end)
-                    segsit = 1;/*we force the selective mut*/
-                loopcount += 1;
-                if(loopcount > 100) {
-                    printf("\nSorry, the length of the sequence is too short to include so much mutations: try mhits 1.\n");
-                    exit(1);
-                }
-                if(segsit > len_nozero[k] && mhits == 0)
-                    segsit = len_nozero[k];
-				if((segsit + ns) >= maxsites) {	/* refem la matriu dels polimorfismes */
-					maxsites = segsit + ns + SITESINC;
-					posit = (long int *)realloc(posit,(long int)maxsites*sizeof(long int));
-					/* canvia mida del vector dels nombres dels polimorfismes */
-					if(posit==NULL) perror("realloc error. gensam.1");
-					biggerlist(nsam);	/* refem la llista dels polimorfismes */
-				}
-				/*partial selection*//*not well debugged yet*/ 
-				if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end
-                   && (sfreqend == 0.1 || sendt == 1E6)) {
-					segsit_sel = 1;
-				}
-				/*partial selection*/
-				if(segsit_sel == 1) {
-					locate_psel(segsit,start,posit+ns,mhits,sel_nt,weightmut,end);
-					ii = (int)ns;
-					while((long int)posit[ii] != (long int)sel_nt) ii++; 
-					for(i=0;i<nsam;i++) {
-						list[i][ns] = list[i][ii];
-						if(all_sel>i) list[i][ii] = '1';
-						else list[i][ii] = '0';
-					}
-					segsit_sel = 0;
-				}
-				else locate(segsit,start,/*len,*/posit+ns,mhits,weightmut,end);/* posa el nombre de les mutacions a la matriu */
-				
-				/*begin of substracting mutations out of range (only for the regions included in the study)*/
-				/**/
-				if(linked > 1) {
-					cc = 0;
-					dd = 0;
-					mm = (long int)0;
-					for(aa=0;aa<linked;aa++) {
-						kk=loci_linked[aa][0];
-						ll=loci_linked[aa][1]+1;
-						for(bb=dd+cc;bb<segsit;bb++) {
-							if((posit[bb] < kk) && (posit[bb] >= mm)) {
-								dd++;
-							}
-							else {
-								if((posit[bb] >= kk) && (posit[bb] < ll)) {
-									posit[cc] = posit[bb];
-									cc++;
-								}
-							}
-						}
-						mm = ll;
-					}
-					segsit = cc;
-				}
-				/**/
-				/*end of substracting mutations out of range*/
-				
-				/*changed the order of the functions!! now here down*/
-				make_gametes(nsam,seglst[seg].ptree,tt,segsit-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);	/* posa les mutacions  a list*/
-				free(seglst[seg].ptree);
-
-				ns += segsit;
-			}
-		/**/	
-		}
-    }
-    else {/*THE PARTIAL SELECTION WITH SEG. SITE ARE NOT WELL DEBUGGED YET IN THE Sfix METHOD*/
-        /* en cas de S fix */
-		pk = (double *)malloc((unsigned)(nsegs*sizeof(double)));
-        ss = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
-        len2 = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
-        if((pk==NULL)||(ss==NULL)||(len2 ==NULL)) perror("malloc error. gensam.2");
-		/*multiple hits for fixed mutations*/
-		if(mhits) mmax = (3 < nsam ? (long int)3 : (long int)(nsam-1));
-		else mmax = (long int)1; /*if no multiple hits available*/
-        /*set time  and nsites_nozero to zero*/
-		tt = ttt = 0.0;
-		if(mhits) tout = 0.0;
-		/*calcular primer la mida total de tot l'arbre*/
-		for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {		
-            end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
-            start = seglst[seg].beg;
-			/*when it is not possible to fix the specified segsites*/
-			if(nsites_nozero*mmax < segsites) {
-				printf("\n*****WARNING: It is not possible to fix %ld mutations!!. Instead used 0 mutations.*****\n",segsites);
-				segsites = 0;
-			}
-			
-			len = end - start + 1;
-			if(start==0) wstartm1 = 0.0;
-			else wstartm1 = weightmut[start-1];
-			tseg = (double)(weightmut[end] - wstartm1)*theta;
-			len2[k] = len_nozero[k]*mmax;
-			pk[k] = ttime(seglst[seg].ptree,nsam) * tseg;/*time per chromosome section (in function of mutational rate)*/
-			tt += pk[k];
-			ttt += pk[k]/tseg * (double)len/(double)nsites_mod_recinf;/*time to be counted by lengtht (not in function of mutational rate)*/
-			if(mhits && T_out > 0) {		/* incorporacio per mhits */
-				tout2 = 2.0*T_out;
-				tout2 += -1.0*log(1.0-ran1());/*time after divergence, assuming equal No*/
-				tout2 -= (seglst[seg].ptree + 2*nsam-2)->time; /*substract the distance of the sample*/
-				if(tout2 < 0.0) tout2 = 0.0;	/*Outgroup can not accumulate negative mutations*/
-				tout += tout2 * tseg;/*time to the outgroup (in function of mutational rate)*/
-			}
-			else tout = 0.;
-        }
-        *lengtht = ttt; /*afegit per Sfix_allthetas*/
-        for(k=0;k<nsegs;k++) pk[k] /= tt;	/* aleshores dividir el temps proporcionalment per situar les mutacions */
-        if(mhits && T_out > 0 && theta) {		/* incorporacio per mhits en especiacio, only if theta is defined*/
-            *Sout = (int)poissondist((theta*tout));
-        }
-		else *Sout = 0;
-		/*partial selection*/
-		if(all_sel > 0 && all_sel < nsam)
-			mnmial2_psel((long int)segsites,nsegs,pk,ss,len2,(long int)sel_nt*mmax);
-        else 
-			mnmial2((long int)segsites,nsegs,pk,ss,len2);/* afegit, per evitar mes mutacions que posicions, en mhits mes de 3xpos */
-        ns = 0;/*mnmial2 distribueix segsites al llarg de la secuencia*/
-        for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
-            end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
-            start = seglst[seg].beg;
-            len = end - start + 1;
-			if(start==0) wstartm1 = 0.0;
-			else wstartm1 = weightmut[start-1];
-			tseg = (weightmut[end] - wstartm1)*theta;
-            /*partial selection*/
-			segsit_sel = 0;
-            if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && sel_nt <= (long int)end && segsites > 0 && (sfreqend == 0.1 || sendt == 1E6)) {
-                segsit_sel = 1;
-            }
-            make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);/*posa a la matriu list les mutacions*/
-            /*partial selection*/
-            if(segsit_sel == 1) {
-                locate2_psel(ss[k],start,/*len,*/posit+ns,mhits,nsam,(long int)sel_nt,weightmut,end);
-				ii = (int)ns;
-				while((long int)posit[ii] != (long int)sel_nt) ii++; 
-				for(i=0;i<nsam;i++) {
-					list[i][ns] = list[i][ii];
-					if(all_sel>i) list[i][ii] = '1';
-					else list[i][ii] = '0';
-				}
-                segsit_sel = 0;
-            }
-            else locate2(ss[k],start,posit+ns,mhits,nsam,weightmut,end); /* posa el nombre de les mutacions a la matriu */
-            /* modificat per mhits i fix muts */
-            free(seglst[seg].ptree);
-            ns += ss[k];
-        }
-        free(pk);
-        free(ss);
-        free(len2);
-    }
-    free(selnsam);
-	free(len_nozero);
-    return(ns);
-}
 void biggerlist(int nsam)	/* fa més gran la matriu dels polimorfismes */
 {
     int i;
@@ -3967,7 +3958,7 @@ void ranvec_psel(long int n,long int *pbuf,int mhits,long int sel_nt,long int be
     long int i,x;
     double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(double *,double,long int,long int);
+	long int localize_positiontop(const double *,double,long int,long int);
     
 	/*include nsites*/
     pbuf[0] = (long int)sel_nt;
@@ -4018,7 +4009,7 @@ void ranvec(long int n, /*double */long int *pbuf,int mhits,long int beg,double 
     long int i,x;
     double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(double *,double,long int,long int);
+	long int localize_positiontop(const double *,double,long int,long int);
     
     
 	if(beg==0) wstartm1 = 0.0;
@@ -4066,7 +4057,7 @@ void ranvec2(long int n, long int *pbuf,int mhits,int nsam,long int beg,double *
     double a;
     double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(double *,double,long int,long int);
+	long int localize_positiontop(const double *,double,long int,long int);
     
 	if(beg==0) wstartm1 = 0.0;
 	else wstartm1 = (double)weightmut[beg-1];
@@ -4159,7 +4150,7 @@ void ranvec2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,l
     double a;
 	double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(double *,double,long int,long int);
+	long int localize_positiontop(const double *,double,long int,long int);
     
 	if(beg==0) wstartm1 = 0.0;
 	else wstartm1 = (double)weightmut[beg-1];
@@ -5349,9 +5340,9 @@ void calc_neutparSRH(int valuep,long int segsit,struct var2 **inputp, struct dna
     int a,b,h,x;
 	long int comb;
     char *hapl=0;
-    int ispolnomhit(long int,int,int,int);	
+    int ispolnomhit(long int,int,int,int);
 	int Min_rec(int,int,int,int,int);
-	
+
 	if(npopa == (*inputp)->npop) {
 		inits = 0;
 		nsam = (*inputp)->nsam;
@@ -5916,8 +5907,8 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						else j++;
 					}                    
 					if(j<segsit) {
-						if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < (float)(*inputp)->ehh_margin) {
-							if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < ehhr)
+						if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
+							if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < ehhr)
 								ehhr = j;
 						}
 						else {
@@ -6098,8 +6089,8 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						else j++;
 					}                    
 					if(j<segsit) {
-						if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < (float)(*inputp)->ehh_margin) {
-							if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < ehhr)
+						if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
+							if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < ehhr)
 								ehhr = j;
 						}
 						else {
@@ -6749,7 +6740,7 @@ double Zns(int valuep,long int segsites,struct var2 **inputp,int npopa)
 	int nb=0;
     double A,B,C;
     int ispolnomhit(long int,int,int,int);
-    
+
     if(valuep == 0) {
 		inits = 0;
 		for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -6836,7 +6827,7 @@ double ZnA_(int valuep,long int segsites,struct var2 **inputp,int npopa)
 	int nb=0;
     double A,B,C;
     int ispolnomhit(long int,int,int,int);
-    
+
     if(valuep == 0) {
 		inits = 0;
 		for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -6956,21 +6947,7 @@ double fixoutg(int nsam, int Sout, int freq0)
     }
     else return -10000;
 }
-double koutg(int nsam, int Sout, int *freq)
-{
-    int x;
-    double div;
-    
-    if(nsam) {
-        div = (double)Sout;
-		div += (double)freq[0];
-		
-        for(x=1;x<nsam;x++) 
-			div += (double)freq[x]*(double)x/(double)nsam;
-        return div;
-    }
-    else return -10000;
-}
+
 double koutgJC(int nsam, int Sout, int *freq, unsigned long nsites)
 {
     int x;
@@ -7099,8 +7076,6 @@ void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  
 		free(hapl);
 		free(haplotype);
 	}
-	
-	return;
 }
 
 void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,long int  s1,double valuer,int npopa)
@@ -7251,8 +7226,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		(ntpar)->m_skew = -10000;
 		(ntpar)->m_kurt = -10000;
 		(ntpar)->ragg = -10000;
-	}
-    else {
+	} else {
 		if((veca = (int **)calloc(segsit,sizeof(int *))) == 0) {
 			puts("calloc error veca.1");
 			exit(1);
@@ -7413,7 +7387,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						z++;/*mismatch dist*/
 					}
 				}
-                k_ += pi;
+                k_ += (double)pi;
             }
         }
         (ntpar)->k = k_/(double)comb;
@@ -7484,7 +7458,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 
 		/*calculate mismatch distribution to do ragg*/
 		maxpwd = 0;
-		for(z=0;z<comb;z++) if(freq1[z] > maxpwd) maxpwd = (long int)freq1[z];
+		for(z=0;z<comb;z++) if(freq1[z] > (double)maxpwd) maxpwd = (long int)freq1[z];
 		Pwd  = (long int *)calloc((unsigned long)(maxpwd+1),sizeof(long int));
 		for(z=0;z<comb;z++) {
 			Pwd[(long int)freq1[z]] = Pwd[(long int)freq1[z]] + 1;
@@ -7558,8 +7532,8 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						else j++;
 					}                    
 					if(j<s1) {
-						if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < (float)(*inputp)->ehh_margin) {
-							if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < ehhr)
+						if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
+							if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < ehhr)
 								ehhr = j;
 						}
 						else {
@@ -7743,8 +7717,8 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						else j++;
 					}                    
 					if(j<segsit) {
-						if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < (float)(*inputp)->ehh_margin) {
-							if(fabs((float)posit[j] - (float)posit[(*inputp)->ehh_fixnt]) < ehhr)
+						if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
+							if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < ehhr)
 								ehhr = j;
 						}
 						else {
@@ -8398,7 +8372,7 @@ double Zns_window(struct var2 **inputp, long int s0, long int s1,int npopa)
 	int nb=0;
     double A,B,C;
     int ispolnomhit(long int,int,int,int);
-    
+
     nsam  = (*inputp)->nsam;
 	inits = 0;
 	for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -8473,7 +8447,7 @@ double ZnA_window(struct var2 **inputp, long int s0, long int s1,int npopa)
 	int nb=0;
     double A,B,C;
     int ispolnomhit(long int,int,int,int);
-    
+
     nsam  = (*inputp)->nsam;
 	inits = 0;
 	for(x=0;x<(*inputp)->npop_sampled;x++) {
@@ -8736,12 +8710,6 @@ int compare_(const void *i,const void *j)
     return 0;
 }
 
-/*compare two numbers*/
-int compare(const void *i,const void *j) 
-{
-    return (*((int *)i) - (*(int *)j));
-}
-
 double logPPoisson2(long int Si, double lambda)
 {
     double value;
@@ -8759,7 +8727,7 @@ int Min_rec(int x, int segsit, int nsam, int inits,int totalsam)
   int h;
   int t11,t12,t21,t22;
   int ispolnomhit(long int,int,int,int);
-  
+
 	if (segsit<2 || x >= (segsit-1)) return (0);
 	
 	for (a=x+1; a<segsit; ++a) {
@@ -8902,7 +8870,7 @@ int do_heter_gamma_sites(double *categories,double gammashape,double poppar,long
 	return 0;
 }
 
-long int localize_positiontop(double *categories,double valuer,long int start,long int end) /*es molt lent probablement*/
+long int localize_positiontop(const double *categories,double valuer,long int start,long int end) /*es molt lent probablement*/
 {
 	long int half;
 	

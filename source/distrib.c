@@ -714,52 +714,7 @@ double distp_binom(int n, int k, double p)
 	return(exp(s1+(double)k*log(p)+(double)(n-k)*log(1.0-p)));
 }
 
-double qsimp(double (*func)(int,int,double), double a, double b, int nsam, int k)
-/*Return the integral of the function func from a to b. EPS accuracy. 2^(JMAX-1) define the number of steps*/
-/*Simpson's rule*/
-{
-	double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam, int k);
-	int j;
-	double s,st;
-	double ost=0.0;
-	double os=0.0;
-	
-	for(j=1;j<=JMAX;j++) {
-		st=trapzd(func,a,b,j,nsam,k);
-		s=(4.0*st-ost)/3.0;
-		if(j>5) {
-			if(fabs(s-os) < EPS2*fabs(os) || (s==0.0 && os==0.0))
-				return s;
-		}
-		os=s;
-		ost=st;
-	}
-	/*if get here: error*/
-	return(0);
-}
-
-double trapzd(double (*func)(int,int,double),double a,double b, int n, int nsam, int k)
-/*nth stage of trapezoidal rule. accuracy adding 2^n-2 interior points*/
-{
-	double x,tnm,sum,del;
-	static double s=0.0;
-	int it,j;
-	
-	if(n==1) {
-		return(s=0.5*(b-a)*(FUNC(nsam,k,a)+FUNC(nsam,k,b)));
-	} else {
-		for(it=1,j=1;j<n-1;j++) it <<= 1;/*!!(2^n-2)*/
-		tnm=it;
-		del=(b-a)/tnm;
-		x=a+0.5*del;
-		for(sum=0.0,j=1;j<=it;j++,x+=del) sum += FUNC(nsam,k,x);
-		s=0.5*(s+(b-a)*sum/tnm);
-		return s;
-	}
-	return 0;
-}
-
-double trapzd_inv(double (*func)(int,int,double),double a,double b, int n, int nsam, int k, double *xm, double *psum)
+double trapzd_inv(double a,double b, int n, int nsam, int k, double *xm, double *psum)
 /*nth stage of trapezoidal rule. accuracy adding 2^n-2 interior points*/
 {
 	double x,tnm,sum,del;
@@ -767,7 +722,7 @@ double trapzd_inv(double (*func)(int,int,double),double a,double b, int n, int n
 	int it,j;
 	
 	if(n==1) {
-		return(s=0.5*(b-a)*(FUNC(nsam,k,a)+FUNC(nsam,k,b)));
+		s=0.5*(b-a)*(FUNC(nsam,k,a)+FUNC(nsam,k,b));
 	} else {
 		for(it=1,j=1;j<n-1;j++) it <<= 1;/*!!(2^n-2)*/
 		tnm=it;
@@ -780,10 +735,9 @@ double trapzd_inv(double (*func)(int,int,double),double a,double b, int n, int n
 		}	
 		s=0.5*(s+(b-a)*sum/tnm);
 		for(j=1;j<=it;j++) {
-			psum[j-1] = psum[j-1]/sum;
-		}
-		return s;
+            psum[j - 1] = psum[j - 1] / sum;
+        }
 	}
-	return 0;
+    return s;
 }
 
