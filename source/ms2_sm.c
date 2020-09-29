@@ -122,7 +122,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                 int ifselection, double pop_sel, double sinit,double pop_size,long int sel_nt,double T_out, int *Sout,int *nintn,double **nrec,
                 double **nrec2,double **tpast,int split_pop, double time_split, double time_scoal, double factor_anc, double *freq,
                 double tlimit,int iflogistic,double *ts, double factor_chrn, double rsv,double *weightmut,double *weightrec,double **migrate_matrix,
-                int my_rank,int npop_events,struct events *pop_event,int linked,long int **loci_linked,int event_forsexratio,double event_sexratio,
+                int npop_events,struct events *pop_event,int linked,long int **loci_linked,int event_forsexratio,double event_sexratio,
                 double sex_ratio,int no_rec_males,double sendt,double sfreqend,double sfreqinit)
 {
     int i,ii;
@@ -405,14 +405,12 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     char **cmatrix(int,long int);
     void print_matrix(long int, struct var2 **,FILE *,int,long int,struct var_priors *,int);
     void mod_mhits(long int, struct var2 **,double *);
-    void mod_outgroup(long int, struct var2 **,int);
     double logp(double);
     double ran1(void);
 	void init_seed1(long int);
     
     void init_coef(double *,int);
     void calc_neutpar(int,long int,struct var2 **,struct dnapar *,double,int);
-    void calc_neutparSRH(int,long int,struct var2 **,struct dnapar *,double,int,int);
     double tajima_d(double,int, double *);
     double Fs(int,double,int);
     double fay_wu(int,int *,double);
@@ -445,6 +443,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	double fl_d2_achaz(int,int *,long int);
 	double Y_achaz(int,int *,long int);
 	double Y2_achaz(int,int *,long int);
+	void mod_outgroup(long int segsit, struct var2 **inputp);
 	
    
     double thetae=0.;
@@ -472,8 +471,10 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	double recemax=0.;
 	double recombinationv=0.;
     double correction_recabs(double,double,int);
+	void calc_neutparSRH(long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa,int flaghap);
     void calc_neutpar_window(struct var2 **,struct dnapar *,long int,long int,double,int);
     void calc_neutpar_windowSRH(struct var2 **,struct dnapar *,long int,long int,double,int,int);
+	void mod_outgroup(long int segsit, struct var2 **inputp);
 
 	double gammadist(double);
 
@@ -1379,11 +1380,11 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
             (*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
             (*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq,
             (*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,(*inputp)->factor_chrn,(*inputp)->ratio_sv,
-			weightmut,weightrec,(*inputp)->migrate_matrix,my_rank,(*inputp)->npop_events,(*inputp)->pop_event,
+			weightmut,weightrec,(*inputp)->migrate_matrix,(*inputp)->npop_events,(*inputp)->pop_event,
 			(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
 			(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit);
             if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut); /******** mhits ******************/
-            if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp,(*inputp)->pop_outgroup); /******** outgroup ******************/
+            if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp); /******** outgroup ******************/
 			if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
 				postp[0][count0-1].thetap = thetae;
 			if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
@@ -1450,11 +1451,11 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					(*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
 					(*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq,
 					(*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,(*inputp)->factor_chrn,(*inputp)->ratio_sv,
-					weightmut,weightrec,(*inputp)->migrate_matrix,my_rank,(*inputp)->npop_events,(*inputp)->pop_event,
+					weightmut,weightrec,(*inputp)->migrate_matrix,(*inputp)->npop_events,(*inputp)->pop_event,
 					(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
 					(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit);
 					if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut); /******** mhits ******************/
-					if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp,(*inputp)->pop_outgroup); /******** outgroup ******************/
+					if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp); /******** outgroup ******************/
 					
 					if((*inputp)->linked > 1) {/*linked fragments with subset fixed values*/
 						s0=s1=0;
@@ -1555,7 +1556,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					}
 					else {/*like not linked fragments*/
 						if((*inputp)->rmfix == 1 || (*inputp)->Sfix_alltheta == 1)
-							calc_neutparSRH(0,segsites,inputp,neutpar+0,recombinationv,npopa,(*inputp)->nhapl);
+							calc_neutparSRH(segsites,inputp,neutpar+0,recombinationv,npopa,(*inputp)->nhapl);
 						if((*inputp)->rmfix == 1) {
 							Rmi = neutpar[0].Rm;
 							nhi = neutpar[0].nhapl;
@@ -3049,14 +3050,13 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
     long j,k,Ss,i;
     int h,y;
     int ispolnomhit(long int,int,int,int);
+	void function_atcg(int nsam,long int nsites,char **list2,double *patcg);
 
 	int xx;
 	long int kk,ll,pnsites;
 	long int s0,s1,psegsites=0;
     char **list2;
 	char ss[1];
-	
-	void function_atcg(int,long int,long int,char **,double *);
 	
     /*x=1 pr_matrix, x=2 print Hudson format (modified for mhits), x=3 print matrix excluding positions with mhits*/
     
@@ -3257,7 +3257,7 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 		}
 		
 		if((*inputp)->patcg[0] != -1.) 
-			function_atcg((*inputp)->nsam,segsites,(*inputp)->nsites,list2,(*inputp)->patcg);
+			function_atcg((*inputp)->nsam,(*inputp)->nsites,list2,(*inputp)->patcg);
 			
 		fprintf(output,"\nFASTA file: locus %d, nsam %d, total sites %ld, mutations %ld, iteration %ld\n",(*inputp)->nloci,(*inputp)->nsam,(*inputp)->nsites,segsites,count0);
 		j=h=0;
@@ -3320,7 +3320,7 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
     }
 }
 
-void function_atcg(int nsam,long int segsites,long int nsites,char **list2,double *patcg) 
+void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 {
 	int i,flagp,s;
 	long int j;
@@ -3753,7 +3753,7 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
 	
     (*inputp)->Sout = Sout;
 }
-void mod_outgroup(long int segsit, struct var2 **inputp,int outgroup) 
+void mod_outgroup(long int segsit, struct var2 **inputp)
 {
 	int j,h,polc,inito,nt0;
 	int oldn;
@@ -5329,7 +5329,7 @@ double calc_quantile(double *vec, long int lenvec,double quant, long int numit) 
     return(res);
 }
 
-void calc_neutparSRH(int valuep,long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa,int flaghap)
+void calc_neutparSRH(long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa,int flaghap)
 {
     long int S;
     int nhapl;
