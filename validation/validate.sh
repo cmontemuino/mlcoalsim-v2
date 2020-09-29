@@ -56,7 +56,7 @@ function validate() {
         # We make a file-to-file comparison
         printf >&2 '\t\t3.1 Comparing Output: '
 
-        for file in "${case}"*.out
+        for file in "$case"*.out
         do
             cmp --silent "$file" "$baseline/$file"
             local status=$?
@@ -83,6 +83,8 @@ function run() {
     local variant=$3
     local np=$4
 
+    printf >&2 '** Running the validation for |%s|, variant |%s| **\n' "$case" "$variant"
+
     # Maintain a reference to the current location that we later use for running the simulations
     # and validate the results.
     local project
@@ -96,36 +98,58 @@ function run() {
     local letter
     if [[ $id == "example00" ]]; then letter="A"; fi
 
+    local status=0
     case $variant in
       zns)
+        checkBinary "$project/build/mlcoalsimX_ZnS" && status=0 || status=1
         COMMAND="$project/build/mlcoalsimX_ZnS"
         if [[ $id == "example00" ]]; then letter="B"; fi
         ;;
-      mpi) COMMAND="mpirun -np $np $project/build/mlcoalsimXmpi";;
-      *) COMMAND="$project/build/mlcoalsimX";;
+      mpi)
+        checkBinary "$project/build/mlcoalsimXmpi" && status=0 || status=1
+        COMMAND="mpirun -np $np $project/build/mlcoalsimXmpi"
+        ;;
+      *)
+        checkBinary "$project/build/mlcoalsimX" && status=0 || status=1
+        COMMAND="$project/build/mlcoalsimX"
+        ;;
     esac
 
-    printf >&2 '** Running the validation for |%s|, variant |%s| **\n' "$case" "$variant"
-    printf >&2 '\t1. Creating the folder to put the generated data: %s\n' "$output"
-    mkdir -p "$output" >/dev/null
+    if [[ $status -eq 0 ]]; then
 
-    printf >&2 '\t2. Generating the data\n'
-    pushd "examples/$id/" >/dev/null
+      printf >&2 '\t1. Creating the folder to put the generated data: %s\n' "$output"
+      mkdir -p "$output" >/dev/null
 
-    $COMMAND "$case.txt" "$output/${case}${letter}.out" >/dev/null 2>&1
+      printf >&2 '\t2. Generating the data\n'
+      pushd "examples/$id/" >/dev/null
 
-    popd >/dev/null
+      $COMMAND "$case.txt" "$output/${case}${letter}.out" >/dev/null 2>&1
 
-    printf >&2 '\t3. Validating the generated data for |%s|\n' "$case"
+      popd >/dev/null
 
-    validate "$output" "${case}${letter}" "$project/validation" "$id"
-    local status=$?
+      printf >&2 '\t3. Validating the generated data for |%s|\n' "$case"
 
-    printf >&2 "\t4. Tear down\n"
+      validate "$output" "${case}${letter}" "$project/validation" "$id"
+      status=$?
 
-    rm -rf "$output"sh
+      printf >&2 "\t4. Tear down\n"
+
+      rm -rf "$output"
+    else
+      printf >&2 '\t Cannot run |%s|. You need to generate binaries!!\n' "$COMMAND"
+    fi
 
     return $status
+}
+
+
+function checkBinary() {
+  local _binary="$1"
+
+  # Checks if the binary is available.
+  command -v "$_binary"  >/dev/null
+  local status=$?
+  return $status
 }
 
 OK=0
