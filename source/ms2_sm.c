@@ -17,6 +17,7 @@
 /*HUDSON ms.c file modified*/
 /*ALSO INCLUDED A FUNCTION FOR RM FROM J. Wall.*/
 
+#include "neut_tests.h"
 #include "mlsp_sm.h"
 #include "streec2_sm.h"
 #include <stdio.h>
@@ -409,40 +410,16 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     double ran1(void);
 	void init_seed1(long int);
     
-    void init_coef(double *,int);
     void calc_neutpar(int,long int,struct var2 **,struct dnapar *,double,int);
-    double tajima_d(double,int, double *);
-    double Fs(int,double,int);
-    double fay_wu(int,int *,double);
-    double fay_wu_normalized2(int,double,double,double,double *,double);
-    double Fst(double,double,int);
     double Zns(int,long int,struct var2 **,int);
     double Zns_window(struct var2 **,long int,long int,int);
     double ZnA_(int,long int,struct var2 **,int);
     double ZnA_window(struct var2 **,long int,long int,int);
-    double testHap(int, int *);
-    double R2(long int *,double,int,int);
-    double Gxi(int ,int *, double);
-    double Gximod(int ,int *, double);
-    double frabs(int ,int *, double);
-    double tajima_dvsdmin(double,int, double *,int);
-	double E_zeng(int,double,double,double,double *);
     double Fstw(double *, int *,double,int);
-    double EWtest(int, int *);
-	double pwh(int,double *);
-    /*canviat per debug*/
-    double estnm(int,int,int *,long int,char **);
-    /*double gst1,gst2;*/
     double logPPoisson2(long int, double);
 	double koutgJC(int,int,int *,unsigned long);
 	double fixoutg(int,int,int);
  	
-	double fl_f_achaz(int,int *,long int);
-	double fl_f2_achaz(int,int *,long int);
-	double fl_d_achaz(int,int *,long int);
-	double fl_d2_achaz(int,int *,long int);
-	double Y_achaz(int,int *,long int);
-	double Y2_achaz(int,int *,long int);
 	void mod_outgroup(long int segsit, struct var2 **inputp);
 	
    
@@ -5446,8 +5423,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
     long int *hapw = 0;
     long int *hapb = 0;
     long int segsitesm1;
-	int /*pidcount,*/npw;
-	double testHap(int, int *);
+	int npw;
 	
 	#if iHStest == 1
 	int *fhap1,*fhap2,*nsam1,*nsam2;
@@ -5465,7 +5441,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 	#endif
 	
 	#if iEtest == 1 || iHStest == 1
-	double testHap(int, int *);
 	long int l;
 	#endif
 
@@ -5493,7 +5468,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 	double *freq1,*freq2,*freq3,*freq4,s,s2,g1,g2,moment;
 	long int z;
 	
-	double raggadeness(long int *,long int,long int);
 	long int *Pwd;
 	long int maxpwd;
 		
@@ -7135,11 +7109,9 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 	#endif
 	
 	#if iEStest == 1 || iHStest == 1
-	double testHap(int, int *);
 	long int l;
 	#endif
 	
-	double raggadeness(long int *,long int,long int);
 	long int *Pwd;
 	long int maxpwd;
 	
