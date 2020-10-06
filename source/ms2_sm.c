@@ -17,9 +17,12 @@
 /*HUDSON ms.c file modified*/
 /*ALSO INCLUDED A FUNCTION FOR RM FROM J. Wall.*/
 
+#include "ms2_sm_helpers.h"
 #include "neut_tests.h"
 #include "mlsp_sm.h"
 #include "streec2_sm.h"
+#include "distrib.h"
+#include "ran1.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -407,7 +410,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     void print_matrix(long int, struct var2 **,FILE *,int,long int,struct var_priors *,int);
     void mod_mhits(long int, struct var2 **,double *);
     double logp(double);
-    double ran1(void);
 	void init_seed1(long int);
     
     void calc_neutpar(int,long int,struct var2 **,struct dnapar *,double,int);
@@ -416,12 +418,8 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     double ZnA_(int,long int,struct var2 **,int);
     double ZnA_window(struct var2 **,long int,long int,int);
     double Fstw(double *, int *,double,int);
-    double logPPoisson2(long int, double);
-	double koutgJC(int,int,int *,unsigned long);
-	double fixoutg(int,int,int);
  	
 	void mod_outgroup(long int segsit, struct var2 **inputp);
-	
    
     double thetae=0.;
 	double thetaemin=0.;
@@ -436,7 +434,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     double logPoissonkk=0.;
     double div=0.; double divt,divr;
     int burn_in=0;
-    int compare_(const void *,const void *);
     int nwindow,aa;
     long int s0,s1,kk,ll;
 	long int inputS;
@@ -453,9 +450,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     void calc_neutpar_windowSRH(struct var2 **,struct dnapar *,long int,long int,double,int,int);
 	void mod_outgroup(long int segsit, struct var2 **inputp);
 
-	double gammadist(double);
-
-
 	/*counting simulations in stdout*/
     static double counterp;
 	static double restp;
@@ -466,8 +460,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	/*heterogeneity in mutation and recombination*/
 	double *weightmut=0;
 	double *weightrec=0;
-	int do_heter_gamma_sites(double *,double,double,long int,long int);
-	int do_heter_gamma_sitesrec(double *,double,double,long int);
 	double thetaSv;
     	
 	long int nrej; /*avoid too much rejections*/
@@ -3572,11 +3564,9 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
     char a[1];
     int Sout;
     double rr,ratio,r_transv,r_transc;
-    double ran1(void);
     int *mhsout;
 	double poissondist(double);
 	double valuer;
-	long int localize_positiontop(const double *,double,long int,long int);
     
 	ratio = (*inputp)->ratio_sv;
     r_transc = ratio/(ratio + 1.);
@@ -3801,7 +3791,6 @@ void make_gametes(int nsam, struct node *ptree, double tt,long int newsites,long
     int tdesn(struct node *,int,int);
 	
 	double rr;
-	double ran1(void);
 	char r;
 	
 	
@@ -3827,7 +3816,6 @@ int pickb(int nsam, struct node *ptree,double tt) /* agafa la branca a on ha cai
 {
     double x,y,z;
     int i;
-    double ran1(void);
     
     x = (double)ran1()*tt;
     for(i=0,y=0;i<2*nsam-2;i++) {
@@ -3852,7 +3840,6 @@ void mnmial(long int n,long int nclass,double *p,long int *rv)
     
     double x,s;
     long int i,j;
-    double ran1(void);
     
     for(i=0;i<(long int)nclass;i++) rv[i]=0;	/* inicialitzar */
     for(i=0;i<(long int)n;i++) {	/* posa les n mutacions */
@@ -3867,7 +3854,6 @@ void mnmial2(long int n,long int nclass,double *p,long int *rv,long int *len)
 {
     double x,s;
     long int i,j;
-    double ran1(void);
     
     for(i=0;i<(long int)nclass;i++) rv[i]=0;	/* inicialitzar */
     i = 0;
@@ -3887,7 +3873,6 @@ void mnmial2_psel(long int n,long int nclass,double *p,long int *rv,long int *le
 {
     double x,s;
     long int i,j;
-    double ran1(void);
 	long int sumlen;
     
     for(i=0;i<(long int)nclass;i++) rv[i]=0;	/* inicialitzar */
@@ -3933,9 +3918,7 @@ void ranvec_psel(long int n,long int *pbuf,int mhits,long int sel_nt,long int be
  /* posa un nombre entre [0,len) */
 {
     long int i,x;
-    double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(const double *,double,long int,long int);
     
 	/*include nsites*/
     pbuf[0] = (long int)sel_nt;
@@ -3984,9 +3967,7 @@ void ordran(long int n, long int *pbuf,int mhits,long int beg,double *weightmut,
 void ranvec(long int n, /*double */long int *pbuf,int mhits,long int beg,double *weightmut,long int end) /* posa un nombre entre [0,len) */
 {
     long int i,x;
-    double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(const double *,double,long int,long int);
     
     
 	if(beg==0) wstartm1 = 0.0;
@@ -4032,9 +4013,7 @@ void ranvec2(long int n, long int *pbuf,int mhits,int nsam,long int beg,double *
 	
     double dlen;
     double a;
-    double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(const double *,double,long int,long int);
     
 	if(beg==0) wstartm1 = 0.0;
 	else wstartm1 = (double)weightmut[beg-1];
@@ -4125,9 +4104,7 @@ void ranvec2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,l
     int z,f;
     double dlen;
     double a;
-	double ran1(void);
 	double valuer,wstartm1;
-	long int localize_positiontop(const double *,double,long int,long int);
     
 	if(beg==0) wstartm1 = 0.0;
 	else wstartm1 = (double)weightmut[beg-1];
@@ -4225,7 +4202,6 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
     int n=0;
     int observed=1;
     int pv=0;
-    int compare_(const void *,const void *);
     long int count,countequal,totalobs;
     long int total=0;
     double fcount=0.;
@@ -6909,44 +6885,6 @@ int ispolnomhit(long int j,int init, int nsam, int totalsam)
     return(nsam-h); /*gives the frequency of the variant that is different of '0'*/
 }
 
-double fixoutg(int nsam, int Sout, int freq0)
-{
-    double div;
-    
-    if(nsam) {
-        div = (double)Sout;
-		div += (double)freq0;
-		
-        return div;
-    }
-    else return -10000;
-}
-
-double koutgJC(int nsam, int Sout, int *freq, unsigned long nsites)
-{
-    int x;
-    double div;
-    
-    if(nsam) {
-        div = (double)Sout;
-		div += (double)freq[0];
-		
-		for(x=1;x<nsam;x++) 
-            div += (double)freq[x]*(double)x/(double)nsam;
-		
-		if((double)Sout == 0) { /*correction only in case calculating from sequence data*/
-			div/= (double)nsites;
-			if(div >= .75) return -10000.0;
-			else {
-				div = -.75*log(1.0-4.0/3.0*div);/*Jukes and Cantor correction...*/
-				return div*(double)nsites;
-			}
-		}
-		else return div; /*in case calculating directly Sout, we already included the multiple hits in the branch length*/
-    }
-    else return -10000.0;
-}
-
 void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  s0,long int  s1,double valuer,int npopa,int flaghap)
 {
 	long int segsit;    
@@ -8481,217 +8419,6 @@ double ZnA_window(struct var2 **inputp, long int s0, long int s1,int npopa)
     return(ZnA);
 }
 
-int print_matrix_sfixalltheta(struct var **data,FILE *file_thetap,FILE *file_ttotp,struct prob_par **postp) 
-{
-	int x;
-	long int j;
-	
-	x=0;
-	
-    if((*data)->ifgamma == 1 || (*data)->range_thetant) {
-		for(x=0;x<(*data)->n_loci;x++) {                                
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_thetap,"thetap[locus=%d]\t",x);
-			fprintf(file_thetap,"Prob[locus=%d]\t",x);
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			fprintf(file_ttotp,"Ttot[locus=%d]\t",x);
-			fprintf(file_ttotp,"Prob[locus=%d]\t",x);
-			#endif
-		}
-		#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-		fprintf(file_thetap,"\n");
-		#endif
-		#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-		fprintf(file_ttotp,"\n");
-		#endif
-		for(j=0;j<(*data)->n_iter;j++) {                                
-			for(x=0;x<(*data)->n_loci;x++) {                                
-				#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-				if(postp[x][j].thetap > -9999)
-					fprintf(file_thetap,"%G\t",postp[x][j].thetap);
-				else
-					fputs("na\t",file_thetap);
-				fprintf(file_thetap,"%f\t",postp[x][j].prob);
-				#endif
-				#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-				if(postp[x][j].Ttotp > -9999)
-					fprintf(file_ttotp,"%G\t",postp[x][j].Ttotp);
-				else
-					fputs("na\t",file_ttotp);
-				fprintf(file_ttotp,"%f\t",postp[x][j].prob);
-				#endif
-			}
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_thetap,"\n");
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			fprintf(file_ttotp,"\n");
-			#endif
-		}
-		#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-		fprintf(file_thetap,"\n");
-		#endif
-		#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-		fprintf(file_ttotp,"\n");
-		#endif
-		if((*data)->sfix_allthetas > 0) {
-			if((*data)->mhits == 0) 
-				fprintf(file_thetap,"In case mhits = 0, the rejection ratio counts for appropriate trees using a fix S.\n");
-			for(x=0;x<(*data)->n_loci;x++) {                                
-				#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-				fprintf(file_thetap,"ratio[locus=%d]\t",x);
-				#endif
-				#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-				fprintf(file_ttotp,"ratio[locus=%d]\t",x);
-				#endif
-			}
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_thetap,"\n");
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			fprintf(file_ttotp,"\n");
-			#endif
-			for(x=0;x<(*data)->n_loci;x++) {                                
-				#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-				if(postp[x][(*data)->n_iter].thetap > -9999)
-					fprintf(file_thetap,"%G\t",postp[x][(*data)->n_iter].thetap);
-				else
-					fputs("na\t",file_thetap);
-				#endif
-				#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-				if(postp[x][(*data)->n_iter].Ttotp > -9999)
-					fprintf(file_ttotp,"%G\t",postp[x][(*data)->n_iter].Ttotp);
-				else
-					fputs("na\t",file_ttotp);
-				#endif
-			}
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_thetap,"\n");
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			fprintf(file_ttotp,"\n");
-			#endif
-		}
-	}
-	return 0;
-}
-int print_matrix_rmfix(struct var **data,FILE *file_recp,FILE *file_ttotp,int Sfix,struct prob_par **postp)
-{
-	int x;
-	long int j;
-	
-    if((*data)->ifgammar == 1 || (*data)->range_rnt) {
-		for(x=0;x<(*data)->n_loci;x++) {                                
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_recp,"recp[locus=%d]\t",x);
-			fprintf(file_recp,"Prob[locus=%d]\t",x);
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			if(Sfix == 0) {
-				fprintf(file_ttotp,"Ttot[locus=%d]\t",x);
-				fprintf(file_ttotp,"Prob[locus=%d]\t",x);
-			}
-			#endif
-		}
-		#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-		fprintf(file_recp,"\n");
-		#endif
-		#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-		if(Sfix == 0) fprintf(file_ttotp,"\n");
-		#endif
-		for(j=0;j<(*data)->n_iter;j++) {                                
-			for(x=0;x<(*data)->n_loci;x++) {                                
-				#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-				if(postp[x][j].recp > -9999)
-					fprintf(file_recp,"%G\t",postp[x][j].recp);
-				else
-					fputs("na\t",file_recp);
-				fprintf(file_recp,"%f\t",postp[x][j].prob);
-				#endif
-				#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-				if(Sfix == 0) {
-					if(postp[x][j].Ttotp > -9999) 
-						fprintf(file_ttotp,"%G\t",postp[x][j].Ttotp);
-					else
-						fputs("na\t",file_ttotp);	
-					fprintf(file_ttotp,"%f\t",postp[x][j].prob);
-				}
-				#endif
-			}
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_recp,"\n");
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			if(Sfix == 0) fprintf(file_ttotp,"\n");
-			#endif
-		}
-		#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-		fprintf(file_recp,"\n");
-		#endif
-		#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-		if(Sfix == 0) fprintf(file_ttotp,"\n");
-		#endif
-		if((*data)->rmfix > 0) {
-			for(x=0;x<(*data)->n_loci;x++) {                                
-				#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-				fprintf(file_recp,"ratio[locus=%d]\t",x);
-				#endif
-				#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-				if(Sfix == 0) fprintf(file_ttotp,"ratio[locus=%d]\t",x);
-				#endif
-			}
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_recp,"\n");
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			if(Sfix == 0) fprintf(file_ttotp,"\n");
-			#endif
-			for(x=0;x<(*data)->n_loci;x++) {                                
-				#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-				if(postp[x][(*data)->n_iter].recp > -9999)
-					fprintf(file_recp,"%G\t",postp[x][(*data)->n_iter].recp);
-				else
-					fputs("na\t",file_recp);
-				#endif
-				#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-				if(Sfix == 0) {
-					if(postp[x][(*data)->n_iter].Ttotp > -9999)
-						fprintf(file_ttotp,"%G\t",postp[x][(*data)->n_iter].Ttotp);
-					else
-						fputs("na\t",file_ttotp);
-				}
-				#endif
-			}
-			#if ADDITIONAL_PRINTS == 1 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 13 || ADDITIONAL_PRINTS == 123
-			fprintf(file_recp,"\n");
-			#endif
-			#if ADDITIONAL_PRINTS == 2 || ADDITIONAL_PRINTS == 12 || ADDITIONAL_PRINTS == 23 || ADDITIONAL_PRINTS == 123
-			if(Sfix == 0) fprintf(file_ttotp,"\n");
-			#endif
-		}
-	}
-	return 0;
-}
-
-/*compare two double numbers in a long int list*/
-int compare_(const void *i,const void *j) 
-{
-    if(*(double *)i < *(double *)j) return -1;
-    if(*(double *)i > *(double *)j) return  1;
-    return 0;
-}
-
-double logPPoisson2(long int Si, double lambda)
-{
-    double value;
-	double factln(long int);
-    
-	value = ((double)Si*log((double)lambda) - lambda - factln(Si));
-    return value;
-}
-
-
 /*Wall's program for calculating minimum recombination events: modification*/
 int Min_rec(int x, int segsit, int nsam, int inits,int totalsam)
 {  /* Calculate min # rec. events */
@@ -8761,105 +8488,6 @@ int Min_rec(int x, int segsit, int nsam, int inits,int totalsam)
 		return (1+c);
 	}
 	return 0;
-}
-
-int do_heter_gamma_sitesrec(double *categories,double gammashape,double poppar,long int nsites) 
-{
-	/*do a cummulative vector*/
-	long int i;
-	double gammadist(double);
-	
-	categories[0] = 0.0;
-	
-	if(gammashape <= 0.0) {/*we do simply all equal*/
-		for (i=1;i<nsites;i++) {
-			categories[i] = (double)poppar/(double)(nsites-1);
-			categories[i] += categories[i-1];
-		}
-	}
-	else {/*gamma distribution*/
-		for (i=1;i<nsites;i++) {
-			categories[i] = gammadist(gammashape)/gammashape;
-			categories[i] *= (double)poppar/(double)(nsites-1);
-			categories[i] += categories[i-1];
-		}
-	}
-	return 0;
-}
-
-int do_heter_gamma_sites(double *categories,double gammashape,double poppar,long int nsites,long int invariable) 
-{
-	/*do a cummulative vector*/
-	long int i;
-	double gammadist(double),newpoppar;
-	double ran1(void);
-		
-	newpoppar = poppar * (double)nsites/(double)(nsites-invariable);
-	
-	if(gammashape <= 0.0) {/*we do simply all equal*/
-		if(invariable > 0) {
-			if(ran1() > (double)(nsites-invariable)/(double)nsites) categories[0] = 0.0;
-			else categories[0] = newpoppar/(double)nsites;
-		}
-		else categories[0] = newpoppar/(double)nsites;
-		for (i=1;i<nsites;i++) {
-			if(invariable > 0) {
-				if(ran1() > (double)(nsites-invariable)/(double)nsites) categories[i] = 0.0;
-				else categories[i] = newpoppar/(double)nsites;
-			}
-			else categories[i] = newpoppar/(double)nsites;
-			categories[i] += categories[i-1];
-		}
-	}
-	else {/*gamma distribution*/
-		if(invariable > 0) {
-			if(ran1() > (double)(nsites-invariable)/(double)nsites) categories[0] = 0.0;
-			else {
-				categories[0] = gammadist(gammashape)/gammashape;
-				categories[0] *= newpoppar/(double)nsites;
-			}
-		}
-		else {
-			categories[0] = gammadist(gammashape)/gammashape;
-			categories[0] *= newpoppar/(double)nsites;
-		}
-		for (i=1;i<nsites;i++) {
-			if(invariable > 0) {
-				if(ran1() > (double)(nsites-invariable)/(double)nsites) categories[i] = 0.0;
-				else {
-					categories[i] = gammadist(gammashape)/gammashape;
-					categories[i] *= newpoppar/(double)nsites;
-				}
-			}
-			else {
-				categories[i] = gammadist(gammashape)/gammashape;
-				categories[i] *= newpoppar/(double)nsites;
-			}
-			categories[i] += categories[i-1];
-		}
-	}
-	
-	return 0;
-}
-
-long int localize_positiontop(const double *categories,double valuer,long int start,long int end) /*es molt lent probablement*/
-{
-	long int half;
-	
-	half = (long int)floor((double)(start+end)/2.0);
-	/**/
-	while(half != start) {
-		if((double)valuer < categories[half]) end = half;
-		else if((double)valuer > categories[half]) start = half;
-		half = (long int)floor((double)(start+end)/2.0);
-	}
-	/**/
-	if(half == start) {
-		if((double)valuer < categories[half]) return half;
-		else return half+1;
-	}	
-
-	return half;
 }
 
 double correction_recabs(double f,double sexratio,int m) /*ABSOLUTE value of recombination: This calculation is NOT important*/

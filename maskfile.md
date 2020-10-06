@@ -18,7 +18,7 @@ It is possible to tweak the flags used by `CMAKE` by specifying the `btype` flag
 * `RelWithDebInfo`: Adds `-O2 -g -DNDEBUG` flags (**default value**)
 
 Please note that all executables depend on `zf_logs` and `benchmark`, therefore, even if you issue `mask build -t mlcoalsimXmpi`,
-then you will notice the following: 
+then you will notice the following:
 
 ```sh
 mask build -t mlcoalsimXmpi
@@ -52,10 +52,10 @@ cmake -B build -DCMAKE_BUILD_TYPE="$_build_type"
 
 if [[ "$_target" == "all" ]]; then
     echo "Building all targets..."
-    make -C build
+    make -j4 -C build
 else
     printf 'Building target <%s> ...\n' "$_target"
-    make -C build "$_target"
+    make -j4 -C build "$_target"
 fi
 ~~~
 

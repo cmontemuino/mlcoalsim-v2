@@ -17,7 +17,7 @@
 /************************************************************************************/
 
 #include "mlsp_sm.h"
-#include "ms2_sm.h"
+#include "print_helpers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
