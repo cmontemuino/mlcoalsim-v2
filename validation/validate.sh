@@ -91,7 +91,7 @@ function run() {
     project=$(pwd)
 
     # Create a temporary folder to put the outputs of running this simulation
-    local output="/tmp/$id-$RANDOM"
+    local output=$(mktemp -d -t $id)
 
     # Letter used as suffix in the output files. Usually "A", but "B" in case of ZNS variant.
     # This distinction only applies to example00
