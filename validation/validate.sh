@@ -156,6 +156,7 @@ OK=0
 KO=0
 function example00() {
     run example00 Example1locus_1pop_mhit0 standard && OK=$((OK + 1)) || KO=$((KO + 1))
+    run example00 Example1locus_1pop_mhit0_bl standard && OK=$((OK + 1)) || KO=$((KO + 1))
     run example00 Example1locus_1pop_mhit0_n100_S200 standard && OK=$((OK + 1)) || KO=$((KO + 1))
     run example00 Example1locus_1pop_mhit0_rec100_n100_S200 standard && OK=$((OK + 1)) || KO=$((KO + 1))
     run example00 Example1locus_1pop_mhit0_obs zns && OK=$((OK + 1)) || KO=$((KO + 1))

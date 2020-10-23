@@ -1,0 +1,16 @@
+print_neuttest	1
+print_matrixpol	0
+
+n_iterations	1000
+seed1	81140
+n_loci	1
+n_samples	20
+n_sites	10000
+
+npop	1
+mhits	0
+
+# The only intention of this theta value compared against Example1locus_1pop_mhit0.txt is testing
+# the `biggerlist` function.
+theta	0.02
+recombination	0
