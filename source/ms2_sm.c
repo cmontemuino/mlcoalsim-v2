@@ -94,6 +94,8 @@ double **coef = NULL;
 struct dnapar *neutpar = NULL;    
 long int *posit;	/*important! externes perque al reallocar memoria no localitza la nova posicio. */
                         /*Tambe es fa posant la posicio de memoria*/
+
+// Matrix with mutations. It contains `nsam` columns x `maxsites` rows.
 char **list;
 
 char dfiles[NEUTVALUES2+1][420] = {{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},
@@ -251,7 +253,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                     segsit = len_nozero[k];
                 if((segsit + ns) >= maxsites) {	/* refem la matriu dels polimorfismes */
                     maxsites = segsit + ns + SITESINC;
-                    posit = (long int *)realloc(posit,(long int)maxsites*sizeof(long int));
+                    posit = realloc(posit, sizeof *posit * maxsites);
                     /* canvia mida del vector dels nombres dels polimorfismes */
                     if(posit==NULL) perror("realloc error. gensam.1");
                     biggerlist(nsam);	/* refem la llista dels polimorfismes */
@@ -758,7 +760,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 			x = 0;
 			for(kk=0,ll=(*inputp)->window;kk<(*inputp)->nsites;kk += (long int)(*inputp)->despl) {
 				if((*inputp)->print_neuttest > 2 && (*inputp)->print_neuttest < 5) {
-					if(!(file_outputm = (FILE **)realloc(file_outputm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+					if(!(file_outputm = realloc(file_outputm, sizeof *file_outputm * (x+1)))) perror("Error in input/output");
 					for(j=0;j<420;j++) namefile_[j] = '\0';
 					sprintf(namefile_,"%s_locus_%05d_rank%03d.out",file_out_,x,my_rank);
 					if(count0 == countmpi) {
@@ -800,7 +802,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 				}
 				if(count0 == countmpi) {
 					if((*inputp)->max_npop_sampled > 2 || ((*inputp)->max_npop_sampled == 2 && (*inputp)->pop_outgroup == -1)) {
-						if(!(outfstallcompm = (FILE **)realloc(outfstallcompm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+						if(!(outfstallcompm = realloc(outfstallcompm,sizeof *outfstallcompm * (x+1)))) perror("Error in input/output");
 						for(j=0;j<420;j++) namefile_[j] = '\0';	
 						sprintf(namefile_,"%s_locus_%05d_Fst_allcomp_rank%03d.out",file_out_,x,my_rank);
 						if(!(outfstallcompm[x] = fopen(namefile_,"w"))) perror("Error in input/output");
@@ -812,7 +814,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							fflush(outfstallcompm[x]);
 						}
 						
-						if(!(outpiwallcompm = (FILE **)realloc(outpiwallcompm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+						if(!(outpiwallcompm = realloc(outpiwallcompm, sizeof *outpiwallcompm * (x+1)))) perror("Error in input/output");
 						for(j=0;j<420;j++) namefile_[j] = '\0';	
 						sprintf(namefile_,"%s_locus_%05d_PiW_allcomp_rank%03d.out",file_out_,x,my_rank);
 						if(!(outpiwallcompm[x] = fopen(namefile_,"w"))) perror("Error in input/output");
@@ -824,7 +826,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							fflush(outpiwallcompm[x]);
 						}
 						
-						if(!(outpiaallcompm = (FILE **)realloc(outpiaallcompm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+						if(!(outpiaallcompm = realloc(outpiaallcompm, sizeof *outpiaallcompm * (x+1)))) perror("Error in input/output");
 						for(j=0;j<420;j++) namefile_[j] = '\0';	
 						sprintf(namefile_,"%s_locus_%05d_PiA_allcomp_rank%03d.out",file_out_,x,my_rank);
 						if(!(outpiaallcompm[x] = fopen(namefile_,"w"))) perror("Error in input/output");
@@ -836,7 +838,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							fflush(outpiaallcompm[x]);
 						}
 						
-						if(!(outfsthapallcompm = (FILE **)realloc(outfsthapallcompm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+						if(!(outfsthapallcompm = realloc(outfsthapallcompm, sizeof *outfsthapallcompm * (x+1)))) perror("Error in input/output");
 						for(j=0;j<420;j++) namefile_[j] = '\0';	
 						sprintf(namefile_,"%s_locus_%05d_Fsthap_allcomp_rank%03d.out",file_out_,x,my_rank);
 						if(!(outfsthapallcompm[x] = fopen(namefile_,"w"))) perror("Error in input/output");
@@ -848,7 +850,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							fflush(outfsthapallcompm[x]);
 						}
 						
-						if(!(outhapwallcompm = (FILE **)realloc(outhapwallcompm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+						if(!(outhapwallcompm = realloc(outhapwallcompm, sizeof *outhapwallcompm * (x+1)))) perror("Error in input/output");
 						for(j=0;j<420;j++) namefile_[j] = '\0';	
 						sprintf(namefile_,"%s_locus_%05d_HapW_allcomp_rank%03d.out",file_out_,x,my_rank);
 						if(!(outhapwallcompm[x] = fopen(namefile_,"w"))) perror("Error in input/output");
@@ -860,7 +862,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							fflush(outhapwallcompm[x]);
 						}
 						
-						if(!(outhapaallcompm = (FILE **)realloc(outhapaallcompm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+						if(!(outhapaallcompm = realloc(outhapaallcompm, sizeof *outhapaallcompm * (x+1)))) perror("Error in input/output");
 						for(j=0;j<420;j++) namefile_[j] = '\0';	
 						sprintf(namefile_,"%s_locus_%05d_HapA_allcomp_rank%03d.out",file_out_,x,my_rank);
 						if(!(outhapaallcompm[x] = fopen(namefile_,"w"))) perror("Error in input/output");
@@ -873,7 +875,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						}
 						
 						if((*inputp)->type_ancestral) {
-							if(!(outancestralm = (FILE **)realloc(outancestralm,(x+1)*sizeof(FILE *)))) perror("Error in input/output");
+							if(!(outancestralm = realloc(outancestralm, sizeof *outancestralm * (x+1)))) perror("Error in input/output");
 							for(j=0;j<420;j++) namefile_[j] = '\0';	
 							sprintf(namefile_,"%s_locus_%05d_Sancestral_rank%03d.out",file_out_,x,my_rank);
 							if(!(outancestralm[x] = fopen(namefile_,"w"))) perror("Error in input/output");
@@ -1138,12 +1140,13 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     }
 	/*Define the matrix for posterior probabilities for theta and other values*/
     
-    if((*inputp)->theta > 0.0 || (*inputp)->ifgamma == 1 || (*inputp)->range_thetant) {        
+    if((*inputp)->theta > 0.0 || (*inputp)->ifgamma == 1 || (*inputp)->range_thetant) {
         list = cmatrix((*inputp)->nsam,maxsites+1);
         if(!(posit = (long int *)malloc((long int)(maxsites*sizeof(long int)))))
             perror("ms error.1");
-    }
-    else {
+    } else {
+		// Note: when `theta` equals 0, then (*inputp)->segsitesin takes the `mutations` parameter value.
+		// For example, see `examples/examples00/Example1locus_1pop_mhit0_recINF_S200_Lfix.txt`
         list = cmatrix((*inputp)->nsam,(long int)(*inputp)->segsitesin+1);
         if(!(posit = (long int *)malloc((long int)(((long int)(*inputp)->segsitesin+1)*sizeof(long int)))))
             perror("ms error.2");
@@ -3758,18 +3761,21 @@ char **cmatrix(int nsam,long int len)	/* defineix l'espai per col.locar els poli
     int i;
     char **m;
     
-    if(!(m=(char **)malloc((unsigned)nsam*sizeof(char *)))) perror("alloc error in cmatrix");
+    if(!(m=(char **)malloc(nsam * sizeof(char *))))
+		perror("alloc error in cmatrix");
     for(i=0;i<nsam;i++)
-        if(!(m[i] = (char *)malloc((long int)len*sizeof(char)))) perror("alloc error in cmatrix.2");
+        if(!(m[i] = (char *)malloc(len * sizeof(char))))
+			perror("alloc error in cmatrix.2");
     return(m);
 }
 
-void biggerlist(int nsam)	/* fa més gran la matriu dels polimorfismes */
+// Expand matrix with mutations
+void biggerlist(int nsam)
 {
     int i;
     for(i=0;i<nsam;i++) {
-        list[i] = (char *)realloc(list[i],maxsites*sizeof(char));
-        if(list[i] == NULL) perror("realloc error. biggerlist");
+		if(!(list[i] = realloc(list[i],sizeof *list[i] *maxsites)))
+			perror("realloc error. biggerlist");
     }
 }
 double ttime(struct node *ptree, int nsam)	/* la Ttot de l'arbre */

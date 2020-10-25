@@ -270,9 +270,9 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 		/* for infinite recombination.*/
 		indtrees = nsites; 
 
-		if((seglst = (struct segl *)realloc(seglst,(indtrees*sizeof(struct segl)))) == NULL)
+		if((seglst = realloc(seglst, sizeof *seglst * indtrees)) == NULL)
 			perror("malloc error. segtre_mig.1nsites");
-		if((nnodes = (long int *)realloc(nnodes,(indtrees*sizeof(long int)))) == NULL)
+		if((nnodes = realloc(nnodes, sizeof *nnodes * indtrees)) == NULL)
 			perror("malloc error. segtre_mig.2");
 		for(jj=0;jj<indtrees;jj++) {
 			seglst[jj].beg = jj;
@@ -298,11 +298,11 @@ struct segl *segtre_mig(long int npop,int nsam,int *inconfig,long int nsites,dou
 
 		if((int)maxchr < nsam) {
 			maxchr = (long int)nsam + 50;
-			if((chrom = (struct chromo *)realloc(chrom,(maxchr*sizeof(struct chromo)))) == NULL)
+			if((chrom = realloc(chrom,(sizeof *chrom * maxchr))) == NULL)
 				perror("malloc error. segtre_mig.1");
 		}
 		else {
-			if((chrom = (struct chromo *)realloc(chrom,(maxchr*sizeof(struct chromo)))) == NULL)
+			if((chrom = realloc(chrom,(sizeof *chrom * maxchr))) == NULL)
 				perror("malloc error. segtre_mig.1");
 		}
 		
@@ -1489,7 +1489,7 @@ void xover(int nsam,int ic,long int is,double *weightrec,long int nsites,double 
     nchrom++; 					/* fem un individu més, variable externa, val per tot el fitxer */
     if((long int)nchrom >= (long int)maxchr) {
         maxchr += 50;				/* afegeix 50 independent individus cada vegada que hem d'ampliar */
-        if(!(chrom = (struct chromo *)realloc(chrom,(long int)(maxchr*sizeof(struct chromo)))))
+        if(!(chrom = realloc(chrom,sizeof *chrom * maxchr)))
             perror("realloc error. xover.1");
     }
     if(!(pseg2 = chrom[nchrom-1].pseg = (struct seg *)calloc((unsigned)newsg,sizeof(struct seg))))/* pseg2 apunta a chrom */
@@ -1548,7 +1548,7 @@ void xover(int nsam,int ic,long int is,double *weightrec,long int nsites,double 
 	lenr/*len*/ = ((double)weightrec[(pseg2 + newsg - 1)->end] - (double)weightrec[pseg2->beg])*r;/* llargada del nou individu */
     cleft += 1.0 - pow(pc,/*len*/lenr);   		/* conversió */
     
-	if(!(chrom[ic].pseg = (struct seg *)realloc(chrom[ic].pseg,(long int)(lsg*sizeof(struct seg)))))
+	if(!(chrom[ic].pseg = realloc(chrom[ic].pseg,sizeof *chrom[ic].pseg * lsg)))
         perror("realloc error. xover.3");	/* només es deixen lsg(=jseg+in) segments a ic */
     if(in) {
         begs = (long int)pseg2->beg;	/* inici del primer segment */
@@ -1558,9 +1558,9 @@ void xover(int nsam,int ic,long int is,double *weightrec,long int nsites,double 
             /* new tree */
             if(nsegs >= seglimit) {	
                 seglimit += SEGINC;
-                if(!(nnodes = (long int *)realloc(nnodes,(unsigned)(sizeof(long int)*seglimit))))
+                if(!(nnodes = realloc(nnodes, sizeof *nnodes * seglimit)))
                     perror("realloc error. xover.4");
-                if(!(seglst = (struct segl *)realloc(seglst,(unsigned)(sizeof(struct segl)*seglimit))))
+                if(!(seglst = realloc(seglst, sizeof *seglst * seglimit)))
                     perror("realloc error. xover.5");
             }
             seglst[nsegs].next = seglst[i].next;	/* Crear un segment entre els altres segments */
@@ -1680,7 +1680,7 @@ int ca(int nsam,long int nsites,long int c1, long int c2,double *weightrec,doubl
         nchrom--;				/* un individu menys! */
     }
     else {			/* en cas no hi hagi MRCA per tots segments */
-        if(!(pseg = (struct seg *)realloc(pseg,(unsigned)((tseg+1)*sizeof(struct seg)))))
+        if(!(pseg = realloc(pseg,sizeof *pseg * (tseg+1))))
             perror("realloc error. ca.2");
         chrom[c1].pseg = pseg;			/* ara c1 passa a tenir els valors de pseg */
         chrom[c1].nseg = tseg + 1;

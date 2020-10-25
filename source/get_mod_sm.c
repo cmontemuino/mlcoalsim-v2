@@ -526,7 +526,7 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
     (*inputp)->ifselection = (*data)->ifselection[p1+1];
     if((*data)->ifselection[p1+1] == 1) {
         (*inputp)->npop = 2;
-        (*inputp)->config = (int *)realloc((*inputp)->config,2*sizeof(int));
+        (*inputp)->config = realloc((*inputp)->config,2*sizeof(int));
         (*inputp)->pop_sel = (*data)->pop_sel[p1+1];
 		if((*data)->pop_sel[p1+1]>=REFNUMBER && (*data)->pop_sel[p1+1] < REFNUMBER + PLUSPRIOR) {
 			z = (int)((*data)->pop_sel[p1+1] - REFNUMBER1);
@@ -559,7 +559,7 @@ void getpars_mod(struct var **data, struct var2 **inputp,int p1)
         }
 
         /***************/
-        (*inputp)->nintn = (int *)realloc((*inputp)->nintn,((*inputp)->npop)*sizeof(int));
+        (*inputp)->nintn = realloc((*inputp)->nintn,((*inputp)->npop)*sizeof(int));
         for(x=1;x<(*inputp)->npop;x++) (*inputp)->nintn[x] = 0;
         /***************/
     }

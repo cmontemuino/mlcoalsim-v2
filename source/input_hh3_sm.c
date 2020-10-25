@@ -600,7 +600,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 									exit(1);
 								}
 								if(count_pri < atof(number+1)) {
-									if(!(*priors = (struct var_priors *)realloc(*priors,(unsigned)((int)(double)atof(number+1))*sizeof(struct var_priors))))
+									if(!(*priors = realloc(*priors,sizeof **priors * (unsigned)(atoi(number+1)))))
 										perror("realloc error.9");
 									for(y=count_pri;y<(int)(double)atof(number+1);y++) {
 										priors[0][y].idprior = 0;
@@ -613,8 +613,8 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 									printf("Error: prior %d is already defined in another parameter.\n",(int)(double)atof(number+1));
 									exit(1);
 								}
-								memcpy(priors[0][(int)(double)atof(number+1)-1].name_pr,var_file[w],30);
-								priors[0][(int)(double)atof(number+1)-1].idprior = atof(number+1);
+								memcpy(priors[0][(int)atoi(number+1)-1].name_pr,var_file[w],30);
+								priors[0][(int)atoi(number+1)-1].idprior = atof(number+1);
 								numb_c[numb_1][numb_2] = REFNUMBER + (double)priors[0][(int)(double)atof(number+1)-1].idprior;
 								numb_c[numb_1][0] ++;
 							}
@@ -627,7 +627,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						numb_2 = 1;
 						numb_1++;
 						if(numb_1 >= 20) {
-							if(!(numb_c = realloc(numb_c,(numb_1+1)*sizeof(double *)))) perror("realloc error.5");
+							if(!(numb_c = realloc(numb_c, sizeof *numb_c * (numb_1+1)))) perror("realloc error.5");
 							if(!(numb_c[numb_1] = (double *) malloc(20 * sizeof(double)))) perror("realloc error.6");
 						}
 						numb_c[numb_1][0] = 0;
@@ -656,22 +656,22 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 									}
 									/*count_pri++;*/
 									if(count_pri < atof(number+1)) {
-										if(!(*priors = (struct var_priors *)realloc(*priors,(unsigned)((int)(double)atof(number+1))*sizeof(struct var_priors))))
+										if(!(*priors = realloc(*priors, sizeof **priors * (unsigned)(atoi(number+1)))))
 											perror("realloc error.9");
 										for(y=count_pri;y<(int)(double)atof(number+1);y++) {
 											priors[0][y].idprior = 0;
 											priors[0][y].prior_file[0] = '\0';
 										}
-										count_pri = (int)(double)atof(number+1);
+										count_pri = atoi(number+1);
 										(*data)->npriors = count_pri;
 									}
 									if(priors[0][count_pri-1].idprior) {
-										printf("Error: prior %d is already defined in another parameter.\n",(int)(double)atof(number+1));
+										printf("Error: prior %d is already defined in another parameter.\n",atoi(number+1));
 										exit(1);
 									}
-									memcpy(priors[0][(int)(double)atof(number+1)-1].name_pr,var_file[w],30);
-									priors[0][(int)(double)atof(number+1)-1].idprior = atof(number+1);
-									numb_c[numb_1][numb_2] = REFNUMBER + (double)priors[0][(int)(double)atof(number+1)-1].idprior;
+									memcpy(priors[0][atoi(number+1)-1].name_pr,var_file[w],30);
+									priors[0][atoi(number+1)-1].idprior = atof(number+1);
+									numb_c[numb_1][numb_2] = REFNUMBER + priors[0][atoi(number+1)-1].idprior;
 								}
 								else /**/
 									numb_c[numb_1][numb_2] = atof(number);
@@ -679,7 +679,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 								numb_c[numb_1][0]++;
 								numb_2++;
 								if(numb_2 >= 20) 
-									if(!(numb_c[numb_1] = realloc(numb_c[numb_1],(numb_2+1)*sizeof(double)))) perror("realloc error.7");
+									if(!(numb_c[numb_1] = realloc(numb_c[numb_1], sizeof *numb_c[numb_1] * (numb_2+1)))) perror("realloc error.7");
 								x = 0;
 							}
 						}
@@ -740,45 +740,43 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 4:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->nsam = (int *)realloc((*data)->nsam,(unsigned)(numb_c[0][0]+1)*sizeof(int))))
+						if(!((*data)->nsam = realloc((*data)->nsam,(unsigned)(numb_c[0][0]+1)*sizeof(int))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->nsam[z] = (int)numb_c[0][z];
 					break;
 				case 5:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->r = (double *)realloc((*data)->r,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->r = realloc((*data)->r,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++)
 						(*data)->r[z] = numb_c[0][z];
 					break;
 				case 6:
-					if(numb_c[0][0] >= 20) 
-						if(!((*data)->nsites = (long int *)realloc((*data)->nsites,
-											   (unsigned)(numb_c[0][0]+1)*sizeof(long int))))
+					if(numb_c[0][0] >= 20)
+						if(!((*data)->nsites = realloc((*data)->nsites, (unsigned)(numb_c[0][0]+1)*sizeof(long int))))
 						perror("realloc error.13");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->nsites[z] = (long int)numb_c[0][z];
 					break;
 				case 7:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->f = (double *)realloc((*data)->f,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->f = realloc((*data)->f,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->f[z] = numb_c[0][z];
 					break;
 				case 8:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->track_len = (double *)realloc((*data)->track_len,
-											(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->track_len = realloc((*data)->track_len, (unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->track_len[z] = numb_c[0][z];
 					break;
 				case 9:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->theta_1 = (double *)realloc((*data)->theta_1,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->theta_1 = realloc((*data)->theta_1,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.33");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->theta_1[z] = numb_c[0][z];
 					break;
 				case 10:
-					if(numb_c[0][0] >= 20) if(!((*data)->mutations = (long int *)realloc((*data)->mutations,(unsigned)(numb_c[0][0]+1)*sizeof(long int)))) 
+					if(numb_c[0][0] >= 20) if(!((*data)->mutations = realloc((*data)->mutations,(unsigned)(numb_c[0][0]+1)*sizeof(long int)))) 
 						perror("realloc error.21");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->mutations[z] = (long int)numb_c[0][z];
 					break;
@@ -791,7 +789,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						exit(1);
 					}
 					if(numb_1 >= 20) {
-						if(!((*data)->ssize_pop = (int **)realloc((*data)->ssize_pop,(unsigned)(numb_1+1)*sizeof(int *))))
+						if(!((*data)->ssize_pop = realloc((*data)->ssize_pop,(unsigned)(numb_1+1)*sizeof(int *))))
 							perror("realloc error.22");
 					}
 					for(z=0;z<numb_1+1;z++) {
@@ -801,7 +799,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						}
 						else {
 							if(numb_c[z][0] >= 20) 
-								if(!((*data)->ssize_pop[z]=(int *)realloc((*data)->ssize_pop[z],(unsigned)(numb_c[z][0]+1)*sizeof(int))))
+								if(!((*data)->ssize_pop[z]=realloc((*data)->ssize_pop[z],(unsigned)(numb_c[z][0]+1)*sizeof(int))))
 									perror("realloc error.22b");
 						}
 						for(y=0;y<numb_c[z][0]+1;y++) (*data)->ssize_pop[z][y] = (int)numb_c[z][y];
@@ -815,7 +813,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 15:
 					if(numb_1 >= 20) {
-						if(!((*data)->loci_linked = (long int **)realloc((*data)->loci_linked,(unsigned)(numb_1+1)*sizeof(long int *))))
+						if(!((*data)->loci_linked = realloc((*data)->loci_linked,(unsigned)(numb_1+1)*sizeof(long int *))))
 							perror("realloc error.38");
 					}
 					for(z=0;z<numb_1+1;z++) {
@@ -825,7 +823,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						}
 						else {
 							if(numb_c[z][0] >= 20) 
-							if(!((*data)->loci_linked[z] = (long int *)realloc((*data)->loci_linked[z],(unsigned)(numb_c[z][0]+1)* sizeof(long int))))
+							if(!((*data)->loci_linked[z] = realloc((*data)->loci_linked[z],(unsigned)(numb_c[z][0]+1)* sizeof(long int))))
 								perror("realloc error.39");
 						}
 						for(y=0;y<numb_c[z][0]+1;y++) (*data)->loci_linked[z][y] = (long int)numb_c[z][y];
@@ -836,7 +834,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 17:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->ratio_sv = (double *)realloc((*data)->ratio_sv,
+						if(!((*data)->ratio_sv = realloc((*data)->ratio_sv,
 						(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.33");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->ratio_sv[z] = numb_c[0][z];
@@ -846,7 +844,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 19:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->factor_pop = (double *)realloc((*data)->factor_pop,
+						if(!((*data)->factor_pop = realloc((*data)->factor_pop,
 						(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.58");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->factor_pop[z] = (double)numb_c[0][z];                
@@ -865,14 +863,14 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;            
 				case 24:
 					if(numb_c[0][0] >= 20) {
-						if(!((*data)->npop_sampled = (int *)realloc((*data)->npop_sampled,(unsigned)(numb_c[0][0]+1)*sizeof(int)))) 
+						if(!((*data)->npop_sampled = realloc((*data)->npop_sampled,(unsigned)(numb_c[0][0]+1)*sizeof(int)))) 
 							perror("realloc error.58");
 					}
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->npop_sampled[z] = (int)numb_c[0][z];                
 					break;
 				case 25: /*Exactly equal than case 9*/
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->theta_1 = (double *)realloc((*data)->theta_1,
+						if(!((*data)->theta_1 = realloc((*data)->theta_1,
 						(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.33");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->theta_1[z] = numb_c[0][z];
@@ -885,7 +883,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 28:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->ifselection = (int *)realloc((*data)->ifselection,(unsigned)(numb_c[0][0]+1)*sizeof(int))))
+						if(!((*data)->ifselection = realloc((*data)->ifselection,(unsigned)(numb_c[0][0]+1)*sizeof(int))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->ifselection[z] = (int)numb_c[0][z];
 					break;
@@ -894,19 +892,19 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 30:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->pop_sel = (double *)realloc((*data)->pop_sel,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->pop_sel = realloc((*data)->pop_sel,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->pop_sel[z] = (double)numb_c[0][z];
 					break;
 				case 31:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->sel_nt = (double *)realloc((*data)->sel_nt,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->sel_nt = realloc((*data)->sel_nt,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->sel_nt[z] = (double)numb_c[0][z];
 					break;
 				case 32:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->sinit = (double *)realloc((*data)->sinit,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->sinit = realloc((*data)->sinit,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.9");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->sinit[z] = (double)numb_c[0][z];
 					break;
@@ -915,7 +913,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 34:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->thetant_min = (double *)realloc((*data)->thetant_min,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->thetant_min = realloc((*data)->thetant_min,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.69");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->thetant_min[z] = (double)numb_c[0][z];
 					break;
@@ -936,13 +934,13 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 39:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->nintn = (int *)realloc((*data)->nintn,(unsigned)(numb_c[0][0]+1)*sizeof(int))))
+						if(!((*data)->nintn = realloc((*data)->nintn,(unsigned)(numb_c[0][0]+1)*sizeof(int))))
 							perror("realloc error.69");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->nintn[z] = (int)numb_c[0][z];
 					break;
 				case 40:
 					if(numb_1 >= 20) {
-						if(!((*data)->nrec = (double **)realloc((*data)->nrec,(unsigned)(numb_1+1)*sizeof(double *))))
+						if(!((*data)->nrec = realloc((*data)->nrec,(unsigned)(numb_1+1)*sizeof(double *))))
 							perror("realloc error.38");
 					}
 					for(z=0;z<numb_1+1;z++) {
@@ -952,7 +950,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						}
 						else {
 							if(numb_c[z][0] >= 20) 
-								if(!((*data)->nrec[z] = (double *)realloc((*data)->nrec[z],(unsigned)(numb_c[z][0]+1)* sizeof(double))))
+								if(!((*data)->nrec[z] = realloc((*data)->nrec[z],(unsigned)(numb_c[z][0]+1)* sizeof(double))))
 									perror("realloc error.39");
 						}
 						for(y=0;y<numb_c[z][0]+1;y++) (*data)->nrec[z][y] = (double)numb_c[z][y];
@@ -963,7 +961,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 42:
 					if(numb_1 >= 20) {
-						if(!((*data)->tpast = (double **)realloc((*data)->tpast,(unsigned)(numb_1+1)*sizeof(double *))))
+						if(!((*data)->tpast = realloc((*data)->tpast,(unsigned)(numb_1+1)*sizeof(double *))))
 							perror("realloc error.38");
 					}
 					for(z=0;z<numb_1+1;z++) {
@@ -973,7 +971,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						}
 						else {
 							if(numb_c[z][0] >= 20) 
-								if(!((*data)->tpast[z] = (double *)realloc((*data)->tpast[z],(unsigned)(numb_c[z][0]+1)* sizeof(double))))
+								if(!((*data)->tpast[z] = realloc((*data)->tpast[z],(unsigned)(numb_c[z][0]+1)* sizeof(double))))
 									perror("realloc error.39");
 						}
 						for(y=0;y<numb_c[z][0]+1;y++) (*data)->tpast[z][y] = (double)numb_c[z][y];
@@ -993,7 +991,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 47:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->freq = (double *)realloc((*data)->freq,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->freq = realloc((*data)->freq,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.26");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->freq[z] = numb_c[0][z];
 					break;
@@ -1008,7 +1006,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 51:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->ts = (double *)realloc((*data)->ts,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->ts = realloc((*data)->ts,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.269");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->ts[z] = numb_c[0][z];
 					break;
@@ -1017,19 +1015,19 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 53:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->p_gamma = (double *)realloc((*data)->p_gamma,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->p_gamma = realloc((*data)->p_gamma,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.53");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->p_gamma[z] = (double)numb_c[0][z];
 					break;
 				case 54:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->alpha_gamma = (double *)realloc((*data)->alpha_gamma,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->alpha_gamma = realloc((*data)->alpha_gamma,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.54");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->alpha_gamma[z] = (double)numb_c[0][z];
 					break;
 				case 55:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->factor_chrn = (double *)realloc((*data)->factor_chrn,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->factor_chrn = realloc((*data)->factor_chrn,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.55");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->factor_chrn[z] = (double)numb_c[0][z];
 					break;
@@ -1038,7 +1036,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 57:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->Rm = (int *)realloc((*data)->Rm,(unsigned)(numb_c[0][0]+1)*sizeof(int)))) 
+						if(!((*data)->Rm = realloc((*data)->Rm,(unsigned)(numb_c[0][0]+1)*sizeof(int)))) 
 							perror("realloc error.57");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->Rm[z] = (int)numb_c[0][z];
 					break;
@@ -1050,13 +1048,13 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 60:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->recnt_min = (double *)realloc((*data)->recnt_min,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->recnt_min = realloc((*data)->recnt_min,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.69");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->recnt_min[z] = (double)numb_c[0][z];
 					break;
 				case 61:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->recnt_max = (double *)realloc((*data)->recnt_max,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->recnt_max = realloc((*data)->recnt_max,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.69");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->recnt_max[z] = (double)numb_c[0][z];
 					break;
@@ -1065,13 +1063,13 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 63:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->alpha_gammar = (double *)realloc((*data)->alpha_gammar,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->alpha_gammar = realloc((*data)->alpha_gammar,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.62");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->alpha_gammar[z] = (double)numb_c[0][z];
 					break;
 				case 64:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->p_gammar = (double *)realloc((*data)->p_gammar,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
+						if(!((*data)->p_gammar = realloc((*data)->p_gammar,(unsigned)(numb_c[0][0]+1)*sizeof(double)))) 
 							perror("realloc error.63");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->p_gammar[z] = (double)numb_c[0][z];
 					break;
@@ -1080,7 +1078,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 66:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->nhapl = (int *)realloc((*data)->nhapl,(unsigned)(numb_c[0][0]+1)*sizeof(int)))) 
+						if(!((*data)->nhapl = realloc((*data)->nhapl,(unsigned)(numb_c[0][0]+1)*sizeof(int)))) 
 							perror("realloc error.57");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->nhapl[z] = (int)numb_c[0][z];
 					break;
@@ -1092,13 +1090,13 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 69:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->heter_theta_alphag = (double *)realloc((*data)->heter_theta_alphag,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->heter_theta_alphag = realloc((*data)->heter_theta_alphag,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.93");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->heter_theta_alphag[z] = (double)numb_c[0][z];
 					break;
 				case 70:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->heter_rm_alphag = (double *)realloc((*data)->heter_rm_alphag,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->heter_rm_alphag = realloc((*data)->heter_rm_alphag,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.93");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->heter_rm_alphag[z] = (double)numb_c[0][z];
 					break;
@@ -1107,19 +1105,19 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 72:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->correct_gamma = (double *)realloc((*data)->correct_gamma,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->correct_gamma = realloc((*data)->correct_gamma,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.97");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->correct_gamma[z] = (double)numb_c[0][z];
 					break;
 				case 73:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->correct_gammar = (double *)realloc((*data)->correct_gammar,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
+						if(!((*data)->correct_gammar = realloc((*data)->correct_gammar,(unsigned)(numb_c[0][0]+1)*sizeof(double))))
 							perror("realloc error.98");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->correct_gammar[z] = (double)numb_c[0][z];
 					break;
 				case 74:
 					if(numb_c[0][0] >= 20) 
-						if(!((*data)->invariable_mut_sites = (long int *)realloc((*data)->invariable_mut_sites,(unsigned)(numb_c[0][0]+1)*sizeof(long int))))
+						if(!((*data)->invariable_mut_sites = realloc((*data)->invariable_mut_sites,(unsigned)(numb_c[0][0]+1)*sizeof(long int))))
 							perror("realloc error.98");
 					for(z=0;z<numb_c[0][0]+1;z++) (*data)->invariable_mut_sites[z] = (long int)numb_c[0][z];
 					break;
@@ -1134,7 +1132,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 					break;
 				case 78:
 					if(numb_1 >= 20) {
-						if(!((*data)->mig_rate_matrix = (double **)realloc((*data)->mig_rate_matrix,(unsigned)(numb_1+1)*sizeof(double *))))
+						if(!((*data)->mig_rate_matrix = realloc((*data)->mig_rate_matrix,(unsigned)(numb_1+1)*sizeof(double *))))
 							perror("realloc error.22");
 					}
 					for(z=0;z<numb_1+1;z++) {
@@ -1144,7 +1142,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 						}
 						else {
 							if(numb_c[z][0] >= 20) 
-								if(!((*data)->mig_rate_matrix[z]=(double *)realloc((*data)->mig_rate_matrix[z],(unsigned)(numb_c[z][0]+1)*sizeof(double))))
+								if(!((*data)->mig_rate_matrix[z] = realloc((*data)->mig_rate_matrix[z],(unsigned)(numb_c[z][0]+1)*sizeof(double))))
 									perror("realloc error.22b");
 						}
 						for(y=0;y<numb_c[z][0]+1;y++) (*data)->mig_rate_matrix[z][y] = (double)numb_c[z][y];
@@ -1487,7 +1485,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	else {
-		if(!((*data)->f = (double *)realloc((*data)->f,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->f = realloc((*data)->f,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->f[0] = (double)(*data)->n_loci;
 		for(x=1;x<(*data)->n_loci+1;x++) (*data)->f[x] = 0.0;
@@ -1500,7 +1498,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	else {
-		if(!((*data)->track_len = (double *)realloc((*data)->track_len,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->track_len = realloc((*data)->track_len,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->track_len[0] = (double)(*data)->n_loci;
 		for(x=1;x<(*data)->n_loci+1;x++) (*data)->track_len[x] = 0.0;
@@ -1514,7 +1512,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	else {
-		if(!((*data)->heter_theta_alphag = (double *)realloc((*data)->heter_theta_alphag,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->heter_theta_alphag = realloc((*data)->heter_theta_alphag,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->heter_theta_alphag[0] = (double)(*data)->n_loci;
 		for(x=1;x<(*data)->n_loci+1;x++) (*data)->heter_theta_alphag[x] = -1.0;
@@ -1535,7 +1533,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	else {
-		if(!((*data)->invariable_mut_sites = (long int *)realloc((*data)->invariable_mut_sites,(long int)((*data)->n_loci+1)*sizeof(long int)))) 
+		if(!((*data)->invariable_mut_sites = realloc((*data)->invariable_mut_sites,(long int)((*data)->n_loci+1)*sizeof(long int)))) 
 			perror("realloc error.99");
 		(*data)->invariable_mut_sites[0] = (long int)(*data)->n_loci;
 		for(x=1;x<(*data)->n_loci+1;x++) (*data)->invariable_mut_sites[x] = (long int)-1;
@@ -1548,7 +1546,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	else {
-		if(!((*data)->heter_rm_alphag = (double *)realloc((*data)->heter_rm_alphag,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->heter_rm_alphag = realloc((*data)->heter_rm_alphag,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.93");
 		(*data)->heter_rm_alphag[0] = (double)(*data)->n_loci;
 		for(x=1;x<(*data)->n_loci+1;x++) (*data)->heter_rm_alphag[x] = -1.0;
@@ -1590,18 +1588,18 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
     }
     if((*data)->split_pop == 1) {
         if((*data)->n_loci >= 20)
-            if(!((*data)->ssize_pop = (int **)realloc((*data)->ssize_pop,((*data)->n_loci+1)*sizeof(int *)))) 
+            if(!((*data)->ssize_pop = realloc((*data)->ssize_pop,((*data)->n_loci+1)*sizeof(int *)))) 
                 perror("realloc error.38bb");
-        if(!((*data)->npop_sampled = (int *)realloc((*data)->npop_sampled,((*data)->n_loci+1)*sizeof(int)))) 
+        if(!((*data)->npop_sampled = realloc((*data)->npop_sampled,((*data)->n_loci+1)*sizeof(int)))) 
             perror("realloc error.38bb");/*afegit21.4.2003*/
         (*data)->npop_sampled[0] = (*data)->n_loci;/*afegit21.4.2003*/
         for(z=0;z<(*data)->n_loci;z++) {
             if(z<20) {
-                if(!((*data)->ssize_pop[z]=(int *)realloc((*data)->ssize_pop[z],2*sizeof(int)))) 
+                if(!((*data)->ssize_pop[z] = realloc((*data)->ssize_pop[z],2*sizeof(int)))) 
                     perror("realloc error.22bb");
             }
             else {
-                if(!((*data)->ssize_pop[z]=(int *)malloc(2*sizeof(int)))) 
+                if(!((*data)->ssize_pop[z] = (int *)malloc(2*sizeof(int)))) 
                     perror("realloc error.22bb");
             }
         }
@@ -1614,14 +1612,14 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
     
     if((*data)->npop == 1 && (*data)->split_pop == 0) {
         if(windows >= 20)
-            if(!((*data)->ssize_pop = (int **)realloc((*data)->ssize_pop,(windows+1)*sizeof(int *)))) 
+            if(!((*data)->ssize_pop = realloc((*data)->ssize_pop,(windows+1)*sizeof(int *)))) 
                 perror("realloc error.38bb");
-        if(!((*data)->npop_sampled = (int *)realloc((*data)->npop_sampled,(windows+1)*sizeof(int)))) 
+        if(!((*data)->npop_sampled = realloc((*data)->npop_sampled,(windows+1)*sizeof(int)))) 
             perror("realloc error.38bb");/*afegit21.4.2003*/
         (*data)->npop_sampled[0] = (*data)->n_loci;/*afegit21.4.2003*/
         for(z=0;z<windows;z++) {
             if(z<20) {
-                if(!((*data)->ssize_pop[z]=(int *)realloc((*data)->ssize_pop[z],2*sizeof(int)))) 
+                if(!((*data)->ssize_pop[z] = realloc((*data)->ssize_pop[z],2*sizeof(int)))) 
                     perror("realloc error.22bb");
             }
             else {
@@ -1643,7 +1641,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         if((*data)->npop > 1) {
             if((*data)->npop_sampled[0] == 1 && windows > 1) { 
                 /*Si només hi ha 1 valor és que no s´han definit els altres loci*/
-                if(!((*data)->npop_sampled = (int *)realloc((*data)->npop_sampled,(windows+1)*sizeof(int))))
+                if(!((*data)->npop_sampled = realloc((*data)->npop_sampled,(windows+1)*sizeof(int))))
                     perror("realloc error.38bb");
                 (*data)->npop_sampled[0] = windows; /*definim tots els loci*/
                 for(z=1;z<windows;z++) (*data)->npop_sampled[z+1] = (*data)->npop_sampled[1];
@@ -1652,7 +1650,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			if((*data)->ssize_pop[0][0] == 0) {
 				/*if ssize is not included in input file*/
 				(*data)->ssize_pop[0][0] = (*data)->npop_sampled[0];
-				if(!((*data)->ssize_pop[0] = (int *)realloc((*data)->ssize_pop[0],(unsigned)((*data)->npop_sampled[0]+1)*sizeof(int)))) perror("calloc error.11b");
+				if(!((*data)->ssize_pop[0] = realloc((*data)->ssize_pop[0],(unsigned)((*data)->npop_sampled[0]+1)*sizeof(int)))) perror("calloc error.11b");
 				(*data)->ssize_pop[0][1] = (*data)->nsam[0+1];
 				for(x=2;x<=(*data)->ssize_pop[0][0];x++) {
 					(*data)->ssize_pop[0][x] = 0;
@@ -1660,11 +1658,11 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 			}
 			if(((*data)->ssize_pop[1][0] == 0 && windows > 1) || ((*data)->ssize_pop[0][0] < (*data)->npop_sampled[1])) {
 				/*if only the first loci is defined or if ssize_pop is not entirey defined*/
-				if(!((*data)->ssize_pop = (int **)realloc((*data)->ssize_pop,(unsigned)windows*sizeof(int *)))) perror("calloc error.11");
+				if(!((*data)->ssize_pop = realloc((*data)->ssize_pop,(unsigned)windows*sizeof(int *)))) perror("calloc error.11");
 				/*define size for ssize_pop per loci*/
 				for(x=0;x<windows;x++) {
 					if(windows < 20) {
-						if(!((*data)->ssize_pop[x] = (int *)realloc((*data)->ssize_pop[x],(unsigned)((*data)->npop_sampled[x+1]+1)*sizeof(int)))) perror("calloc error.11b");
+						if(!((*data)->ssize_pop[x] = realloc((*data)->ssize_pop[x],(unsigned)((*data)->npop_sampled[x+1]+1)*sizeof(int)))) perror("calloc error.11b");
 					}
 					else {
 						if(!((*data)->ssize_pop[x] = (int *)calloc((unsigned)(*data)->npop_sampled[x+1]+1,sizeof(int)))) perror("calloc error.11b");
@@ -1679,10 +1677,10 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
         }
         else {
             if((*data)->npop == 1) {
-                if(!((*data)->npop_sampled = (int *)realloc((*data)->npop_sampled,(windows+1)*sizeof(int))))
+                if(!((*data)->npop_sampled = realloc((*data)->npop_sampled,(windows+1)*sizeof(int))))
                     perror("realloc error.38bb");
                 for(x=0;x<windows;x++) { /*definir valors*/
-                    if(!((*data)->ssize_pop[x]=(int *)realloc((*data)->ssize_pop[x],2*sizeof(int)))) 
+                    if(!((*data)->ssize_pop[x] = realloc((*data)->ssize_pop[x],2*sizeof(int)))) 
                         perror("realloc error.22bb");
                     (*data)->ssize_pop[x][0] = 1;
                     (*data)->ssize_pop[x][1] = (*data)->nsam[x+1];
@@ -1710,20 +1708,20 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 	
 	if((*data)->nintn[0] == 0) {
 		if(npopt >= 20) {
-			if(!((*data)->nintn=(int *)realloc((*data)->nintn,(npopt+1)*sizeof(int)))) 
+			if(!((*data)->nintn = realloc((*data)->nintn,(npopt+1)*sizeof(int)))) 
 				perror("realloc error.225b");
-			if(!((*data)->ts=(double *)realloc((*data)->ts,(npopt+1)*sizeof(double)))) 
+			if(!((*data)->ts = realloc((*data)->ts,(npopt+1)*sizeof(double)))) 
 				perror("realloc error.22t5b");
-			if(!((*data)->nrec=(double **)realloc((*data)->nrec,(npopt)*sizeof(double *)))) 
+			if(!((*data)->nrec = realloc((*data)->nrec,(npopt)*sizeof(double *)))) 
 				perror("realloc error.226b");
-			if(!((*data)->tpast=(double **)realloc((*data)->tpast,(npopt)*sizeof(double *)))) 
+			if(!((*data)->tpast = realloc((*data)->tpast,(npopt)*sizeof(double *)))) 
 				perror("realloc error.227b");
 			for(x=0;x<npopt;x++) {
 				(*data)->nintn[x] = 0;
 				(*data)->ts[x] = 0.;
-				if(!((*data)->nrec[x]=(double *)calloc(20,sizeof(double)))) 
+				if(!((*data)->nrec[x] = (double *)calloc(20,sizeof(double)))) 
 					perror("realloc error.226b");
-				if(!((*data)->tpast[x]=(double *)calloc(20,sizeof(double)))) 
+				if(!((*data)->tpast[x] = (double *)calloc(20,sizeof(double)))) 
 					perror("realloc error.227b");
 			}
 		}
@@ -2061,7 +2059,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	if((*data)->ratio_sv[0] < (*data)->n_loci) {
-		if(!((*data)->ratio_sv = (double *)realloc((*data)->ratio_sv,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->ratio_sv = realloc((*data)->ratio_sv,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->ratio_sv[0];x<=(int)(*data)->n_loci;x++) {
 			(*data)->ratio_sv[x] = 0.50;
@@ -2070,7 +2068,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 	}
 
 	if((*data)->p_gamma[0] < (*data)->n_loci) {
-		if(!((*data)->p_gamma = (double *)realloc((*data)->p_gamma,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->p_gamma = realloc((*data)->p_gamma,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		(*data)->p_gamma[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
@@ -2078,7 +2076,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	if((*data)->p_gammar[0] < (*data)->n_loci) {
-		if(!((*data)->p_gammar = (double *)realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->p_gammar = realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->p_gammar[0];x<=(int)(*data)->n_loci;x++) {
 			(*data)->p_gammar[x] = 1.0;
@@ -2087,7 +2085,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 	}
 
 	if((*data)->alpha_gamma[0] < (*data)->n_loci) {
-		if(!((*data)->alpha_gamma = (double *)realloc((*data)->alpha_gamma,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->alpha_gamma = realloc((*data)->alpha_gamma,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		(*data)->alpha_gamma[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
@@ -2095,7 +2093,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	if((*data)->alpha_gammar[0] < (*data)->n_loci) {
-		if(!((*data)->alpha_gammar = (double *)realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->alpha_gammar = realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->alpha_gammar[0];x<=(int)(*data)->n_loci;x++) {
 			(*data)->alpha_gammar[x] = 1.0;
@@ -2104,7 +2102,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 	}
 
  	if((*data)->correct_gamma[0] < (*data)->n_loci) {
-		if(!((*data)->correct_gamma = (double *)realloc((*data)->correct_gamma,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->correct_gamma = realloc((*data)->correct_gamma,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		(*data)->correct_gamma[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
@@ -2112,7 +2110,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	if((*data)->correct_gammar[0] < (*data)->n_loci) {
-		if(!((*data)->correct_gammar = (double *)realloc((*data)->correct_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->correct_gammar = realloc((*data)->correct_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.155");
 		for(x=(int)(*data)->correct_gammar[0];x<=(int)(*data)->n_loci;x++) {
 			(*data)->correct_gammar[x] = 1.0;
@@ -2140,7 +2138,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	if((*data)->nhapl[0] == (int)0 && (*data)->rmfix) {
-		if(!((*data)->nhapl = (int *)realloc((*data)->nhapl,(unsigned)((*data)->n_loci+1)*sizeof(int)))) 
+		if(!((*data)->nhapl = realloc((*data)->nhapl,(unsigned)((*data)->n_loci+1)*sizeof(int)))) 
 			perror("realloc error.1558");
 		(*data)->nhapl[0] = (int)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
@@ -2218,7 +2216,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 	}
 
 	if((*data)->p_gammar[0] == 0.0) {
-		if(!((*data)->p_gammar = (double *)realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->p_gammar = realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.158");
 		(*data)->p_gammar[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
@@ -2226,7 +2224,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	if((*data)->p_gammar[0] < (*data)->n_loci) {
-		if(!((*data)->p_gammar = (double *)realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->p_gammar = realloc((*data)->p_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.159");
 		for(x=(int)(*data)->p_gammar[0];x<=(int)(*data)->n_loci;x++) {
 			(*data)->p_gammar[x] = 1.0;
@@ -2235,7 +2233,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 	}
 
 	if((*data)->alpha_gammar[0] == 0.0) {
-		if(!((*data)->alpha_gammar = (double *)realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->alpha_gammar = realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.159n");
 		(*data)->alpha_gammar[0] = (double)(*data)->n_loci;
 		for(x=1;x<=(*data)->n_loci;x++) {
@@ -2243,7 +2241,7 @@ void input_data( FILE *file_input,struct var **data,struct var_priors **priors)
 		}
 	}
 	if((*data)->alpha_gammar[0] < (*data)->n_loci) {
-		if(!((*data)->alpha_gammar = (double *)realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
+		if(!((*data)->alpha_gammar = realloc((*data)->alpha_gammar,(unsigned)((*data)->n_loci+1)*sizeof(double)))) 
 			perror("realloc error.159p");
 		for(x=(int)(*data)->alpha_gammar[0];x<=(int)(*data)->n_loci;x++) {
 			(*data)->alpha_gammar[x] = 1.0;

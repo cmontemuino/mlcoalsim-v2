@@ -237,7 +237,7 @@ double binomialdist(double pp, int n)
 			f[N+1] = f[N] + log((double)N);
 	}
 	if(n > max) {
-		if((f=(double *)realloc(f,n*sizeof(double))) == 0) {
+		if((f=realloc(f,n*sizeof(double))) == 0) {
 			printf("Error allocation memory");
 			return -10000;
 		}
