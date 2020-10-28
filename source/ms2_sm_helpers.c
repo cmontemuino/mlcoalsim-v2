@@ -1,6 +1,17 @@
+#include <stdio.h>
 #include <math.h>
 #include "ran1.h"
 #include "distrib.h"
+
+// Expand matrix with mutations
+void biggerlist(int nsam, char **mutations_matrix, long int maxsites)
+{
+    int i;
+    for(i=0;i<nsam;i++) {
+		if(!(mutations_matrix[i] = realloc(mutations_matrix[i],sizeof *mutations_matrix[i] *maxsites)))
+			perror("realloc error. biggerlist");
+    }
+}
 
 /*Function used to compare numbers in `qsort`*/
 int compare_(const void *i,const void *j)
@@ -94,6 +105,44 @@ double fixoutg(int nsam, int Sout, int freq0)
     } else {
         return -10000;
     }
+}
+
+int ispolnomhit(long int j,int init, int nsam, int totalsam, char **mutations_matrix, long int *positions)
+{
+    int i,h,g;
+    int a0,a1;
+    
+    if(j && positions[j-1] == positions[j]) 
+		return(-1);/*estem a la segona mutació o més*/
+    
+	/*mhit, including outgroup*//**/
+    h = g = a1 = 0;
+	a0 = '0';
+    for(i=0;i<totalsam;i++) {
+        if((int)mutations_matrix[i][j] != a0) {
+            if(!a1)
+				a1 = (int)mutations_matrix[i][j];
+            if((int)mutations_matrix[i][j] != a1) 
+				return(-2);
+        }
+    }
+	/**/
+    h = g = a1 = 0;
+	a0 = '0';
+    for(i=init;i<init+nsam;i++) {
+        if((int)mutations_matrix[i][j] == a0) h++;
+        else {
+            if(!a1)
+				a1 = (int)mutations_matrix[i][j];
+            if((int)mutations_matrix[i][j] == a1)
+				g++;
+            else 
+				return(-2);/*en el cas de la primera mutacio hagin almenys tres variants*/
+        }
+    }
+    if(h==nsam || h == 0)
+		return(0); /*invariant intrapop*/
+    return(nsam-h); /*gives the frequency of the variant that is different of '0'*/
 }
 
 double koutgJC(int nsam, int Sout, int *freq, unsigned long nsites)

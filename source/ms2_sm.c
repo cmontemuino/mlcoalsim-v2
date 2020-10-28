@@ -18,6 +18,7 @@
 /*ALSO INCLUDED A FUNCTION FOR RM FROM J. Wall.*/
 
 #include "ms2_sm_helpers.h"
+#include "ms2_sm_zn.h"
 #include "neut_tests.h"
 #include "mlsp_sm.h"
 #include "streec2_sm.h"
@@ -142,7 +143,6 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
     double r_transc,r_transv;
     double ttime(struct node *, int);
     double poissondist(double), ran1(void);
-    void biggerlist(int);
     void make_gametes(int,struct node *,double,long int,long int,int,double,double);
     void locate(long int,long int,long int *,int,double *,long int);
     void locate2(long int,long int,long int *,int,int,double *,long int);
@@ -253,13 +253,12 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                     segsit = len_nozero[k];
                 if((segsit + ns) >= maxsites) {	/* refem la matriu dels polimorfismes */
                     maxsites = segsit + ns + SITESINC;
-                    posit = realloc(posit, sizeof *posit * maxsites);
-                    /* canvia mida del vector dels nombres dels polimorfismes */
-                    if(posit==NULL) perror("realloc error. gensam.1");
-                    biggerlist(nsam);	/* refem la llista dels polimorfismes */
+                    if (!(posit = realloc(posit, sizeof *posit * maxsites)))
+						perror("realloc error. gensam.1");
+                    biggerlist(nsam, list, maxsites);	/* refem la llista dels polimorfismes */
                 }
                 /*partial selection*//*not well debugged yet*/
-                if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end
+                if(all_sel > 0 && all_sel < nsam && sel_nt >= start && sel_nt <= end
                    && (sfreqend == 0.1 || sendt == 1E6)) {
                     segsit_sel = 1;
                 }
@@ -267,7 +266,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                 if(segsit_sel == 1) {
                     locate_psel(segsit,start,posit+ns,mhits,sel_nt,weightmut,end);
                     ii = (int)ns;
-                    while((long int)posit[ii] != (long int)sel_nt) ii++;
+                    while(posit[ii] != sel_nt) ii++;
                     for(i=0;i<nsam;i++) {
                         list[i][ns] = list[i][ii];
                         if(all_sel>i) list[i][ii] = '1';
@@ -275,14 +274,14 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                     }
                     segsit_sel = 0;
                 }
-                else locate(segsit,start,/*len,*/posit+ns,mhits,weightmut,end);/* posa el nombre de les mutacions a la matriu */
+                else locate(segsit,start,posit+ns,mhits,weightmut,end);/* posa el nombre de les mutacions a la matriu */
 
                 /*begin of substracting mutations out of range (only for the regions included in the study)*/
                 /**/
                 if(linked > 1) {
                     cc = 0;
                     dd = 0;
-                    mm = (long int)0;
+                    mm = 0;
                     for(aa=0;aa<linked;aa++) {
                         kk=loci_linked[aa][0];
                         ll=loci_linked[aa][1]+1;
@@ -338,7 +337,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
             len = end - start + 1;
             if(start==0) wstartm1 = 0.0;
             else wstartm1 = weightmut[start-1];
-            tseg = (double)(weightmut[end] - wstartm1)*theta;
+            tseg = (weightmut[end] - wstartm1)*theta;
             len2[k] = len_nozero[k]*mmax;
             pk[k] = ttime(seglst[seg].ptree,nsam) * tseg;/*time per chromosome section (in function of mutational rate)*/
             tt += pk[k];
@@ -360,12 +359,12 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
         else *Sout = 0;
         /*partial selection*/
         if(all_sel > 0 && all_sel < nsam)
-            mnmial2_psel((long int)segsites,nsegs,pk,ss,len2,(long int)sel_nt*mmax);
+            mnmial2_psel(segsites,nsegs,pk,ss,len2,sel_nt*mmax);
         else
-            mnmial2((long int)segsites,nsegs,pk,ss,len2);/* afegit, per evitar mes mutacions que posicions, en mhits mes de 3xpos */
+            mnmial2(segsites,nsegs,pk,ss,len2);/* afegit, per evitar mes mutacions que posicions, en mhits mes de 3xpos */
         ns = 0;/*mnmial2 distribueix segsites al llarg de la secuencia*/
         for(seg=0,k=0;k<nsegs;seg=seglst[seg].next,k++) {
-            end = (k<nsegs-1 ? (long int)seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
+            end = (k<nsegs-1 ? seglst[seglst[seg].next].beg -1 : nsites_mod_recinf-1);
             start = seglst[seg].beg;
             len = end - start + 1;
             if(start==0) wstartm1 = 0.0;
@@ -373,15 +372,15 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
             tseg = (weightmut[end] - wstartm1)*theta;
             /*partial selection*/
             segsit_sel = 0;
-            if(all_sel > (int)0 && all_sel < (int)nsam && (long int)sel_nt >= (long int)start && sel_nt <= (long int)end && segsites > 0 && (sfreqend == 0.1 || sendt == 1E6)) {
+            if(all_sel > 0 && all_sel < nsam && sel_nt >= start && sel_nt <= end && segsites > 0 && (sfreqend == 0.1 || sendt == 1E6)) {
                 segsit_sel = 1;
             }
             make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);/*posa a la matriu list les mutacions*/
             /*partial selection*/
             if(segsit_sel == 1) {
-                locate2_psel(ss[k],start,/*len,*/posit+ns,mhits,nsam,(long int)sel_nt,weightmut,end);
+                locate2_psel(ss[k],start,posit+ns,mhits,nsam,sel_nt,weightmut,end);
                 ii = (int)ns;
-                while((long int)posit[ii] != (long int)sel_nt) ii++;
+                while(posit[ii] != sel_nt) ii++;
                 for(i=0;i<nsam;i++) {
                     list[i][ns] = list[i][ii];
                     if(all_sel>i) list[i][ii] = '1';
@@ -415,10 +414,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	void init_seed1(long int);
     
     void calc_neutpar(int,long int,struct var2 **,struct dnapar *,double,int);
-    double Zns(int,long int,struct var2 **,int);
-    double Zns_window(struct var2 **,long int,long int,int);
-    double ZnA_(int,long int,struct var2 **,int);
-    double ZnA_window(struct var2 **,long int,long int,int);
     double Fstw(double *, int *,double,int);
  	
 	void mod_outgroup(long int segsit, struct var2 **inputp);
@@ -1663,7 +1658,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] 
-									= ZnA_window(inputp,s0,s1,npops);
+									= ZnA_window(inputp,s0,s1,npops,list,posit);
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -1768,9 +1763,9 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 									if((*inputp)->pop_outgroup != -1) (*inputp)->Sout = 0;
 									else neutpar[0].freq[0] = 0;
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+33][listnumbers[count0-1]] 
-									= (double)fixoutg((*inputp)->config[npops],(*inputp)->Sout,neutpar[0].freq[0]);
+									= fixoutg((*inputp)->config[npops],(*inputp)->Sout,neutpar[0].freq[0]);
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+34][listnumbers[count0-1]] 
-									= (double)koutgJC((*inputp)->config[npops],(*inputp)->Sout,neutpar[0].freq,(*inputp)->nsites);
+									= koutgJC((*inputp)->config[npops],(*inputp)->Sout,neutpar[0].freq,(*inputp)->nsites);
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+33][listnumbers[count0-1]] = -10000;
@@ -1790,42 +1785,42 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+36][listnumbers[count0-1]] = -10000;
                                 if((*inputp)->config[npops] > 2)
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+37][listnumbers[count0-1]] 
-									= (double)neutpar[0].pie1 * (double)(*inputp)->config[npops]/((double)(*inputp)->config[npops]-2.0);
+									= neutpar[0].pie1 * (double)(*inputp)->config[npops]/((double)(*inputp)->config[npops]-2.0);
                                 else
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+37][listnumbers[count0-1]] = -10000;
                                 if((*inputp)->config[npops] > 3)
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+38][listnumbers[count0-1]] 
-									= (double)neutpar[0].pin1 * ((double)(*inputp)->config[npops] - 1.0)/((double)(*inputp)->config[npops] - 3.0);
+									= neutpar[0].pin1 * ((double)(*inputp)->config[npops] - 1.0)/((double)(*inputp)->config[npops] - 3.0);
                                 else
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+38][listnumbers[count0-1]] = -10000;
                                 
 								if((*inputp)->config[npops] > 2)
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+39][listnumbers[count0-1]] 
-									= (double)Y_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
+									= Y_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 								else 
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+39][listnumbers[count0-1]] = -10000;
 								if((*inputp)->config[npops] > 2)
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+40][listnumbers[count0-1]] 
-									= (double)(double)Y2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
+									= Y2_achaz((*inputp)->config[npops],neutpar[0].freq,neutpar[0].S);
 								else 
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+40][listnumbers[count0-1]] = -10000;
 							#endif
 							#if FREQSPECTRUM_TDFSR2 < 2		
                                 if((*inputp)->config[npops] > 2) {
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+41][listnumbers[count0-1]]
-                                    = (double)neutpar[0].m_sdev;
+                                    = neutpar[0].m_sdev;
                                 }
                                 else
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+41][listnumbers[count0-1]] = -10000;
                                 if((*inputp)->config[npops] > 2) {
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+42][listnumbers[count0-1]]
-                                    = (double)neutpar[0].m_skew;
+                                    = neutpar[0].m_skew;
                                 }
                                 else
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+42][listnumbers[count0-1]] = -10000;
                                 if((*inputp)->config[npops] > 3) {
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+43][listnumbers[count0-1]]
-                                    = (double)neutpar[0].m_kurt;
+                                    = neutpar[0].m_kurt;
                                 }
                                 else
                                     matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+43][listnumbers[count0-1]] = -10000;
@@ -1833,19 +1828,17 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 == 0
 								if(neutpar[0].S > 0) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+44][listnumbers[count0-1]] 
-									= (double)neutpar[0].ragg;
+									= neutpar[0].ragg;
 								}
 								#if ZNS_ACTIVE == 1
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
-								= Zns_window(inputp,s0,s1,npops);
+								= Zns_window(inputp,s0,s1,npops,list,posit);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
 								= matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9] [listnumbers[count0-1]] -
 								  matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
 								#else
-								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
-								= -10000.0;
-								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
-								= -10000.0;
+								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] = -10000.0;
+								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] = -10000.0;
 								#endif
 							#endif
 							}
@@ -2104,7 +2097,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] 
-									= (double)ZnA_window(inputp,s0,s1,npops);
+									= ZnA_window(inputp,s0,s1,npops,list,posit);
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -2274,16 +2267,15 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								}
 								#if ZNS_ACTIVE == 1
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
-								= Zns_window(inputp,s0,s1,npops);
+								= Zns_window(inputp,s0,s1,npops,list,posit);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
 								= matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9] [listnumbers[count0-1]] -
-								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
+								  matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
 								#else
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] = -10000.0;
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] = -10000.0;
 								#endif	
-							#endif	
-								/*end calc neutrality test*/
+							#endif
 							}
 							else {
 								for(nv=0;nv<NEUTVALUES2;nv++) {
@@ -2521,7 +2513,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					#if FREQSPECTRUM_TDFSR2 < 2		
 						if(neutpar[0].S > 1) {
 							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]]
-							= ZnA_(0,segsites,inputp,npops);/*INACTIVE*/
+							= ZnA_(0,segsites,inputp,npops,list,posit);/*INACTIVE*/
 						}
 						else {
 							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -2683,7 +2675,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						}
 						#if ZNS_ACTIVE == 1
 						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
-						= Zns(0,segsites,inputp,npops);
+						= Zns(0,segsites,inputp,npops,list,posit);
 						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
 						= matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9] [listnumbers[count0-1]] -
 						  matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
@@ -3021,7 +3013,6 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 {
     long j,k,Ss,i;
     int h,y;
-    int ispolnomhit(long int,int,int,int);
 	void function_atcg(int nsam,long int nsites,char **list2,double *patcg);
 
 	int xx;
@@ -3254,7 +3245,7 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
         }
         k = 0;
         if(segsites > 0) {
-            if((h=ispolnomhit(0,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) {
+            if((h=ispolnomhit(0,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) {
                 for(i=0;i<(*inputp)->nsam;i++) {
                     if(list[i][0] == '1') list2[i][posit[0]-k] = 'G';
                     if(list[i][0] == '2') list2[i][posit[0]-k] = 'C';
@@ -3263,7 +3254,7 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
             }
             else if(h == -2) k++;/*k=0; check positions*/
             for(j=1;j<(int)segsites;j++) {
-                if((h=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) {
+                if((h=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) {
                     for(i=0;i<(*inputp)->nsam;i++) {
                         if(list[i][j] == '1') list2[i][posit[j]-k] = 'G';
                         if(list[i][j] == '2') list2[i][posit[j]-k] = 'C';
@@ -3769,15 +3760,7 @@ char **cmatrix(int nsam,long int len)	/* defineix l'espai per col.locar els poli
     return(m);
 }
 
-// Expand matrix with mutations
-void biggerlist(int nsam)
-{
-    int i;
-    for(i=0;i<nsam;i++) {
-		if(!(list[i] = realloc(list[i],sizeof *list[i] *maxsites)))
-			perror("realloc error. biggerlist");
-    }
-}
+
 double ttime(struct node *ptree, int nsam)	/* la Ttot de l'arbre */
 {
     double t;
@@ -5299,7 +5282,6 @@ void calc_neutparSRH(long int segsit,struct var2 **inputp, struct dnapar *ntpar,
     int a,b,h,x;
 	long int comb;
     char *hapl=0;
-    int ispolnomhit(long int,int,int,int);
 	int Min_rec(int,int,int,int,int);
 
 	if(npopa == (*inputp)->npop) {
@@ -5349,7 +5331,7 @@ void calc_neutparSRH(long int segsit,struct var2 **inputp, struct dnapar *ntpar,
 	nhapl = 0;                
 	for(j=0;j<segsit;j++) {
 		while(j < segsit) {
-			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 			else j++;
 		}            
 		if(j<segsit) {
@@ -5434,7 +5416,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
     int a,b,c,d,i,comb2,x; int h=0;
 	long int comb;
     char *hapl;
-    int ispolnomhit(long int,int,int,int);
 	int **veca;
 	
 	#if MAXHAP1
@@ -5527,7 +5508,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			   (ntpar)->fhapl[a] = 0;
 			}
 			for(j=0;j<segsit;j++) { /*all valid positions are invariant positions in nsam=1*/
-				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) == 0) (ntpar)->freq[0] += 1;
+				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) == 0) (ntpar)->freq[0] += 1;
 			}		
 			(ntpar)->fhapl[0] = nsam;
 			(ntpar)->maxhapl = nsam;
@@ -5591,14 +5572,14 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
         for(j=0;j<(long int)segsitesm1;) {
             k = j;
             while(k+1 < segsit) { /*calcular k*/
-                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else {
 					k++;
 				}
             }
             j = k+1;
             while(j < segsit) { /*calcular j*/
-                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else j++;
             }
             if(j < segsit) {                
@@ -5672,15 +5653,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
             (ntpar)->freq[a] = 0;
             (ntpar)->unic[a] = 0;
         }
-		/*
-		pidcount = 0;
-		for(a=inits;a<inits+nsam-1;a++) {
-			for(b=a+1;b<inits+nsam;b++) {
-				(ntpar)->pid[pidcount] = 0.0;
-				pidcount++;
-			}
-		}
-		*/
+
         S = 0;
         nhapl = 0;                
 		nmh = 0;
@@ -5691,7 +5664,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
         for(j=0;j<segsit;j++) {
             pi = 0;
             while(j < segsit) {
-                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
                 else {
 					j++;
 					if(h == -2) nmh += 1;
@@ -5859,7 +5832,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				ehhr = (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -6041,7 +6014,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				ehhr =  (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -6256,7 +6229,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			S = 0;
 			for(j=0;j<segsit;j++) {
 				while(j < segsit) {
-					if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+					if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 					else j++;
 				}                    
 				if(j<segsit) {
@@ -6265,7 +6238,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
 							hapl[(a)*segsit+S] = list[a][j];
 						}
-						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
+						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit);
 						piw[h] += (c * ((*inputp)->config[h] - c));
 						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
@@ -6276,8 +6249,8 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					inits2 = inits;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
-						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam)>=0) 
-						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam)>=0))) {
+						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit)>=0) 
+						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit)>=0))) {
 							for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 								for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
 									if(list[a][j] != list[b][j]) pib[h]++;
@@ -6291,13 +6264,13 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			for(j=0;j<segsit;j++) {
 				inits1 = 0;
 				for(h=0;h<(*inputp)->pop_outgroup;h++) inits1 += (*inputp)->config[h];
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 &&
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) == 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) == 0) {
 					if(list[inits2][j] == list[inits1][j]) 
 						(ntpar)->freq[0] -= 1;
 				}
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 && 
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) < 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 && 
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) < 0) {
 					(ntpar)->freq[0] -= 1;
 				}
 			}			
@@ -6424,7 +6397,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		}
 		for(j=0;j<segsit;j++) {
 			while(j < segsit) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<segsit) {					
@@ -6598,7 +6571,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		}
 		for(j=0;j<segsit;j++) {
 			while(j < segsit) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<segsit) {
@@ -6684,213 +6657,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 	}
 }
 
-
-double Zns(int valuep,long int segsites,struct var2 **inputp,int npopa)
-{
-    double ZnS;
-    long k,j,comb;
-    int i,inits,x;
-	int nsam=0;
-    int vala,valb,val00,a,b;
-	int na=0;
-	int nb=0;
-    double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-
-    if(valuep == 0) {
-		inits = 0;
-		for(x=0;x<(*inputp)->npop_sampled;x++) {
-			if(x < npopa) inits += (*inputp)->config[x];
-			else {
-				nsam = (*inputp)->config[x];
-				break;
-			}
-		}
-    }
-    else {
-        if(valuep == 1) {
-            inits = 0;
-            nsam  = (*inputp)->config[0];
-        }
-        else {
-            inits = (*inputp)->config[0];
-            nsam  = (*inputp)->config[1];
-        } 
-    }
-    if(nsam == 0) return(-10000.);
-    
-    ZnS = 0.0;
-    j = 0;
-    comb = 0;
-    while(j+1 < (long)segsites) {
-        while(j < (long)segsites) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
-            else j++;
-        }
-        k = j+1;
-        while(k < (long)segsites) {
-            while(k < (long)segsites) {
-                if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
-                else k++;
-            }
-            if(k < (long)segsites) {
-                /*calcular freqs p1,q1*/
-                vala = valb = 1;
-                a = list[inits][j];
-                b = list[inits][k];
-                for(i=1+inits;i<inits+nsam;i++) {
-                    if(list[i][j] == a) vala++;
-                    else na = list[i][j];
-                    if(list[i][k] == b) valb++;                                
-                    else nb = list[i][k];
-                }
-                if(nsam - vala > vala) {
-                    a = na;
-                    vala = nsam - vala;
-                }
-                if(nsam - valb > valb) {
-                    b = nb;
-                    valb = nsam - valb;
-                }
-                /*calcular p1q1*/
-                val00 = 0;
-                for(i=0+inits;i<inits+nsam;i++) if(list[i][j] == a && list[i][k] == b) val00++;
-                
-                /*calcular R2 = (p1q1 - (p1*q1))"2 / (p1*(1-p1) * (q1*(1-q1))) */
-                A = (double)vala/(double)nsam;
-                B = (double)valb/(double)nsam;
-                C = (double)val00/(double)nsam;
-                ZnS += ((C - (A*B)) * (C - (A*B))) / (A*(1.0 - A)*B*(1.0 - B));
-                comb++;
-            }
-            k++;
-        }
-        j++;
-    }
-    if(comb) ZnS = ZnS/(double)comb;
-    else return(-10000.);
-    return(ZnS);
-}
-
-double ZnA_(int valuep,long int segsites,struct var2 **inputp,int npopa)
-{
-    double ZnA;
-    long k,j,comb;
-    int i,inits,x;
-	int nsam=0;
-    int vala,valb,val00,a,b;
-	int na=0;
-	int nb=0;
-    double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-
-    if(valuep == 0) {
-		inits = 0;
-		for(x=0;x<(*inputp)->npop_sampled;x++) {
-			if(x < npopa) inits += (*inputp)->config[x];
-			else {
-				nsam = (*inputp)->config[x];
-				break;
-			}
-		}
-    }
-    else {
-        if(valuep == 1) {
-            inits = 0;
-            nsam  = (*inputp)->config[0];
-        }
-        else {
-            inits = (*inputp)->config[0];
-            nsam  = (*inputp)->config[1];
-        } 
-    }
-    if(nsam == 0) return(-10000.);
-    
-    ZnA = 0.0;
-    j = 0;
-    comb = 0;
-    while(j+1 < (long)segsites) {
-        while(j < (long)segsites) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
-            else j++;
-        }
-        k = j+1;
-        while(k < (long)segsites) {
-            if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
-            else k++;
-        }
-        if(k < (long)segsites) {
-            /*calcular freqs p1,q1*/
-            vala = valb = 1;
-            a = list[inits][j];
-            b = list[inits][k];
-            for(i=1+inits;i<inits+nsam;i++) {
-                if(list[i][j] == a) vala++;
-                else na = list[i][j];
-                if(list[i][k] == b) valb++;                                
-                else nb = list[i][k];
-            }
-            if(nsam - vala > vala) {
-                a = na;
-                vala = nsam - vala;
-            }
-            if(nsam - valb > valb) {
-                b = nb;
-                valb = nsam - valb;
-            }
-            /*calcular p1q1*/
-            val00 = 0;
-            for(i=0+inits;i<inits+nsam;i++) if(list[i][j] == a && list[i][k] == b) val00++;
-            
-            /*calcular R2 = (p1q1 - (p1*q1))"2 / (p1*(1-p1) * (q1*(1-q1))) */
-            A = (double)vala/(double)nsam;
-            B = (double)valb/(double)nsam;
-            C = (double)val00/(double)nsam;
-            /*if(vala != ((double)nsam-1.0) && valb != ((double)nsam-1.0)) if only informative */
-            ZnA += ((C - (A*B)) * (C - (A*B))) / (A*(1.0 - A)*B*(1.0 - B));
-            comb++;
-        }
-        j++;
-    }
-    if(comb) ZnA = ZnA/(double)comb;
-    else return(-10000.);
-    return(ZnA);
-}
-
-int ispolnomhit(long int j,int init, int nsam, int totalsam)
-{
-    int i,h,g;
-    int a0,a1;
-    
-    if(j) if(posit[j-1] == posit[j]) 
-		return(-1);/*estem a la segona mutació o més*/
-    
-	/*mhit, including outgroup*//**/
-    h = g = a1 = 0;
-	a0 = '0';
-    for(i=0;i<totalsam;i++) {
-        if((int)list[i][j] != a0) {
-            if(!a1) a1 = (int)list[i][j];
-            if((int)list[i][j] != a1) 
-				return(-2);
-        }
-    }
-	/**/
-    h = g = a1 = 0;
-	a0 = '0';
-    for(i=init;i<init+nsam;i++) {
-        if((int)list[i][j] == a0) h++;
-        else {
-            if(!a1) a1 = (int)list[i][j];
-            if((int)list[i][j] == a1) g++;
-            else 
-				return(-2);/*en el cas de la primera mutacio hagin almenys tres variants*/
-        }
-    }
-    if(h==nsam || h == 0) return(0); /*invariant intrapop*/
-    return(nsam-h); /*gives the frequency of the variant that is different of '0'*/
-}
-
 void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  s0,long int  s1,double valuer,int npopa,int flaghap)
 {
 	long int segsit;    
@@ -6903,7 +6669,6 @@ void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  
     int a,b,h,x;
 	long int comb;
     char *hapl=0;
-    int ispolnomhit(long int,int,int,int);
 	int Min_rec(int,int,int,int,int);
 	
 	if(npopa == (*inputp)->npop) {
@@ -6956,7 +6721,7 @@ void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  
 	nhapl = 0;                
 	for(j=s0;j<s1;j++) {
 		while(j < s1) {
-			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 			else j++;
 		}            
 		if(j<s1) {
@@ -7018,7 +6783,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
     long int j,k;
     int a,b,c,d,i,comb,comb2,x; int h=0;
     char *hapl;
-    int ispolnomhit(long int,int,int,int);
 	int **veca;
 	
 	#if MAXHAP1
@@ -7119,7 +6883,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				(ntpar)->fhapl[a] = 0;
 			}
 			for(j=0;j<segsit;j++) { /*all valid positions are invariant positions in nsam=1*/
-				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) == 0) (ntpar)->freq[0] += 1;
+				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) == 0) (ntpar)->freq[0] += 1;
 			}		
 			(ntpar)->fhapl[0] = nsam;
 			(ntpar)->piw = 0.0;
@@ -7183,14 +6947,14 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
         for(j=s0;j<s1;) {
             k = j;
             while(k+1 < s1) { /*calcular k*/
-                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else {
 					k++;
 				}
             }
             j = k+1;
             while(j < s1) { /*calcular j*/
-                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break;
+                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
                 else j++;
             }
             if(j < s1) {                
@@ -7273,7 +7037,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
         for(j=s0;j<s1;j++) {
             pi = 0;
             while(j < s1) {
-                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam)) > 0) break; /*h is the frequency of the new mutation*/
+                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
                 else {
 					j++;
 					if(h == -2) nmh += 1;
@@ -7444,7 +7208,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				ehhr =  (long int)1e7;
 				for(j=s0;j<s1;j++) {
 					while(j < s1) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<s1) {
@@ -7629,7 +7393,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				ehhr =  (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -7845,7 +7609,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			S = 0;
 			for(j=s0;j<s1;j++) {
 				while(j < s1) {
-					if((c=ispolnomhit(j,0,nsamallpop,nsamallpop)) > 0) break;
+					if((c=ispolnomhit(j,0,nsamallpop,nsamallpop, list, posit)) > 0) break;
 					else j++;
 				}                    
 				if(j<s1) {
@@ -7854,7 +7618,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
 							hapl[(a)*segsit+S] = list[a][j];
 						}
-						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam);
+						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit);
 						piw[h] += (c * ((*inputp)->config[h] - c));
 						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
@@ -7865,8 +7629,8 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					inits2 = inits;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
-						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam)>=0) 
-						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam)>=0))) {
+						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit)>=0) 
+						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit)>=0))) {
 						   for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 							   for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
 								   if(list[a][j] != list[b][j]) pib[h]++;
@@ -7880,13 +7644,13 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			for(j=0;j<segsit;j++) {
 				inits1 = 0;
 				for(h=0;h<(*inputp)->pop_outgroup;h++) inits1 += (*inputp)->config[h];
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 &&
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) == 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) == 0) {
 					if(list[inits2][j] == list[inits1][j]) 
 						(ntpar)->freq[0] -= 1;
 				}
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam) == 0 && 
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam) < 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 && 
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) < 0) {
 					(ntpar)->freq[0] -= 1;
 				}
 			}			
@@ -8044,7 +7808,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		
 		for(j=s0;j<s1;j++) {
 			while(j < s1) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<s1) {					
@@ -8192,7 +7956,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		}
 		for(j=s0;j<s1;j++) {
 			while(j < s1) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<s1) {
@@ -8278,172 +8042,24 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 	}
 }
 
-double Zns_window(struct var2 **inputp, long int s0, long int s1,int npopa)
-{
-    double ZnS;
-    long k,j,comb;
-    int i,nsam,inits,x;
-    int vala,valb,val00,a,b;
-	int na=0;
-	int nb=0;
-    double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-
-    nsam  = (*inputp)->nsam;
-	inits = 0;
-	for(x=0;x<(*inputp)->npop_sampled;x++) {
-		if(x < npopa) inits += (*inputp)->config[x];
-		else {
-			nsam = (*inputp)->config[x];
-			break;
-		}
-	}
-    if(nsam == 0) return(-10000.);
-	
-    ZnS = 0.0;
-    j = s0;
-    comb = 0;
-    while(j+1 < (long)s1) {
-        while(j < (long)s1) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
-            else j++;
-        }
-        k = j+1;
-        while(k < (long)s1) {
-            while(k < (long)s1) {
-                if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
-                else k++;
-            }
-            if(k < (long)s1) {
-                /*calcular freqs p1,q1*/
-                vala = valb = 1;
-                a = list[inits][j];
-                b = list[inits][k];
-                for(i=1+inits;i<inits+nsam;i++) {
-                    if(list[i][j] == a) vala++;
-                    else na = list[i][j];
-                    if(list[i][k] == b) valb++;                                
-                    else nb = list[i][k];
-                }
-                if(nsam - vala > vala) {
-                    a = na;
-                    vala = nsam - vala;
-                }
-                if(nsam - valb > valb) {
-                    b = nb;
-                    valb = nsam - valb;
-                }
-                /*calcular p1q1*/
-                val00 = 0;
-                for(i=inits+0;i<inits+nsam;i++) if(list[i][j] == a && list[i][k] == b) val00++;
-                
-                /*calcular R2 = (p1q1 - (p1*q1))"2 / (p1*(1-p1) * (q1*(1-q1))) */
-                A = (double)vala/(double)nsam;
-                B = (double)valb/(double)nsam;
-                C = (double)val00/(double)nsam;
-                ZnS += ((C - (A*B)) * (C - (A*B))) / (A*(1.0 - A)*B*(1.0 - B));
-                comb++;
-            }
-            k++;
-        }
-        j++;
-    }
-    if(comb) ZnS = ZnS/(double)comb;
-    else return(-10000.);
-    return(ZnS);
-}
-
-double ZnA_window(struct var2 **inputp, long int s0, long int s1,int npopa)
-{
-    double ZnA;
-    long k,j,comb;
-    int i,nsam,inits,x;
-    int vala,valb,val00,a,b;
-	int na=0;
-	int nb=0;
-    double A,B,C;
-    int ispolnomhit(long int,int,int,int);
-
-    nsam  = (*inputp)->nsam;
-	inits = 0;
-	for(x=0;x<(*inputp)->npop_sampled;x++) {
-		if(x < npopa) inits += (*inputp)->config[x];
-		else {
-			nsam = (*inputp)->config[x];
-			break;
-		}
-	}
-    if(nsam == 0) return(-10000.);
-    
-    ZnA = 0.0;
-    j = s0;
-    comb = 0;
-    while(j+1 < (long)s1) {
-        while(j < (long)s1) {
-            if(ispolnomhit(j,inits,nsam,(*inputp)->nsam) > 0) break;
-            else j++;
-        }
-        k = j+1;
-        while(k < (long)s1) {
-            if(ispolnomhit(k,inits,nsam,(*inputp)->nsam) > 0) break;
-            else k++;
-        }
-        if(k < (long)s1) {
-            /*calcular freqs p1,q1*/
-            vala = valb = 1;
-            a = list[inits][j];
-            b = list[inits][k];
-            for(i=1+inits;i<inits+nsam;i++) {
-                if(list[i][j] == a) vala++;
-                else na = list[i][j];
-                if(list[i][k] == b) valb++;                                
-                else nb = list[i][k];
-            }
-            if(nsam - vala > vala) {
-                a = na;
-                vala = nsam - vala;
-            }
-            if(nsam - valb > valb) {
-                b = nb;
-                valb = nsam - valb;
-            }
-            /*calcular p1q1*/
-            val00 = 0;
-            for(i=inits+0;i<inits+nsam;i++) if(list[i][j] == a && list[i][k] == b) val00++;
-            
-            /*calcular R2 = (p1q1 - (p1*q1))"2 / (p1*(1-p1) * (q1*(1-q1))) */
-            A = (double)vala/(double)nsam;
-            B = (double)valb/(double)nsam;
-            C = (double)val00/(double)nsam;
-            ZnA += ((C - (A*B)) * (C - (A*B))) / (A*(1.0 - A)*B*(1.0 - B));
-            comb++;
-        }
-        j++;
-    }
-    if(comb) ZnA = ZnA/(double)comb;
-    else return(-10000.);
-    return(ZnA);
-}
-
 /*Wall's program for calculating minimum recombination events: modification*/
 int Min_rec(int x, int segsit, int nsam, int inits,int totalsam)
 {  /* Calculate min # rec. events */
   int a, b, c, e, gtest, flag = 0;
   int h;
   int t11,t12,t21,t22;
-  int ispolnomhit(long int,int,int,int);
 
 	if (segsit<2 || x >= (segsit-1)) return (0);
 	
 	for (a=x+1; a<segsit; ++a) {
 		while(a < segsit) {
-			if((h=ispolnomhit((long int)a,inits,nsam,totalsam)) > 0) break; /*h is the frequency of the new mutation*/
+			if((h=ispolnomhit((long int)a,inits,nsam,totalsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 			else a++;
 		}            
 		if(a < segsit) {
 			for (b=x; b<a; ++b) {
 				while(b < a) {
-					if((h=ispolnomhit((long int)b,inits,nsam,totalsam)) > 0) break; /*h is the frequency of the new mutation*/
+					if((h=ispolnomhit((long int)b,inits,nsam,totalsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
 					else b++;
 				}
 				if(b < a) {
