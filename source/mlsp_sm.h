@@ -367,4 +367,47 @@ struct events { /*events occured, split, mig and factor_pop changes*/
 	double sex_ratio; /*NOW IS FOR ALL POPS*/
 };
 
+struct dnapar {
+    double k;
+    long int S;
+	int B1;
+    int Q1;
+    int *freq;
+    double piw;
+    double pib;
+    long int *unic;
+    int maxhapl;
+	int maxhapl1;
+	int Rm;
+	double thetaL;
+	
+	double withinw;
+	double max_iES;
+	double min_uiHS;
+	double max_uiHS;
+	
+	double *fstallcomp;
+	double *piwallcomp;
+	double *piaallcomp;
+	
+    int nhapl;
+    int *fhapl;
+	double *fsthapallcomp;
+	double *hapwallcomp;
+	double *hapaallcomp;
+	
+	int *Sanc; /*for 3 pops is: Sx1,Sx2,Sxo,Sf1,Sf2,Sfo,Sx1f2,Sx2f1,Ssh,Sso*/
+	int mhsites;
+	
+	double pie1;	/*Achaz*/
+	double pin1;
+	long int Se1;
+	long int Sn1;
+	
+	double m_sdev;
+	double m_skew;
+	double m_kurt;
+	double ragg;
+};
+
 #endif //MLCOALSIM_MLSP_SM_H

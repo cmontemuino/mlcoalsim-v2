@@ -107,44 +107,6 @@ double fixoutg(int nsam, int Sout, int freq0)
     }
 }
 
-int ispolnomhit(long int j,int init, int nsam, int totalsam, char **mutations_matrix, long int *positions)
-{
-    int i,h,g;
-    int a0,a1;
-    
-    if(j && positions[j-1] == positions[j]) 
-		return(-1);/*estem a la segona mutació o més*/
-    
-	/*mhit, including outgroup*//**/
-    h = g = a1 = 0;
-	a0 = '0';
-    for(i=0;i<totalsam;i++) {
-        if((int)mutations_matrix[i][j] != a0) {
-            if(!a1)
-				a1 = (int)mutations_matrix[i][j];
-            if((int)mutations_matrix[i][j] != a1) 
-				return(-2);
-        }
-    }
-	/**/
-    h = g = a1 = 0;
-	a0 = '0';
-    for(i=init;i<init+nsam;i++) {
-        if((int)mutations_matrix[i][j] == a0) h++;
-        else {
-            if(!a1)
-				a1 = (int)mutations_matrix[i][j];
-            if((int)mutations_matrix[i][j] == a1)
-				g++;
-            else 
-				return(-2);/*en el cas de la primera mutacio hagin almenys tres variants*/
-        }
-    }
-    if(h==nsam || h == 0)
-		return(0); /*invariant intrapop*/
-    return(nsam-h); /*gives the frequency of the variant that is different of '0'*/
-}
-
 double koutgJC(int nsam, int Sout, int *freq, unsigned long nsites)
 {
     int x;
@@ -175,17 +137,29 @@ long int localize_positiontop(const double *categories,double valuer,long int st
 	
 	half = (long int)floor((double)(start+end)/2.0);
 	while(half != start) {
-		if((double)valuer < categories[half]) end = half;
-		else if((double)valuer > categories[half]) start = half;
+		if(valuer < categories[half]) end = half;
+		else if(valuer > categories[half]) start = half;
 		half = (long int)floor((double)(start+end)/2.0);
 	}
 
 	if(half == start) {
-		if((double)valuer < categories[half]) return half;
+		if(valuer < categories[half]) return half;
 		else return half+1;
 	}	
 
 	return half;
+}
+
+/* localitza les mutacions en un fragment */
+void locate(long int n, long int beg, long int *ptr, int mhits, double *weightmut, long int end)
+{
+     ordran(n, ptr, mhits, beg, weightmut, end);	/* mutacions en [0,len) ordenades de major a menor */
+}
+
+/* localitza les mutacions en un fragment */
+void locate2(long int n, long int beg, long int *ptr, int mhits, int nsam, double *weightmut, long int end, char **mutations_matrix)
+{    
+     ordran2(n,ptr,mhits,nsam,beg,weightmut,end, mutations_matrix);	/* mutacions en [0,len) ordenades de major a menor */
 }
 
 double logPPoisson2(long int Si, double lambda)
@@ -194,4 +168,243 @@ double logPPoisson2(long int Si, double lambda)
     
 	value = Si*log(lambda) - lambda - factln(Si);
     return value;
+}
+
+/* localitza les mutacions en un fragment */
+void locate_psel(long int n, long int beg, long int *ptr, int mhits, long int sel_nt, double *weightmut, long int end)
+{    
+     ordran_psel(n,ptr,mhits,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
+}
+
+/* localitza les mutacions en un fragment */
+void locate2_psel(long int n, long int beg, long int *ptr, int mhits, int nsam, long int sel_nt, double *weightmut, long int end, char **mutations_matrix)
+{     
+     ordran2_psel(n,ptr,mhits,nsam,sel_nt,beg,weightmut,end, mutations_matrix);	/* mutacions en [0,len) ordenades de major a menor */
+}
+
+void order(long int n, long int *pbuf)/* ordena els valors: es molt lent per un gran nombre de polimofismes! */
+{
+    long int gap,i,j;
+    long int temp;
+    
+    for(gap= n/2; gap>0;gap /= 2)
+        for(i=gap;i<n;i++)
+            for(j=i-gap;j>=0 && pbuf[j]>pbuf[j+gap];j -= gap) {
+                temp = pbuf[j];
+                pbuf[j] = pbuf[j+gap];
+                pbuf[j+gap] = temp;
+            }
+}
+
+/* posa un nombre entre [0,len) */
+void ordran(long int n, long int *pbuf, int mhits, long int beg, double *weightmut, long int end)
+{
+    ranvec(n,pbuf,mhits,beg,weightmut,end);
+    order(n,pbuf);
+}
+
+void ordran2(long int n, long int *pbuf, int mhits, int nsam, long int beg, double *weightmut, long int end, char **mutations_matrix)
+{
+    /* posa un nombre entre [0,len) */
+
+    ranvec2(n,pbuf,mhits,nsam,beg,weightmut,end, mutations_matrix);
+    order(n,pbuf);
+}
+
+
+void ordran_psel(long int n, long int *pbuf, int mhits, long int sel_nt, long int beg, double *weightmut, long int end)
+{
+    ranvec_psel(n,pbuf,mhits,sel_nt,beg,weightmut,end);
+    order(n,pbuf);
+}
+
+void ordran2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end, char **mutations_matrix)
+{
+    ranvec2_psel(n,pbuf,mhits,nsam,sel_nt,beg,weightmut,end, mutations_matrix);
+    order(n,pbuf);
+}
+
+
+void ranvec(long int n, long int *pbuf, int mhits, long int beg, double *weightmut, long int end) /* posa un nombre entre [0,len) */
+{
+    long int i,x;
+	double valuer,wstartm1;
+    
+    
+	if(beg==0) wstartm1 = 0.0;
+	else wstartm1 = weightmut[beg-1];
+    for(i=0;i<n;i++) {
+        valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+		pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+        if(!mhits) {	/* bucle per no mhits (mhits=0) */
+            x = i-1;
+            while(x>=0) {
+                if(pbuf[i] == pbuf[x]) {
+                    valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+                    x = i-1;
+                }
+                else x--;
+            }
+        }
+    }
+}
+
+/* posa un nombre entre [0,len) */
+void ranvec2(long int n, long int *pbuf, int mhits, int nsam, long int beg, double *weightmut, long int end, char **mutations_matrix)
+{
+    long int i,x;
+    int y;
+    int z,f;
+	
+    double dlen;
+    double a;
+	double valuer,wstartm1;
+    
+	if(beg==0) wstartm1 = 0.0;
+	else wstartm1 = weightmut[beg-1];
+    if(mhits) {
+        dlen = (weightmut[end] - wstartm1);
+        for(i=0;i<n;i++) {
+            a = ran1()*dlen + wstartm1;
+            pbuf[i] = localize_positiontop(weightmut,a,beg,end+1);   
+            x = i-1;
+            y = 1;
+            while(x>=0) {
+                if(pbuf[i] == pbuf[x]) {
+                    y++;
+                    if(y == 3 || y == nsam) {/*no mes de 4 nt per posicio*/
+                        a = ran1()*dlen + wstartm1;
+                        pbuf[i] = localize_positiontop(weightmut,a,beg,end+1);   
+                        x = i;
+                        y = 1;
+                    }
+					f=0;
+					for(z=0;z<nsam;z++) /*all mutations should be observed. equal pattern in different position*/
+						if((mutations_matrix[z][i] == '0' && mutations_matrix[z][x] == '0') ||
+						   (mutations_matrix[z][i] != '0' && mutations_matrix[z][x] != '0')) 
+							f++;
+					if(f==nsam) {
+						a = ran1()*dlen + wstartm1;
+						pbuf[i] = localize_positiontop(weightmut,a,beg,end+1);   
+						x = i;
+						y = 1;
+						break;
+					}
+                }
+                x--;
+            }
+		}
+    }
+    else { /* per no mhits */
+        for(i=0;i<n;i++) {
+			valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+			pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+            x = i-1;
+            while(x>=0) {
+                if(pbuf[i] == pbuf[x]) {
+                    valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+                    x = i-1;
+                }
+                else x--;
+            }
+        }
+    }
+}
+
+/* posa un nombre entre [0,len) */
+void ranvec_psel(long int n, long int *pbuf, int mhits, long int sel_nt, long int beg, double *weightmut, long int end)
+{
+    long int i,x;
+	double valuer,wstartm1;
+    
+	/*include nsites*/
+    pbuf[0] = sel_nt;
+	if(beg==0) wstartm1 = 0.0;
+	else wstartm1 = weightmut[beg-1];
+    for(i=1;i<n;i++) {
+        valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+		pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+		if(pbuf[i] == pbuf[0]) {
+			i--;
+			continue;
+		}   
+        if(!mhits) {	/* bucle per no mhits (mhits=0) */
+            x = i-1;
+            while(x>=0) {
+                if(pbuf[i] == pbuf[x]) {
+                    valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+                    x = i-1;
+                }
+                else x--;
+            }
+        }
+    }
+}
+
+/* posa un nombre entre [0,len) */
+void ranvec2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end, char **mutations_matrix)
+{
+    long int i,x;
+    int y;
+    int z,f;
+    double dlen;
+    double a;
+	double valuer,wstartm1;
+    
+	if(beg==0) wstartm1 = 0.0;
+	else wstartm1 = weightmut[beg-1];
+    if(mhits) {
+        dlen = weightmut[end] - wstartm1;
+        for(i=0;i<n;i++) {
+            if(i) {
+				a = ran1()*dlen + wstartm1;
+				pbuf[i] = localize_positiontop(weightmut,a,beg,end+1);
+			}
+			else pbuf[0] = sel_nt;
+			
+            x = i-1;
+            y = 1;
+            while(x>=0) {
+                if(pbuf[i] == pbuf[x]) {
+                    y++;
+                    if(y == 3 || y == nsam || x == 0) {/*no mes de 4 nt per posicio*/
+                        a = ran1()*dlen + wstartm1;
+                        pbuf[i] = localize_positiontop(weightmut,a,beg,end+1);   
+                        x = i;
+                        y = 1;
+                    }
+					f=0;
+					for(z=0;z<nsam;z++) /*all mutations should be observed. equal pattern in different position*/
+						if(mutations_matrix[z][pbuf[i]] == mutations_matrix[z][pbuf[x]]) f++;
+					if(f==nsam) {
+						a = ran1()*dlen + wstartm1;
+						pbuf[i] = localize_positiontop(weightmut,a,beg,end+1);  
+						x = i;
+						y = 1;
+						break;
+					}
+                }
+                x--;
+            }
+		}
+    }
+    else { /* per no mhits */
+		pbuf[0] = sel_nt;
+        for(i=1;i<n;i++) {
+			valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+			pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+            x = i-1;
+            while(x>=0) {
+                if(pbuf[i] == pbuf[x]) {
+                    valuer = ran1()*(weightmut[end] - wstartm1) + wstartm1;
+					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
+                    x = i-1;
+                }
+                else x--;
+            }
+        }
+    }
 }

@@ -18,6 +18,7 @@
 /*ALSO INCLUDED A FUNCTION FOR RM FROM J. Wall.*/
 
 #include "ms2_sm_helpers.h"
+#include "neutpar.h"
 #include "ms2_sm_zn.h"
 #include "neut_tests.h"
 #include "mlsp_sm.h"
@@ -45,50 +46,6 @@ struct segl {
     long int beg;
     struct node *ptree;
     long int next;
-};
-
-struct dnapar {
-    double k;
-    long int S;
-	int B1;
-    int Q1;
-    int *freq;
-    double piw;
-    double pib;
-    long int *unic;
-    int maxhapl;
-	int maxhapl1;
-	int Rm;
-	double thetaL;
-	
-	double withinw;
-	/*double *pid;*/
-	double max_iES;
-	double min_uiHS;
-	double max_uiHS;
-	
-	double *fstallcomp;
-	double *piwallcomp;
-	double *piaallcomp;
-	
-    int nhapl;
-    int *fhapl;
-	double *fsthapallcomp;
-	double *hapwallcomp;
-	double *hapaallcomp;
-	
-	int *Sanc; /*for 3 pops is: Sx1,Sx2,Sxo,Sf1,Sf2,Sfo,Sx1f2,Sx2f1,Ssh,Sso*/
-	int mhsites;
-	
-	double pie1;	/*Achaz*/
-	double pin1;
-	long int Se1;
-	long int Sn1;
-	
-	double m_sdev;
-	double m_skew;
-	double m_kurt;
-	double ragg;
 };
 
 double **coef = NULL;
@@ -144,15 +101,11 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
     double ttime(struct node *, int);
     double poissondist(double), ran1(void);
     void make_gametes(int,struct node *,double,long int,long int,int,double,double);
-    void locate(long int,long int,long int *,int,double *,long int);
-    void locate2(long int,long int,long int *,int,int,double *,long int);
     void mnmial2(long int,long int,double *,long int *,long int *);
     void mnmial2_psel(long int,long int,double *,long int *,long int *,long int);
     /*partial selection*/
     int all_sel,*selnsam; /*number of lines under selection and the vector with the lines (the first all_sel lines)*/
     int segsit_sel=0;/*parameter for partial selection*/
-    void locate_psel(long int,long int,long int *,int,long int,double *,long int);
-    void locate2_psel(long int,long int,long int *,int,int,long int,double *,long int);
     double wstartm1,ttt;
     long int *len_nozero,nsites_nozero,nz;
     int loopcount;
@@ -378,7 +331,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
             make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);/*posa a la matriu list les mutacions*/
             /*partial selection*/
             if(segsit_sel == 1) {
-                locate2_psel(ss[k],start,posit+ns,mhits,nsam,sel_nt,weightmut,end);
+                locate2_psel(ss[k],start,posit+ns,mhits,nsam,sel_nt,weightmut,end, list);
                 ii = (int)ns;
                 while(posit[ii] != sel_nt) ii++;
                 for(i=0;i<nsam;i++) {
@@ -388,7 +341,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                 }
                 segsit_sel = 0;
             }
-            else locate2(ss[k],start,posit+ns,mhits,nsam,weightmut,end); /* posa el nombre de les mutacions a la matriu */
+            else locate2(ss[k],start,posit+ns,mhits,nsam,weightmut,end, list); /* posa el nombre de les mutacions a la matriu */
             /* modificat per mhits i fix muts */
             free(seglst[seg].ptree);
             ns += ss[k];
@@ -442,9 +395,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	double recemax=0.;
 	double recombinationv=0.;
     double correction_recabs(double,double,int);
-	void calc_neutparSRH(long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa,int flaghap);
-    void calc_neutpar_window(struct var2 **,struct dnapar *,long int,long int,double,int);
-    void calc_neutpar_windowSRH(struct var2 **,struct dnapar *,long int,long int,double,int,int);
+    void calc_neutpar_window(struct var2 **inputp, struct dnapar *ntpar, long int s0, long int s1, double valuer, int npopa, char **mutations_matrix, long int *positions);
 	void mod_outgroup(long int segsit, struct var2 **inputp);
 
 	/*counting simulations in stdout*/
@@ -1434,7 +1385,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							while(s1 < segsites && posit[s1] < ll) s1++;
 							/*calc_estadistics*/
 							if(((*inputp)->rmfix == 1 && (*inputp)->linked_rm_nregion == aa) || ((*inputp)->Sfix_alltheta == 1 && (*inputp)->linked_segsites_nregion == aa)) {
-								calc_neutpar_windowSRH(inputp,neutpar,s0,s1,recombinationv,npopa,(*inputp)->linked_nhapl);
+								calc_neutpar_windowSRH(inputp,neutpar,s0,s1,recombinationv,npopa,(*inputp)->linked_nhapl, list, posit);
 								if((*inputp)->rmfix == 1) {
 									if((*inputp)->linked_rm_nregion == aa) {
 										Rmi = neutpar[0].Rm;
@@ -1523,7 +1474,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					}
 					else {/*like not linked fragments*/
 						if((*inputp)->rmfix == 1 || (*inputp)->Sfix_alltheta == 1)
-							calc_neutparSRH(segsites,inputp,neutpar+0,recombinationv,npopa,(*inputp)->nhapl);
+							calc_neutparSRH(segsites,inputp,neutpar+0,recombinationv,npopa,(*inputp)->nhapl, list, posit);
 						if((*inputp)->rmfix == 1) {
 							Rmi = neutpar[0].Rm;
 							nhi = neutpar[0].nhapl;
@@ -1622,7 +1573,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							/*calc_estadistics*/
 							if(rejflag==0 && npops < (*inputp)->npop_sampled) {
 								init_coef(coef[0],(*inputp)->config[npops]);
-								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops);
+								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops, list, posit);
 								/*calc_neut_tests*/
 								/*we need to define the number of windows and the current window number*/
 							#if FREQSPECTRUM_TDFSR2 < 2		
@@ -2062,7 +2013,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							if(rejflag==0 && npops < (*inputp)->npop_sampled) {
 								init_coef(coef[0],(*inputp)->config[npops]);
 								/*calc_estadistics*/
-								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops);
+								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops, list, posit);
 								/*calc_neut_tests*/
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+0][listnumbers[count0-1]] 
@@ -3323,7 +3274,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 			flagp = 1;
 		/*monomorphic*/
 		if(flagp == 0) {
-			r = (double)rand()/(double)RAND_MAX;
+			r = rand()/(double)RAND_MAX;
 			if(r<patcg[0]) n[0] = 'A';
 			else if(r<patcg[0]+patcg[1]) n[0] = 'T';
 				else if(r<patcg[0]+patcg[1]+patcg[2]) n[0] = 'C';
@@ -3337,7 +3288,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 				   (p[0] == 'G' && p[1] == 'A') ||
 				   (p[0] == 'C' && p[1] == 'T') ||
 				   (p[0] == 'T' && p[1] == 'C')) {
-					r = (double)rand()/(double)RAND_MAX;
+					r = rand()/(double)RAND_MAX;
 					if(r<patcg[0]) {n[0] = 'A'; n[1] = 'G';}
 					else if(r<patcg[0]+patcg[1]) {n[0] = 'T'; n[1] = 'C';}
 						else if(r<patcg[0]+patcg[1]+patcg[2]) {n[0] = 'C'; n[1] = 'T';}
@@ -3348,27 +3299,27 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 					r = (double)rand()/(double)RAND_MAX;
 					if(r<patcg[0]) {
 						n[0] = 'A';
-						r = (double)rand()/(double)RAND_MAX;
+						r = rand()/(double)RAND_MAX;
 						if(r < (patcg[1]/(patcg[1]+patcg[2]))) n[1] = 'T';
 						else n[1] = 'C';
 					}
 					else 
 						if(r<patcg[0]+patcg[1]) {
 							n[0] = 'T';
-							r = (double)rand()/(double)RAND_MAX;
+							r = rand()/(double)RAND_MAX;
 							if(r < (patcg[0]/(patcg[0]+patcg[3]))) n[1] = 'A';
 							else n[1] = 'G';
 						}
 						else 
 							if(r<patcg[0]+patcg[1]+patcg[2]) {
 								n[0] = 'C';
-								r = (double)rand()/(double)RAND_MAX;
+								r = rand()/(double)RAND_MAX;
 								if(r < (patcg[0]/(patcg[0]+patcg[3]))) n[1] = 'A';
 								else n[1] = 'G';
 							}
 							else {
 								n[0] = 'G';
-								r = (double)rand()/(double)RAND_MAX;
+								r = rand()/(double)RAND_MAX;
 								if(r < (patcg[1]/(patcg[1]+patcg[2]))) n[1] = 'T';
 								else n[1] = 'C';
 							}
@@ -3391,11 +3342,11 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 							else s = 0;					
 						
 				if(p[3] == 0) {/*tri*/
-					r = (double)rand()/(double)RAND_MAX;
+					r = rand()/(double)RAND_MAX;
 					if(r<patcg[0]) {
 						n[0] = 'A';
 						if(s) n[s] = 'G';
-						r = (double)rand()/(double)RAND_MAX;
+						r = rand()/(double)RAND_MAX;
 						if(s==1) {
 							if(r<0.5) {n[2] = 'T';}
 							else {n[2] = 'C';}
@@ -3414,7 +3365,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 						if(r<patcg[0]+patcg[1]) {
 							n[0] = 'T';
 							if(s) n[s] = 'C';
-							r = (double)rand()/(double)RAND_MAX;
+							r = rand()/(double)RAND_MAX;
 							if(s==1) {
 								if(r<0.5) {n[2] = 'A';}
 								else {n[2] = 'G';}
@@ -3433,7 +3384,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 							if(r<patcg[0]+patcg[1]+patcg[2]) {
 								n[0] = 'C';
 								if(s) n[s] = 'T';
-								r = (double)rand()/(double)RAND_MAX;
+								r = rand()/(double)RAND_MAX;
 								if(s==1) {
 									if(r<0.5) {n[2] = 'A';}
 									else {n[2] = 'G';}
@@ -3451,7 +3402,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 							else {
 								n[0] = 'G';
 								if(s) n[s] = 'A';
-								r = (double)rand()/(double)RAND_MAX;
+								r = rand()/(double)RAND_MAX;
 								if(s==1) {
 									if(r<0.5) {n[2] = 'T';}
 									else {n[2] = 'C';}
@@ -3468,11 +3419,11 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 							}
 				}
 				else {/*tetra*/
-					r = (double)rand()/(double)RAND_MAX;
+					r = rand()/(double)RAND_MAX;
 					if(r<patcg[0]) {
 						n[0] = 'A';
 						n[s] = 'G';
-						r = (double)rand()/(double)RAND_MAX;
+						r = rand()/(double)RAND_MAX;
 						if(s==1) {
 							if(r<0.5) {n[2] = 'T'; n[3] = 'C';}
 							else {n[2] = 'C'; n[3] = 'T';}
@@ -3490,7 +3441,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 						if(r<patcg[0]+patcg[1]) {
 							n[0] = 'T';
 							n[s] = 'C';
-							r = (double)rand()/(double)RAND_MAX;
+							r = rand()/(double)RAND_MAX;
 							if(s==1) {
 								if(r<0.5) {n[2] = 'A'; n[3] = 'G';}
 								else {n[2] = 'G'; n[3] = 'A';}
@@ -3508,7 +3459,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 							if(r<patcg[0]+patcg[1]+patcg[2]) {
 								n[0] = 'C';
 								n[s] = 'T';
-								r = (double)rand()/(double)RAND_MAX;
+								r = rand()/(double)RAND_MAX;
 								if(s==1) {
 									if(r<0.5) {n[2] = 'A'; n[3] = 'G';}
 									else {n[2] = 'G'; n[3] = 'A';}
@@ -3525,7 +3476,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 							else {
 								n[0] = 'G';
 								n[s] = 'A';
-								r = (double)rand()/(double)RAND_MAX;
+								r = rand()/(double)RAND_MAX;
 								if(s==1) {
 									if(r<0.5) {n[2] = 'T'; n[3] = 'C';}
 									else {n[2] = 'C'; n[3] = 'T';}
@@ -3886,287 +3837,6 @@ void mnmial2_psel(long int n,long int nclass,double *p,long int *rv,long int *le
         }
     }
 }
-void locate_psel(long int n,long int beg,long int *ptr,int mhits,long int sel_nt,double *weightmut,long int end)
-/* localitza les mutacions en un fragment */
-{
-     /*long int i;*/
-     void ordran_psel(long int,long int *,int,long int,long int,double *,long int);
-     
-     ordran_psel(n,ptr,/*len,*/mhits,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-}
-
-void ordran_psel(long int n,long int *pbuf,int mhits,long int sel_nt,long int beg,double *weightmut,long int end)
-{
-    void ranvec_psel(long int,long int *,/*long int,*/int,long int,long int,double *,long int);
-    void order(long int,long int *);
-
-    ranvec_psel(n,pbuf,/*len,*/mhits,sel_nt,beg,weightmut,end);
-    order(n,pbuf);
-}
-void ranvec_psel(long int n,long int *pbuf,int mhits,long int sel_nt,long int beg,double *weightmut,long int end)
- /* posa un nombre entre [0,len) */
-{
-    long int i,x;
-	double valuer,wstartm1;
-    
-	/*include nsites*/
-    pbuf[0] = (long int)sel_nt;
-	if(beg==0) wstartm1 = 0.0;
-	else wstartm1 = (double)weightmut[beg-1];
-    for(i=1;i<(long int)n;i++) {
-        valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-		pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-		if(pbuf[i] == pbuf[0]) {
-			i--;
-			continue;
-		}   
-        if(!mhits) {	/* bucle per no mhits (mhits=0) */
-            x = i-1;
-            while(x>=0) {
-                if(pbuf[i] == pbuf[x]) {
-                    valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-                    x = i-1;
-                }
-                else x--;
-            }
-        }
-    }
-}
-
-void locate(long int n,long int beg,long int *ptr,int mhits,double *weightmut,long int end)
-/* localitza les mutacions en un fragment */
-{
-     /*long int i;*/
-     void ordran(long int,long int *,int,long int,double *,long int);
-     
-     ordran(n,ptr,/*len,*/mhits,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-}
-
-void ordran(long int n, long int *pbuf,int mhits,long int beg,double *weightmut,long int end)
-{
-    void ranvec(long int,long int *,int,long int,double *,long int);
-    /* posa un nombre entre [0,len) */
-    void order(long int,long int *);/* ordena els valors */
-
-    ranvec(n,pbuf,mhits,beg,weightmut,end);
-    order(n,pbuf);
-}
-
-void ranvec(long int n, /*double */long int *pbuf,int mhits,long int beg,double *weightmut,long int end) /* posa un nombre entre [0,len) */
-{
-    long int i,x;
-	double valuer,wstartm1;
-    
-    
-	if(beg==0) wstartm1 = 0.0;
-	else wstartm1 = (double)weightmut[beg-1];
-    for(i=0;i<(long int)n;i++) {
-        valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-		pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-        if(!mhits) {	/* bucle per no mhits (mhits=0) */
-            x = i-1;
-            while(x>=0) {
-                if(pbuf[i] == pbuf[x]) {
-                    valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-                    x = i-1;
-                }
-                else x--;
-            }
-        }
-    }
-}
-void locate2(long int n,long int beg,long int *ptr,int mhits,int nsam,double *weightmut,long int end)/* localitza les mutacions en un fragment */
-{
-     /*long int i;*/
-     void ordran2(long int,long int *,int,int,long int,double *,long int);
-     
-     ordran2(n,ptr,mhits,nsam,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-}
-void ordran2(long int n, long int *pbuf,int mhits,int nsam,long int beg,double *weightmut,long int end)
-{
-    void ranvec2(long int,long int *,int,int,long int,double *,long int);
-    /* posa un nombre entre [0,len) */
-    void order(long int,long int *);/* ordena els valors */
-
-    ranvec2(n,pbuf,mhits,nsam,beg,weightmut,end);
-    order(n,pbuf);
-}
-void ranvec2(long int n, long int *pbuf,int mhits,int nsam,long int beg,double *weightmut,long int end)
-/* posa un nombre entre [0,len) */
-{
-    long int i,x;
-    int y;
-    int z,f;
-	
-    double dlen;
-    double a;
-	double valuer,wstartm1;
-    
-	if(beg==0) wstartm1 = 0.0;
-	else wstartm1 = (double)weightmut[beg-1];
-    if(mhits) {
-        dlen = (double)(weightmut[end] - wstartm1);
-        for(i=0;i<(long int)n;i++) {
-            a = (double)ran1()*dlen + (double)wstartm1;
-            pbuf[i] = localize_positiontop(weightmut,(double)a,beg,end+1);   
-            x = i-1;
-            y = 1;
-            while(x>=0) {
-                if(pbuf[i] == pbuf[x]) {
-                    y++;
-                    if(y == 3 || y == nsam) {/*no mes de 4 nt per posicio*/
-                        a = (double)ran1()*dlen + (double)wstartm1;
-                        pbuf[i] = localize_positiontop(weightmut,(double)a,beg,end+1);   
-                        x = i;
-                        y = 1;
-                    }
-					f=0;
-					for(z=0;z<nsam;z++) /*all mutations should be observed. equal pattern in different position*/
-						if((list[z][i] == '0' && list[z][x] == '0') ||
-						   (list[z][i] != '0' && list[z][x] != '0')) 
-							f++;
-					if(f==nsam) {
-						a = (double)ran1()*dlen + (double)wstartm1;
-						pbuf[i] = localize_positiontop(weightmut,(double)a,beg,end+1);   
-						x = i;
-						y = 1;
-						break;
-					}
-                }
-                x--;
-            }
-		}
-    }
-    else { /* per no mhits */
-        for(i=0;i<(long int)n;i++) {
-			valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-			pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-            x = i-1;
-            while(x>=0) {
-                if(pbuf[i] == pbuf[x]) {
-                    valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-                    x = i-1;
-                }
-                else x--;
-            }
-        }
-    }
-}
-
-void order(long int n,long int *pbuf)/* ordena els valors: es molt lent per un gran nombre de polimofismes! */
-{
-    long int gap,i,j;
-    long int temp;
-    
-    for(gap= n/2; gap>0;gap /= 2)
-        for(i=gap;i<(long int)n;i++)
-            for(j=i-gap;j>=0 && pbuf[j]>pbuf[j+gap];j -= gap) {
-                temp = pbuf[j];
-                pbuf[j] = pbuf[j+gap];
-                pbuf[j+gap] = temp;
-            }
-}
-
-void locate2_psel(long int n,long int beg,long int *ptr,int mhits,int nsam,long int sel_nt,double *weightmut,long int end)/* localitza les mutacions en un fragment */
-{
-     /*long int i;*/
-     void ordran2_psel(long int,long int *,int,int,long int,long int,double *,long int);
-     
-     ordran2_psel(n,ptr,mhits,nsam,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
-}
-void ordran2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end)
-{
-    void ranvec2_psel(long int,long int *,int,int,long int,long int,double *,long int);/* posa un nombre entre [0,len) */
-    void order(long int,long int *);/* ordena els valors */
-
-    ranvec2_psel(n,pbuf,mhits,nsam,sel_nt,beg,weightmut,end);
-    order(n,pbuf);
-}
-void ranvec2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end)
-/* posa un nombre entre [0,len) */
-{
-    long int i,x;
-    int y;
-    int z,f;
-    double dlen;
-    double a;
-	double valuer,wstartm1;
-    
-	if(beg==0) wstartm1 = 0.0;
-	else wstartm1 = (double)weightmut[beg-1];
-    if(mhits) {
-        dlen = (double)(weightmut[end] - wstartm1);
-        for(i=0;i<(long int)n;i++) {
-            if(i) {
-				a = (double)ran1()*dlen + (double)wstartm1;
-				pbuf[i] = localize_positiontop(weightmut,(double)a,beg,end+1);
-			}
-			else pbuf[0] = (long int)sel_nt;
-			
-            x = i-1;
-            y = 1;
-            while(x>=0) {
-                if(pbuf[i] == pbuf[x]) {
-                    y++;
-                    if(y == 3 || y == nsam || x == 0) {/*no mes de 4 nt per posicio*/
-                        a = (double)ran1()*dlen + (double)wstartm1;
-                        pbuf[i] = localize_positiontop(weightmut,(double)a,beg,end+1);   
-                        x = i;
-                        y = 1;
-                    }
-					f=0;
-					for(z=0;z<nsam;z++) /*all mutations should be observed. equal pattern in different position*/
-						if(list[z][pbuf[i]] == list[z][pbuf[x]]) f++;
-					if(f==nsam) {
-						a = (double)ran1()*dlen + (double)wstartm1;
-						pbuf[i] = localize_positiontop(weightmut,(double)a,beg,end+1);  
-						x = i;
-						y = 1;
-						break;
-					}
-                }
-                x--;
-            }
-		}
-    }
-    else { /* per no mhits */
-		pbuf[0] = (long int)sel_nt;
-        for(i=1;i<(long int)n;i++) {
-			valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-			pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-            x = i-1;
-            while(x>=0) {
-                if(pbuf[i] == pbuf[x]) {
-                    valuer = ran1()*(double)(weightmut[end] - wstartm1) + wstartm1;
-					pbuf[i] = localize_positiontop(weightmut,valuer,beg,end+1);
-                    x = i-1;
-                }
-                else x--;
-            }
-        }
-    }
-}
-
-void order2(long int n, double **pbuf)/* ordena els valors */
-{
-    long int gap,i,j;
-    double temp0;
-    double temp1;
-
-    for(gap= n/2; gap>0;gap /= 2)
-        for(i=gap;i<(long int)n;i++)
-            for(j=i-gap;j>=0 && pbuf[j][0]>pbuf[j+gap][0];j -= gap) {
-                temp0 = pbuf[j][0];
-                temp1 = pbuf[j][1];
-                pbuf[j][0] = pbuf[j+gap][0];
-                pbuf[j][1] = pbuf[j+gap][1];
-                pbuf[j+gap][0] = temp0;
-                pbuf[j+gap][1] = temp1;
-            }
-}
 
 int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,double **matrix_test,struct prob_par **postp)
 {
@@ -4382,7 +4052,7 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                     qsort(matrix_var[a*(*data)->max_npop_sampled+d],(long int)(*data)->n_iter,sizeof(double),compare_);
                     /*calculate percentiles and probabilities*/
                     for(b=0;b<(long int)totalnloci;b++) {
-                        count = countequal = total = totalobs = (long int)0;
+                        count = countequal = total = totalobs = 0;
                         for(x=0;x<(*data)->n_iter;x++) {
                             if(matrix_test[(b*c*(*data)->max_npop_sampled)+(d*c)+a][x] != -10000) {
                                 total++;
@@ -4411,9 +4081,9 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                             matrix_Pvaluesequal[a*(*data)->max_npop_sampled+d][b] = -10000.0;
                         }
                         if((*data)->obs_statistics_used[a] == 1 && (*data)->obs_statistics[a][b][d+1] != -10000.0)
-                            validiter[a*(*data)->max_npop_sampled+d][b] = (long int)totalobs;
+                            validiter[a*(*data)->max_npop_sampled+d][b] = totalobs;
                         else
-                            validiter[a*(*data)->max_npop_sampled+d][b] = (long int)total;
+                            validiter[a*(*data)->max_npop_sampled+d][b] = total;
                         /*percentiles*/
                         for(n=0;n<13;n++) {
                             switch(n) {
@@ -4466,7 +4136,7 @@ int print_neuttest(struct var **data,FILE *output,char *file_out,char *file_in,d
                         }
                     }
                     /*average*/
-                    count = countequal = total = totalobs = (long int)0;
+                    count = countequal = total = totalobs = 0;
                     numloc = 0;
                     average[a*(*data)->max_npop_sampled+d] = 0.0;
                     for(b=0;b<(long int)totalnloci;b++) {
@@ -5271,108 +4941,6 @@ double calc_quantile(double *vec, long int lenvec,double quant, long int numit) 
     return(res);
 }
 
-void calc_neutparSRH(long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa,int flaghap)
-{
-    long int S;
-    int nhapl;
-    int *haplotype = 0;
-    int inits;
-	int nsam=0;
-    long int j;
-    int a,b,h,x;
-	long int comb;
-    char *hapl=0;
-	int Min_rec(int,int,int,int,int);
-
-	if(npopa == (*inputp)->npop) {
-		inits = 0;
-		nsam = (*inputp)->nsam;
-	}
-	else {
-		inits = 0;
-		for(x=0;x<(*inputp)->npop_sampled;x++) {
-			if(x < npopa) inits += (*inputp)->config[x];
-			else {
-				nsam = (*inputp)->config[x];
-				break;
-			}
-		}
-	}
-
-    comb = (int)((double)nsam*((double)nsam-1.0)/(double)2);
-	for(x=0;x<10;x++) (ntpar)->Sanc[x] = 0;
-
-	if(segsit == 0 || nsam < 2) {
-		if(nsam == 0) {
-			(ntpar)->S = -10000;
-			(ntpar)->nhapl = -10000;
-			(ntpar)->Rm = (int)-10000;
-		}
-		else {
-			(ntpar)->S = 0;
-			(ntpar)->nhapl = 1;
-			(ntpar)->Rm = (int)0;
-		}
-	}
-	else {		
-		if(valuer) (ntpar)->Rm = Min_rec(0,(int)segsit,nsam,inits,(*inputp)->nsam);
-		else (ntpar)->Rm = (int)0;
-	}
-
-	if(flaghap > 0) {
-		/* calcul de S,nhapl (excluding mhits)*/
-		if((hapl = (char *)calloc(nsam*segsit,sizeof(char))) == NULL) {
-			perror("calloc error calc_neutpar.0");
-			exit(1);
-		}
-	}
-
-	S = 0;
-	nhapl = 0;                
-	for(j=0;j<segsit;j++) {
-		while(j < segsit) {
-			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
-			else j++;
-		}            
-		if(j<segsit) {
-			if(flaghap > 0) {
-				for(a=inits;a<inits+nsam;a++) {
-					hapl[(a-inits)*segsit+S] = list[a][j];
-				}
-			}
-			S++;
-		}
-	}
-	(ntpar)->S = S;
-	
-	if(flaghap > 0) {
-		if((haplotype = (int *)malloc(nsam*sizeof(int))) == NULL) {
-			perror("calloc error calc_neutpar.1");
-			exit(1);
-		}
-		(ntpar)->nhapl = 0;
-		for(a=0;a<nsam;a++) haplotype[a] = 1;            
-		for(a=0;a<nsam-1;a++) {
-			if(haplotype[a]) {
-				(ntpar)->nhapl += 1;
-				for(b=a+1;b<nsam;b++) {
-					if(haplotype[b]) {
-						if(memcmp(hapl+a*segsit,hapl+b*segsit,S) == 0) { 
-							haplotype[a] += 1;
-							haplotype[b] = 0;
-						}
-					}
-				}
-			}
-		}
-		if(haplotype[a]) (ntpar)->nhapl += 1;
-		free(hapl);
-		free(haplotype);
-	}
-	
-	return;
-}
-
 void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa)
 {
     long int pi;
@@ -5422,7 +4990,6 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 	int mh1,mut,maxhapl1,*sshg;
 	#endif
 
-	int Min_rec(int,int,int,int,int);
 	int pola,polb,polc,pop1,pop2,popo,nt0;
 	int *polqa,*polqb;
 	int nmh;
@@ -5560,7 +5127,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			exit(1);
 		}
 		   
-		if(valuer || (*inputp)->mhits) (ntpar)->Rm = Min_rec(0,(int)segsit,nsam,inits,(*inputp)->nsam);
+		if(valuer || (*inputp)->mhits) (ntpar)->Rm = Min_rec(0,(int)segsit,nsam,inits,(*inputp)->nsam, list, posit);
 		else (ntpar)->Rm = (int)0;
 
         /* calcul B' i Q, pero sense dividir per S (Wall) */
@@ -6657,111 +6224,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 	}
 }
 
-void calc_neutpar_windowSRH(struct var2 **inputp,struct dnapar *ntpar,long int  s0,long int  s1,double valuer,int npopa,int flaghap)
-{
-	long int segsit;    
-	long int S;
-    int nhapl;
-    int *haplotype = 0;
-    int inits;
-	int nsam=0;
-    long int j;
-    int a,b,h,x;
-	long int comb;
-    char *hapl=0;
-	int Min_rec(int,int,int,int,int);
-	
-	if(npopa == (*inputp)->npop) {
-		inits = 0;
-		nsam = (*inputp)->nsam;
-	}
-	else {
-		inits = 0;
-		for(x=0;x<(*inputp)->npop_sampled;x++) {
-			if(x < npopa) inits += (*inputp)->config[x];
-			else {
-				nsam = (*inputp)->config[x];
-				break;
-			}
-		}
-	}
-	
-    comb = (int)((double)nsam*((double)nsam-1.0)/2.0);
-	for(x=0;x<10;x++) (ntpar)->Sanc[x] = 0;
-	
-    /*define segsit first*/
-    segsit = s1 - s0;
-
-	if(segsit == 0 || nsam < 2) {
-		if(nsam == 0) {
-			(ntpar)->S = -10000;
-			(ntpar)->nhapl = -10000;
-			(ntpar)->Rm = -10000;
-		}
-		else {
-			(ntpar)->S = 0;
-			(ntpar)->nhapl = 1;
-			(ntpar)->Rm = 0;
-		}
-	}
-	else {		
-		if(valuer || (*inputp)->mhits) (ntpar)->Rm = Min_rec((int)s0,(int)s1,nsam,inits,(*inputp)->nsam);
-		else (ntpar)->Rm = 0;
-	}
-	
-	/* calcul de S,nhapl (excluding mhits)*/
-	if(flaghap > 0) {
-		if((hapl = (char *)calloc(nsam*segsit,sizeof(char))) == NULL) {
-			perror("calloc error calc_neutpar.0");
-			exit(1);
-		}
-	}
-	
-	S = 0;
-	nhapl = 0;                
-	for(j=s0;j<s1;j++) {
-		while(j < s1) {
-			if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
-			else j++;
-		}            
-		if(j<s1) {
-			if(flaghap > 0) {
-				for(a=inits;a<inits+nsam;a++) {
-					hapl[(a-inits)*segsit+S] = list[a][j];
-				}
-			}
-			S++;
-		}
-	}
-	(ntpar)->S = S;
-	
-	if(flaghap > 0) {
-		if((haplotype = (int *)malloc(nsam*sizeof(int))) == NULL) {
-			perror("calloc error calc_neutpar.1");
-			exit(1);
-		}
-		(ntpar)->nhapl = 0;
-		for(a=0;a<nsam;a++) haplotype[a] = 1;            
-		for(a=0;a<nsam-1;a++) {
-			if(haplotype[a]) {
-				(ntpar)->nhapl += 1;
-				for(b=a+1;b<nsam;b++) {
-					if(haplotype[b]) {
-						if(memcmp(hapl+a*segsit,hapl+b*segsit,S) == 0) { 
-							haplotype[a] += 1;
-							haplotype[b] = 0;
-						}
-					}
-				}
-			}
-		}
-		if(haplotype[a]) (ntpar)->nhapl += 1;
-		free(hapl);
-		free(haplotype);
-	}
-}
-
-void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,long int  s1,double valuer,int npopa)
+void calc_neutpar_window(struct var2 **inputp, struct dnapar *ntpar, long int s0, long int s1, double valuer, int npopa, char **mutations_matrix, long int *positions)
 {
     long int segsit;    
     long int pi;
@@ -6776,7 +6239,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
     long int *hapw = 0;
     long int *hapb = 0;
     
-    int inits,inits1,inits2,initso/*,initcum*/;
+    int inits,inits1,inits2,initso;
 	int nsam=0;
 	int *initsq1,*initsq2,*sq;
     int val10,val20,val21;
@@ -6789,7 +6252,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 	int mut,mh1,maxhapl1,*sshg;
 	#endif
 	
-	int Min_rec(int,int,int,int,int);
 	int pola,polb,polc,pop1,pop2,popo,nt0;
 	int *polqa,*polqb;
 	int nmh;
@@ -6800,7 +6262,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 	
 	long int ehh0,ehhs,ehhr;
 
-	int /*pidcount,*/npw;
+	int npw;
 	#if iHStest == 1
 	int *fhap1,*fhap2,*nsam1,*nsam2;
 	int n1,n2,flagA,flagD;
@@ -6883,7 +6345,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				(ntpar)->fhapl[a] = 0;
 			}
 			for(j=0;j<segsit;j++) { /*all valid positions are invariant positions in nsam=1*/
-				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) == 0) (ntpar)->freq[0] += 1;
+				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, mutations_matrix, positions)) == 0) (ntpar)->freq[0] += 1;
 			}		
 			(ntpar)->fhapl[0] = nsam;
 			(ntpar)->piw = 0.0;
@@ -6936,7 +6398,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			exit(1);
 		}
 		
-		if(valuer) (ntpar)->Rm = Min_rec((int)s0,(int)s1,nsam,inits,(*inputp)->nsam);
+		if(valuer) (ntpar)->Rm = Min_rec((int)s0,(int)s1,nsam,inits,(*inputp)->nsam, mutations_matrix, positions);
 		else (ntpar)->Rm = (int)0;
 
         /* calcul B' i Q, pero sense dividir per S (Wall) */
@@ -6947,21 +6409,21 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
         for(j=s0;j<s1;) {
             k = j;
             while(k+1 < s1) { /*calcular k*/
-                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
+                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, mutations_matrix, positions)) > 0) break;
                 else {
 					k++;
 				}
             }
             j = k+1;
             while(j < s1) { /*calcular j*/
-                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
+                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, mutations_matrix, positions)) > 0) break;
                 else j++;
             }
             if(j < s1) {                
                 val20 = val21 = -1;
                 b = 0;
                 for(i=inits;i<inits+nsam;i++) {
-                    val10 = (list[i][k] - 48)*4 + (list[i][j]- 48);
+                    val10 = (mutations_matrix[i][k] - 48)*4 + (mutations_matrix[i][j]- 48);
                     if(val20 == -1) val20 = val10;
                     else{
                         if(val20 != val10) {
@@ -6977,7 +6439,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					B += 1;
 					if(!A) {
 						for(i=inits;i<inits+nsam;i++) {
-							if(list[i][j] > '0') x = '1';
+							if(mutations_matrix[i][j] > '0') x = '1';
 							else x = '0';
 							veca[A][i] = x;
 						}
@@ -6988,7 +6450,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						for(c=0;c<A;c++) {
 							d = 0;
 							for(i=0;i<inits+nsam;i++) {
-								if(list[i][j] > '0') x = '1';
+								if(mutations_matrix[i][j] > '0') x = '1';
 								else x = '0';
 								if(veca[c][i] == x) {
 									d += 1;
@@ -7001,7 +6463,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						}
 						if(!a) {
 							for(i=inits;i<inits+nsam;i++) {
-								if(list[i][j] > '0') x = '1';
+								if(mutations_matrix[i][j] > '0') x = '1';
 								else x = '0';
 								veca[A][i] = x;
 							}
@@ -7037,7 +6499,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
         for(j=s0;j<s1;j++) {
             pi = 0;
             while(j < s1) {
-                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
+                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, mutations_matrix, positions)) > 0) break; /*h is the frequency of the new mutation*/
                 else {
 					j++;
 					if(h == -2) nmh += 1;
@@ -7047,10 +6509,10 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
             if(j<s1) {
                 (ntpar)->freq[h] += 1;
                 for(a=inits;a<inits+nsam;a++) {
-                    hapl[(a-inits)*segsit+S] = list[a][j];
+                    hapl[(a-inits)*segsit+S] = mutations_matrix[a][j];
                     /*new two lines: for singleton mutations (no outgroup)*/
-                    if(h == 1) if(list[a][j] != '0') (ntpar)->unic[a-inits] += 1;
-                    if(h == nsam-1) if(list[a][j] == '0') (ntpar)->unic[a-inits] += 1;
+                    if(h == 1) if(mutations_matrix[a][j] != '0') (ntpar)->unic[a-inits] += 1;
+                    if(h == nsam-1) if(mutations_matrix[a][j] == '0') (ntpar)->unic[a-inits] += 1;
                 }
                 S++;
 				if(h > 1) Se1++;
@@ -7058,7 +6520,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				z = 0;/*mismatch dist*/
                 for(a=inits;a<inits+nsam-1;a++) {
                     for(b=a+1;b<inits+nsam;b++) {
-						if(list[a][j] != list[b][j]) {
+						if(mutations_matrix[a][j] != mutations_matrix[b][j]) {
 							pi++;
 							if(h > 1) k_e1++;
 							if(h > 1 && h < nsam-1) k_n1++;
@@ -7208,12 +6670,12 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				ehhr =  (long int)1e7;
 				for(j=s0;j<s1;j++) {
 					while(j < s1) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, positions)) > 0) break;
 						else j++;
 					}                    
 					if(j<s1) {
-						if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
-							if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < ehhr)
+						if(labs(positions[j] - positions[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
+							if(labs(positions[j] - positions[(*inputp)->ehh_fixnt]) < ehhr)
 								ehhr = j;
 						}
 						else {
@@ -7345,14 +6807,14 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					l=j-1;
 					while(l>= 0 && nousedA[l]) l--;
 					if(l==-1) continue;
-					iHHA += ((EHSA[l]+EHSA[j])*(double)(posit[s0+j]-posit[s0+l]))/2.0;
+					iHHA += ((EHSA[l]+EHSA[j])*(double)(positions[s0+j]-positions[s0+l]))/2.0;
 				}
 				for(j=1;j<segsit;j++) {
 					if(nousedD[j]) continue;
 					l=j-1;
 					while(l>= 0 && nousedD[l]) l--;
 					if(l==-1) continue;
-					iHHD += ((EHSD[l]+EHSD[j])*(double)(posit[s0+j]-posit[s0+l]))/2.0;
+					iHHD += ((EHSD[l]+EHSD[j])*(double)(positions[s0+j]-positions[s0+l]))/2.0;
 				}
 				if(iHHD != 0.0 && (double)(iHHA/(double)iHHD) > 0.0) {
 					uiHS = log(iHHA/(double)iHHD);
@@ -7393,12 +6855,12 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				ehhr =  (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, positions)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
-						if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
-							if(labs(posit[j] - posit[(*inputp)->ehh_fixnt]) < ehhr)
+						if(labs(positions[j] - positions[(*inputp)->ehh_fixnt]) < (*inputp)->ehh_margin) {
+							if(labs(positions[j] - positions[(*inputp)->ehh_fixnt]) < ehhr)
 								ehhr = j;
 						}
 						else {
@@ -7507,7 +6969,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					l=j-1;
 					while(l>=0 && nousedM[k][l]) l--;
 					if(l==-1) continue;
-					iES[k] += ((double)(EHHS[k][l]+EHHS[k][j])*(double)(posit[s0+j]-posit[s0+l]))/2.0;
+					iES[k] += ((double)(EHHS[k][l]+EHHS[k][j])*(double)(positions[s0+j]-positions[s0+l]))/2.0;
 				}
 				if((ntpar)->max_iES < log(iES[k])) (ntpar)->max_iES = log(iES[k]);
 			}
@@ -7609,18 +7071,18 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			S = 0;
 			for(j=s0;j<s1;j++) {
 				while(j < s1) {
-					if((c=ispolnomhit(j,0,nsamallpop,nsamallpop, list, posit)) > 0) break;
+					if((c=ispolnomhit(j,0,nsamallpop,nsamallpop, mutations_matrix, positions)) > 0) break;
 					else j++;
 				}                    
 				if(j<s1) {
 					inits1 = 0;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
-							hapl[(a)*segsit+S] = list[a][j];
+							hapl[(a)*segsit+S] = mutations_matrix[a][j];
 						}
-						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit);
+						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, mutations_matrix, positions);
 						piw[h] += (c * ((*inputp)->config[h] - c));
-						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
+						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = mutations_matrix[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
 					}
 					S++;
@@ -7629,11 +7091,11 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					inits2 = inits;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
-						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit)>=0) 
-						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit)>=0))) {
+						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, mutations_matrix, positions)>=0) 
+						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, mutations_matrix, positions)>=0))) {
 						   for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 							   for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
-								   if(list[a][j] != list[b][j]) pib[h]++;
+								   if(mutations_matrix[a][j] != mutations_matrix[b][j]) pib[h]++;
 					    }
 						inits1 += (*inputp)->config[h];
 					}
@@ -7644,13 +7106,13 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 			for(j=0;j<segsit;j++) {
 				inits1 = 0;
 				for(h=0;h<(*inputp)->pop_outgroup;h++) inits1 += (*inputp)->config[h];
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) == 0) {
-					if(list[inits2][j] == list[inits1][j]) 
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, mutations_matrix, positions) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, mutations_matrix, positions) == 0) {
+					if(mutations_matrix[inits2][j] == mutations_matrix[inits1][j]) 
 						(ntpar)->freq[0] -= 1;
 				}
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 && 
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) < 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, mutations_matrix, positions) == 0 && 
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, mutations_matrix, positions) < 0) {
 					(ntpar)->freq[0] -= 1;
 				}
 			}			
@@ -7775,7 +7237,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		for(h=0;h<10;h++) {
 			(ntpar)->Sanc[h] = 0;
 		}
-		/*find the value inits1,inits2 and initso: indicate the position in list[inits12o][j] for comparison of polymorphsms*/
+		/*find the value inits1,inits2 and initso: indicate the position in mutations_matrix[inits12o][j] for comparison of polymorphsms*/
 		pola = polb = polc = 0; /*if polymorphic in pop1,pop2,popo*/
 		
 		inits1 = -1;
@@ -7808,7 +7270,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		
 		for(j=s0;j<s1;j++) {
 			while(j < s1) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, positions)) > 0) break;
 				else j++;
 			}                    
 			if(j<s1) {					
@@ -7823,7 +7285,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						nt0 = 0;
 						for(h=0;h<(*inputp)->ancestral_pol[0][pop1];h++) nt0 += (*inputp)->config[h];	
 						for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[0][pop1]];h++) {
-							if(list[h][j] != list[inits1][j]) {
+							if(mutations_matrix[h][j] != mutations_matrix[inits1][j]) {
 								pola = 1;
 								break;
 							}
@@ -7834,7 +7296,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						nt0 = 0;
 						for(h=0;h<(*inputp)->ancestral_pol[1][pop2];h++) nt0 += (*inputp)->config[h];	
 						for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[1][pop2]];h++) {
-							if(list[h][j] != list[inits2][j]) {
+							if(mutations_matrix[h][j] != mutations_matrix[inits2][j]) {
 								polb = 1;
 								break;
 							}
@@ -7845,7 +7307,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						nt0 = 0;
 						for(h=0;h<(*inputp)->ancestral_pol[2][popo];h++) nt0 += (*inputp)->config[h];	
 						for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[2][popo]];h++) {
-							if(list[h][j] != list[initso][j]) {
+							if(mutations_matrix[h][j] != mutations_matrix[initso][j]) {
 								polc = 1;
 								break;
 							}
@@ -7857,7 +7319,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				/*define classes*/
 				if(pola==1 && polb==0 && polc==0) {
 					if((*inputp)->ancestral_pol[2][0]) {
-						if(list[inits2][j] == list[initso][j]) (ntpar)->Sanc[0] += 1;/*Sx1*/
+						if(mutations_matrix[inits2][j] == mutations_matrix[initso][j]) (ntpar)->Sanc[0] += 1;/*Sx1*/
 						else (ntpar)->Sanc[6] += 1;/*Sx1f2*/
 					}
 					else {
@@ -7866,7 +7328,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				}
 				if(pola==0 && polb==1 && polc==0) {
 					if((*inputp)->ancestral_pol[2][0]) {
-						if(list[inits1][j] == list[initso][j]) (ntpar)->Sanc[1] += 1;/*Sx2*/
+						if(mutations_matrix[inits1][j] == mutations_matrix[initso][j]) (ntpar)->Sanc[1] += 1;/*Sx2*/
 						else (ntpar)->Sanc[7] += 1;/*Sx2f1*/
 					}
 					else {
@@ -7874,7 +7336,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					}
 				}
 				if(polc == 1 && (pola != -1 && polb != -1))/*(*inputp)->ancestral_pol[2][0] == 1*/ {
-					if((pola==0 && polb==0) && (list[inits1][j] == list[inits2][j])) {
+					if((pola==0 && polb==0) && (mutations_matrix[inits1][j] == mutations_matrix[inits2][j])) {
 						(ntpar)->Sanc[2] += 1;/*Sxo*/
 					}
 					else {
@@ -7886,18 +7348,18 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 				}
 				if(pola==0 && polb==0 && polc==0) {
 					if((*inputp)->ancestral_pol[2][0]) {
-						if(list[inits2][j] == list[initso][j] && list[inits1][j] != list[initso][j]) {
+						if(mutations_matrix[inits2][j] == mutations_matrix[initso][j] && mutations_matrix[inits1][j] != mutations_matrix[initso][j]) {
 							(ntpar)->Sanc[3] += 1;/*Sf1*/
 						}
-						if(list[inits1][j] == list[initso][j] && list[inits2][j] != list[initso][j]) {
+						if(mutations_matrix[inits1][j] == mutations_matrix[initso][j] && mutations_matrix[inits2][j] != mutations_matrix[initso][j]) {
 							(ntpar)->Sanc[4] += 1;/*Sf2*/
 						}
-						if(list[inits1][j] == list[inits2][j] && list[inits1][j] != list[initso][j]) {
+						if(mutations_matrix[inits1][j] == mutations_matrix[inits2][j] && mutations_matrix[inits1][j] != mutations_matrix[initso][j]) {
 							(ntpar)->Sanc[5] += 1;/*Sfo*/
 						}
 					}
 					else {
-						if(list[inits1][j] != list[inits2][j])
+						if(mutations_matrix[inits1][j] != mutations_matrix[inits2][j])
 							(ntpar)->Sanc[3] += 1;/*Sf*/
 					}
 				}
@@ -7920,7 +7382,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		for(h=0;h<4*(*inputp)->type_ancestral;h++) {
 			(ntpar)->Sanc[h] = 0;
 		}
-		/*find the value initsq1,initsq2,initso: indicate the POSITION in list[inits][j] for comparison of polymorphsms*/
+		/*find the value initsq1,initsq2,initso: indicate the POSITION in mutations_matrix[inits][j] for comparison of polymorphsms*/
 		/*do for the outgroup (the last population is defined as outgroup)*/
 		initso = -1;
 		for(popo=1;popo<=(*inputp)->ancestral_pol[(*inputp)->type_ancestral-1][0];popo++) {
@@ -7956,7 +7418,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		}
 		for(j=s0;j<s1;j++) {
 			while(j < s1) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, positions)) > 0) break;
 				else j++;
 			}                    
 			if(j<s1) {
@@ -7966,7 +7428,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					nt0 = 0;
 					for(h=0;h<(*inputp)->ancestral_pol[(*inputp)->type_ancestral-1][popo];h++) nt0 += (*inputp)->config[h];	
 					for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[(*inputp)->type_ancestral-1][popo]];h++) {
-						if(list[h][j] != list[initso][j]) {
+						if(mutations_matrix[h][j] != mutations_matrix[initso][j]) {
 							polc = 1;
 							break;
 						}
@@ -7981,7 +7443,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 							nt0 = 0;
 							for(h=0;h<(*inputp)->ancestral_pol[x][pop1];h++) nt0 += (*inputp)->config[h];	
 							for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[x][pop1]];h++) {
-								if(list[h][j] != list[initsq1[x]][j]) {
+								if(mutations_matrix[h][j] != mutations_matrix[initsq1[x]][j]) {
 									polqa[x] = 1;
 									break;
 								}
@@ -7994,7 +7456,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 									nt0 = 0;
 									for(h=0;h<(*inputp)->ancestral_pol[pop1][pop2];h++) nt0 += (*inputp)->config[h];	
 									for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[pop1][pop2]];h++) {
-										if(list[h][j] != list[initsq2[x]][j]) {
+										if(mutations_matrix[h][j] != mutations_matrix[initsq2[x]][j]) {
 											polqb[x] = 1;
 											break;
 										}
@@ -8008,7 +7470,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					
 					/*define classes*/
 					if(polqa[x]==1 && polqb[x]==0 && polc==0) {
-						if(list[initsq2[x]][j] == list[initso][j]) (ntpar)->Sanc[x*4+0] += 1;/*Sx1*/
+						if(mutations_matrix[initsq2[x]][j] == mutations_matrix[initso][j]) (ntpar)->Sanc[x*4+0] += 1;/*Sx1*/
 						else (ntpar)->Sanc[x*4+2] += 1;/*Sx1f2*/
 					}
 					
@@ -8016,7 +7478,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 						(ntpar)->Sanc[x*4+3] += 1;/*Ssh*/
 					}
 					if(polqa[x]==0 && polqb[x]==0 && polc==0) {
-						if((list[initsq2[x]][j] == list[initso][j]) && (list[initsq1[x]][j] != list[initso][j])) {
+						if((mutations_matrix[initsq2[x]][j] == mutations_matrix[initso][j]) && (mutations_matrix[initsq1[x]][j] != mutations_matrix[initso][j])) {
 							(ntpar)->Sanc[x*4+1] += 1;/*Sf1*/
 						}
 					}
@@ -8026,7 +7488,7 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 					(ntpar)->Sanc[((*inputp)->type_ancestral-1)*4+0] += 1;/*Sxo*/
 				}
 				if(polqa[0]==0 && polqb[0]==0 && polc==0) {
-					if((list[initsq1[0]][j] == list[initsq2[0]][j]) && (list[initsq1[0]][j] != list[initso][j])) {
+					if((mutations_matrix[initsq1[0]][j] == mutations_matrix[initsq2[0]][j]) && (mutations_matrix[initsq1[0]][j] != mutations_matrix[initso][j])) {
 						(ntpar)->Sanc[((*inputp)->type_ancestral-1)*4+1] += 1;/*Sfo*/
 					}
 				}	
@@ -8040,76 +7502,6 @@ void calc_neutpar_window(struct var2 **inputp,struct dnapar *ntpar,long int  s0,
 		free(polqa);
 		free(polqb);
 	}
-}
-
-/*Wall's program for calculating minimum recombination events: modification*/
-int Min_rec(int x, int segsit, int nsam, int inits,int totalsam)
-{  /* Calculate min # rec. events */
-  int a, b, c, e, gtest, flag = 0;
-  int h;
-  int t11,t12,t21,t22;
-
-	if (segsit<2 || x >= (segsit-1)) return (0);
-	
-	for (a=x+1; a<segsit; ++a) {
-		while(a < segsit) {
-			if((h=ispolnomhit((long int)a,inits,nsam,totalsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
-			else a++;
-		}            
-		if(a < segsit) {
-			for (b=x; b<a; ++b) {
-				while(b < a) {
-					if((h=ispolnomhit((long int)b,inits,nsam,totalsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
-					else b++;
-				}
-				if(b < a) {
-					t21 = t22 = list[inits][b];
-					t11 = t12 = list[inits][a];
-					for (e=inits+1; e<inits+nsam; ++e) {
-						if(list[e][b] != t21) t22 = list[e][b];
-						if(list[e][a] != t11) t12 = list[e][a];
-					}
-					
-					gtest = 0;
-					for (e=inits; e<inits+nsam; ++e) {
-						if (list[e][b] == t21 && list[e][a] == t11) {
-							++gtest;
-							break;
-						}
-					}
-					for (e=inits; e<inits+nsam; ++e) {
-						if (list[e][b] == t21 && list[e][a] == t12) {
-							++gtest;
-							break;
-						}
-					}
-					for (e=inits; e<inits+nsam; ++e) {
-						if (list[e][b] == t22 && list[e][a] == t11) {
-							++gtest;
-							break;
-						}
-					}
-					for (e=inits; e<inits+nsam; ++e) {
-						if (list[e][b] == t22 && list[e][a] == t12) {
-							++gtest;
-							break;
-						}
-					}
-					if (gtest == 4) {
-						flag = 1;
-						break;
-					}
-				}
-			}
-		}
-		if (flag == 1) break;
-	}
-	if (a >= segsit) return (0);
-	else {
-		c = Min_rec(a,segsit,nsam,inits,totalsam);
-		return (1+c);
-	}
-	return 0;
 }
 
 double correction_recabs(double f,double sexratio,int m) /*ABSOLUTE value of recombination: This calculation is NOT important*/
