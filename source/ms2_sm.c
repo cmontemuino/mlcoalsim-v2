@@ -53,9 +53,6 @@ struct dnapar *neutpar = NULL;
 long int *posit;	/*important! externes perque al reallocar memoria no localitza la nova posicio. */
                         /*Tambe es fa posant la posicio de memoria*/
 
-// Matrix with mutations. It contains `nsam` columns x `maxsites` rows.
-char **list;
-
 char dfiles[NEUTVALUES2+1][420] = {{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},
 	{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},
 	{"\0"},{"\0"},{"\0"},{"\0"},{"\0"},
@@ -87,7 +84,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                 double **nrec2,double **tpast,int split_pop, double time_split, double time_scoal, double factor_anc, double *freq,
                 double tlimit,int iflogistic,double *ts, double factor_chrn, double rsv,double *weightmut,double *weightrec,double **migrate_matrix,
                 int npop_events,struct events *pop_event,int linked,long int **loci_linked,int event_forsexratio,double event_sexratio,
-                double sex_ratio,int no_rec_males,double sendt,double sfreqend,double sfreqinit)
+                double sex_ratio,int no_rec_males,double sendt,double sfreqend,double sfreqinit, char **mutations_matrix)
 {
     int i,ii;
     long int nsegs,seg,ns,start,end,len,segsit,k;
@@ -100,7 +97,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
     double r_transc,r_transv;
     double ttime(struct node *, int);
     double poissondist(double), ran1(void);
-    void make_gametes(int,struct node *,double,long int,long int,int,double,double);
+    void make_gametes(int,struct node *,double,long int,long int,int,double,double, char **mutations_matrix);
     void mnmial2(long int,long int,double *,long int *,long int *);
     void mnmial2_psel(long int,long int,double *,long int *,long int *,long int);
     /*partial selection*/
@@ -170,9 +167,9 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                 len = end - start + 1;
                 if(start==0) wstartm1 = 0.0;
                 else wstartm1 = weightmut[start-1];
-                tseg = (double)(weightmut[end] - wstartm1)*theta;
+                tseg = (weightmut[end] - wstartm1)*theta;
                 tt = ttime(seglst[seg].ptree,nsam); /* Ttot pel segment, en funció de 4No respecte la pob 0*/
-                *lengtht += (double)tt*((double)len/(double)nsites); /*length in 4N generations, no matter the mutation rate*/
+                *lengtht += tt*((double)len/(double)nsites); /*length in 4N generations, no matter the mutation rate*/
                 if(mhits) {/*T_out is the time to the ancestor in 4N*//*modified Jan2009*/
                     if(T_out == 0.) {
                         *Sout = 0;
@@ -182,7 +179,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                         tout += -1.0 *log(1.0-ran1());/*sum the time after divergence, assuming No=1*/
                         tout -= (seglst[seg].ptree + 2*nsam-2)->time; /*substract the distance of the sample*/
                         if(tout < 0.0) tout = 0.0;	/*Outgroup can not accumulate negative mutations*/
-                        *Sout += (int)poissondist((double)(tseg*tout));	/* Sout needed to calculate hka and mhits */
+                        *Sout += (int)poissondist(tseg*tout);	/* Sout needed to calculate hka and mhits */
                     }
                 }
                 else *Sout = 0;
@@ -193,9 +190,9 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                     else segsit = 0;
                 }
                 else {
-                    segsit = (long int)poissondist((double)(tseg*tt));		/* nombre de mutacions al segment */
+                    segsit = (long int)poissondist(tseg*tt);		/* nombre de mutacions al segment */
                 }
-                if(segsit == (long int)0 && all_sel > (int)0 && all_sel < nsam && (long int)sel_nt >= (long int)start && (long int)sel_nt <= (long int)end)
+                if(segsit == 0 && all_sel > 0 && all_sel < nsam && (long int)sel_nt >= start && sel_nt <= end)
                     segsit = 1;/*we force the selective mut*/
                 loopcount += 1;
                 if(loopcount > 100) {
@@ -208,7 +205,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                     maxsites = segsit + ns + SITESINC;
                     if (!(posit = realloc(posit, sizeof *posit * maxsites)))
 						perror("realloc error. gensam.1");
-                    biggerlist(nsam, list, maxsites);	/* refem la llista dels polimorfismes */
+                    biggerlist(nsam, mutations_matrix, maxsites);	/* refem la llista dels polimorfismes */
                 }
                 /*partial selection*//*not well debugged yet*/
                 if(all_sel > 0 && all_sel < nsam && sel_nt >= start && sel_nt <= end
@@ -221,9 +218,9 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                     ii = (int)ns;
                     while(posit[ii] != sel_nt) ii++;
                     for(i=0;i<nsam;i++) {
-                        list[i][ns] = list[i][ii];
-                        if(all_sel>i) list[i][ii] = '1';
-                        else list[i][ii] = '0';
+                        mutations_matrix[i][ns] = mutations_matrix[i][ii];
+                        if(all_sel>i) mutations_matrix[i][ii] = '1';
+                        else mutations_matrix[i][ii] = '0';
                     }
                     segsit_sel = 0;
                 }
@@ -257,7 +254,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
                 /*end of substracting mutations out of range*/
 
                 /*changed the order of the functions!! now here down*/
-                make_gametes(nsam,seglst[seg].ptree,tt,segsit-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);	/* posa les mutacions  a list*/
+                make_gametes(nsam,seglst[seg].ptree,tt,segsit-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv, mutations_matrix);
                 free(seglst[seg].ptree);
 
                 ns += segsit;
@@ -272,7 +269,7 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
         len2 = (long int *)malloc((unsigned)(nsegs*sizeof(long int)));
         if((pk==NULL)||(ss==NULL)||(len2 ==NULL)) perror("malloc error. gensam.2");
         /*multiple hits for fixed mutations*/
-        if(mhits) mmax = (3 < nsam ? (long int)3 : (long int)(nsam-1));
+        if(mhits) mmax = (3 < nsam ? 3 : (long int)(nsam-1));
         else mmax = (long int)1; /*if no multiple hits available*/
         /*set time  and nsites_nozero to zero*/
         tt = ttt = 0.0;
@@ -328,20 +325,20 @@ long int gensam(long int npop,int nsam,int inconfig[],long int nsites,double the
             if(all_sel > 0 && all_sel < nsam && sel_nt >= start && sel_nt <= end && segsites > 0 && (sfreqend == 0.1 || sendt == 1E6)) {
                 segsit_sel = 1;
             }
-            make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv);/*posa a la matriu list les mutacions*/
+            make_gametes(nsam,seglst[seg].ptree,tt*pk[k]/tseg,ss[k]-segsit_sel,ns+segsit_sel,mhits,r_transc,r_transv, mutations_matrix);
             /*partial selection*/
             if(segsit_sel == 1) {
-                locate2_psel(ss[k],start,posit+ns,mhits,nsam,sel_nt,weightmut,end, list);
+                locate2_psel(ss[k],start,posit+ns,mhits,nsam,sel_nt,weightmut,end, mutations_matrix);
                 ii = (int)ns;
                 while(posit[ii] != sel_nt) ii++;
                 for(i=0;i<nsam;i++) {
-                    list[i][ns] = list[i][ii];
-                    if(all_sel>i) list[i][ii] = '1';
-                    else list[i][ii] = '0';
+                    mutations_matrix[i][ns] = mutations_matrix[i][ii];
+                    if(all_sel>i) mutations_matrix[i][ii] = '1';
+                    else mutations_matrix[i][ii] = '0';
                 }
                 segsit_sel = 0;
             }
-            else locate2(ss[k],start,posit+ns,mhits,nsam,weightmut,end, list); /* posa el nombre de les mutacions a la matriu */
+            else locate2(ss[k],start,posit+ns,mhits,nsam,weightmut,end, mutations_matrix); /* posa el nombre de les mutacions a la matriu */
             /* modificat per mhits i fix muts */
             free(seglst[seg].ptree);
             ns += ss[k];
@@ -361,16 +358,19 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     int i;
 
     char **cmatrix(int,long int);
-    void print_matrix(long int, struct var2 **,FILE *,int,long int,struct var_priors *,int);
-    void mod_mhits(long int, struct var2 **,double *);
+    void print_matrix(long int, struct var2 **,FILE *,int,long int,struct var_priors *,int, char **mutations_matrix);
+    void mod_mhits(long int, struct var2 **,double *, char **mutations_matrix);
     double logp(double);
 	void init_seed1(long int);
     
-    void calc_neutpar(int,long int,struct var2 **,struct dnapar *,double,int);
+    void calc_neutpar(int,long int,struct var2 **,struct dnapar *,double,int, char **mutations_matrix);
     double Fstw(double *, int *,double,int);
  	
-	void mod_outgroup(long int segsit, struct var2 **inputp);
+	void mod_outgroup(long int segsit, struct var2 **inputp, char **mutations_matrix);
    
+	// Matrix with mutations. It contains `nsam` columns x `maxsites` rows.
+	char **mutations_matrix;
+
     double thetae=0.;
 	double thetaemin=0.;
 	double thetaemax= 0.;
@@ -396,7 +396,6 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	double recombinationv=0.;
     double correction_recabs(double,double,int);
     void calc_neutpar_window(struct var2 **inputp, struct dnapar *ntpar, long int s0, long int s1, double valuer, int npopa, char **mutations_matrix, long int *positions);
-	void mod_outgroup(long int segsit, struct var2 **inputp);
 
 	/*counting simulations in stdout*/
     static double counterp;
@@ -1087,13 +1086,13 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 	/*Define the matrix for posterior probabilities for theta and other values*/
     
     if((*inputp)->theta > 0.0 || (*inputp)->ifgamma == 1 || (*inputp)->range_thetant) {
-        list = cmatrix((*inputp)->nsam,maxsites+1);
+        mutations_matrix = cmatrix((*inputp)->nsam,maxsites+1);
         if(!(posit = (long int *)malloc((long int)(maxsites*sizeof(long int)))))
             perror("ms error.1");
     } else {
 		// Note: when `theta` equals 0, then (*inputp)->segsitesin takes the `mutations` parameter value.
 		// For example, see `examples/examples00/Example1locus_1pop_mhit0_recINF_S200_Lfix.txt`
-        list = cmatrix((*inputp)->nsam,(long int)(*inputp)->segsitesin+1);
+        mutations_matrix = cmatrix((*inputp)->nsam,(long int)(*inputp)->segsitesin+1);
         if(!(posit = (long int *)malloc((long int)(((long int)(*inputp)->segsitesin+1)*sizeof(long int)))))
             perror("ms error.2");
     }
@@ -1290,19 +1289,18 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 			}
 			else thetaSv = 1.0; /*indicated 1.0 (and not 0) because it has to be taken into account the heterogeneity in relation to thetaSv*/
 
-			segsites = gensam((*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites,
-            thetaSv, (*inputp)->segsitesin, rece, (*inputp)->f, (*inputp)->track_len,
-            (*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
-            &lengtht,(*inputp)->ifselection, 
-            (*inputp)->pop_sel,(*inputp)->sinit,(*inputp)->pop_size,(long int)(*inputp)->sel_nt,(*inputp)->T_out,&(*inputp)->Sout,
-            (*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
-            (*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq,
-            (*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,(*inputp)->factor_chrn,(*inputp)->ratio_sv,
-			weightmut,weightrec,(*inputp)->migrate_matrix,(*inputp)->npop_events,(*inputp)->pop_event,
-			(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
-			(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit);
-            if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut); /******** mhits ******************/
-            if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp); /******** outgroup ******************/
+			segsites = gensam((*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites, thetaSv, (*inputp)->segsitesin,
+				rece, (*inputp)->f, (*inputp)->track_len, (*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
+				&lengtht,(*inputp)->ifselection, (*inputp)->pop_sel,(*inputp)->sinit,(*inputp)->pop_size,(long int)(*inputp)->sel_nt,
+				(*inputp)->T_out,&(*inputp)->Sout, (*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
+				(*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq,
+				(*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,(*inputp)->factor_chrn,(*inputp)->ratio_sv,
+				weightmut,weightrec,(*inputp)->migrate_matrix,(*inputp)->npop_events,(*inputp)->pop_event,
+				(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
+				(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit, mutations_matrix);
+
+            if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut, mutations_matrix); /******** mhits ******************/
+            if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp, mutations_matrix); /******** outgroup ******************/
 			if((*inputp)->ifgamma == 1 || (*inputp)->range_thetant) 
 				postp[0][count0-1].thetap = thetae;
 			if((*inputp)->ifgammar == 1 || (*inputp)->range_rnt) 
@@ -1361,19 +1359,17 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					else {
 						thetaSv = 1.0;
 					}
-					segsites = gensam((*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites,
-					thetaSv, inputS, rece, (*inputp)->f, (*inputp)->track_len,
-					(*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
-					&lengtht,(*inputp)->ifselection, 
-					(*inputp)->pop_sel,(*inputp)->sinit,(*inputp)->pop_size,(long int)(*inputp)->sel_nt,(*inputp)->T_out,&(*inputp)->Sout,
-					(*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
-					(*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq,
-					(*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,(*inputp)->factor_chrn,(*inputp)->ratio_sv,
-					weightmut,weightrec,(*inputp)->migrate_matrix,(*inputp)->npop_events,(*inputp)->pop_event,
-					(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
-					(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit);
-					if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut); /******** mhits ******************/
-					if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp); /******** outgroup ******************/
+					segsites = gensam((*inputp)->npop,(*inputp)->nsam, (*inputp)->config, (*inputp)->nsites, thetaSv, inputS, rece,
+						(*inputp)->f, (*inputp)->track_len, (*inputp)->migrate,(*inputp)->mhits,count0,(*inputp)->factor_pop, 
+						&lengtht,(*inputp)->ifselection,  (*inputp)->pop_sel,(*inputp)->sinit,(*inputp)->pop_size,(long int)(*inputp)->sel_nt,
+						(*inputp)->T_out,&(*inputp)->Sout, (*inputp)->nintn, (*inputp)->nrec, (*inputp)->nrec, (*inputp)->tpast,
+						(*inputp)->split_pop,(*inputp)->time_split,(*inputp)->time_scoal,(*inputp)->factor_anc,(*inputp)->freq,
+						(*inputp)->tlimit,(*inputp)->iflogistic,(*inputp)->ts,(*inputp)->factor_chrn,(*inputp)->ratio_sv,
+						weightmut,weightrec,(*inputp)->migrate_matrix,(*inputp)->npop_events,(*inputp)->pop_event,
+						(*inputp)->linked,(*inputp)->loci_linked,(*inputp)->event_forsexratio,(*inputp)->event_sexratio,
+						(*inputp)->sex_ratio,(*inputp)->no_rec_males,(*inputp)->sendt,(*inputp)->sfreqend,(*inputp)->sfreqinit, mutations_matrix);
+					if((*inputp)->mhits) mod_mhits(segsites,inputp,weightmut, mutations_matrix); /******** mhits ******************/
+					if((*inputp)->pop_outgroup != -1) mod_outgroup(segsites,inputp, mutations_matrix); /******** outgroup ******************/
 					
 					if((*inputp)->linked > 1) {/*linked fragments with subset fixed values*/
 						s0=s1=0;
@@ -1385,7 +1381,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							while(s1 < segsites && posit[s1] < ll) s1++;
 							/*calc_estadistics*/
 							if(((*inputp)->rmfix == 1 && (*inputp)->linked_rm_nregion == aa) || ((*inputp)->Sfix_alltheta == 1 && (*inputp)->linked_segsites_nregion == aa)) {
-								calc_neutpar_windowSRH(inputp,neutpar,s0,s1,recombinationv,npopa,(*inputp)->linked_nhapl, list, posit);
+								calc_neutpar_windowSRH(inputp,neutpar,s0,s1,recombinationv,npopa,(*inputp)->linked_nhapl, mutations_matrix, posit);
 								if((*inputp)->rmfix == 1) {
 									if((*inputp)->linked_rm_nregion == aa) {
 										Rmi = neutpar[0].Rm;
@@ -1474,7 +1470,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					}
 					else {/*like not linked fragments*/
 						if((*inputp)->rmfix == 1 || (*inputp)->Sfix_alltheta == 1)
-							calc_neutparSRH(segsites,inputp,neutpar+0,recombinationv,npopa,(*inputp)->nhapl, list, posit);
+							calc_neutparSRH(segsites,inputp,neutpar+0,recombinationv,npopa,(*inputp)->nhapl, mutations_matrix, posit);
 						if((*inputp)->rmfix == 1) {
 							Rmi = neutpar[0].Rm;
 							nhi = neutpar[0].nhapl;
@@ -1556,7 +1552,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 		/*MHMCMC routine eliminated*/
 
 		if((*inputp)->pr_matrix) /******** print the whole matrix **********/
-			if(rejflag==0) print_matrix(segsites,inputp,output,(*inputp)->pr_matrix,/*listnumbers[*/count0-1/*]*/,priors,(*inputp)->mhits);
+			if(rejflag==0) print_matrix(segsites,inputp,output,(*inputp)->pr_matrix,count0-1,priors,(*inputp)->mhits, mutations_matrix);
 		/******************************* STATISTICS *******************************/
 
 		if((*inputp)->print_neuttest) {
@@ -1573,7 +1569,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							/*calc_estadistics*/
 							if(rejflag==0 && npops < (*inputp)->npop_sampled) {
 								init_coef(coef[0],(*inputp)->config[npops]);
-								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops, list, posit);
+								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops, mutations_matrix, posit);
 								/*calc_neut_tests*/
 								/*we need to define the number of windows and the current window number*/
 							#if FREQSPECTRUM_TDFSR2 < 2		
@@ -1609,7 +1605,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] 
-									= ZnA_window(inputp,s0,s1,npops,list,posit);
+									= ZnA_window(inputp,s0,s1,npops,mutations_matrix,posit);
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -1783,7 +1779,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								}
 								#if ZNS_ACTIVE == 1
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
-								= Zns_window(inputp,s0,s1,npops,list,posit);
+								= Zns_window(inputp,s0,s1,npops,mutations_matrix,posit);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
 								= matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9] [listnumbers[count0-1]] -
 								  matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
@@ -2013,7 +2009,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							if(rejflag==0 && npops < (*inputp)->npop_sampled) {
 								init_coef(coef[0],(*inputp)->config[npops]);
 								/*calc_estadistics*/
-								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops, list, posit);
+								calc_neutpar_window(inputp,neutpar,s0,s1,recombinationv,npops, mutations_matrix, posit);
 								/*calc_neut_tests*/
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+0][listnumbers[count0-1]] 
@@ -2048,7 +2044,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 							#if FREQSPECTRUM_TDFSR2 < 2		
 								if(neutpar[0].S > 1) {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] 
-									= ZnA_window(inputp,s0,s1,npops,list,posit);
+									= ZnA_window(inputp,s0,s1,npops,mutations_matrix,posit);
 								}
 								else {
 									matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -2218,7 +2214,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 								}
 								#if ZNS_ACTIVE == 1
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
-								= Zns_window(inputp,s0,s1,npops,list,posit);
+								= Zns_window(inputp,s0,s1,npops,mutations_matrix,posit);
 								matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
 								= matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9] [listnumbers[count0-1]] -
 								  matrix_test[nwindow*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
@@ -2430,7 +2426,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 				else {
 					if(rejflag==0 && npops < (*inputp)->npop_sampled) {
 						init_coef(coef[0],(*inputp)->config[npops]);
-						calc_neutpar(0,segsites,inputp,neutpar+0,recombinationv,npops);
+						calc_neutpar(0,segsites,inputp,neutpar+0,recombinationv,npops, mutations_matrix);
 					#if FREQSPECTRUM_TDFSR2 < 2		
 						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+0][listnumbers[count0-1]]
 							= tajima_d(neutpar[0].k,(int)neutpar[0].S,coef[0]);
@@ -2464,7 +2460,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 					#if FREQSPECTRUM_TDFSR2 < 2		
 						if(neutpar[0].S > 1) {
 							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]]
-							= ZnA_(0,segsites,inputp,npops,list,posit);/*INACTIVE*/
+							= ZnA_(0,segsites,inputp,npops,mutations_matrix,posit);/*INACTIVE*/
 						}
 						else {
 							matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9][listnumbers[count0-1]] = -10000;
@@ -2626,7 +2622,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
 						}
 						#if ZNS_ACTIVE == 1
 						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]] 
-						= Zns(0,segsites,inputp,npops,list,posit);
+						= Zns(0,segsites,inputp,npops,mutations_matrix,posit);
 						matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+46][listnumbers[count0-1]] 
 						= matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+9] [listnumbers[count0-1]] -
 						  matrix_test[0*NEUTVALUES2*(*inputp)->max_npop_sampled+npops*NEUTVALUES2+45][listnumbers[count0-1]];
@@ -2858,8 +2854,8 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     /* alliberar les matrius i vectors */
     free(posit);
     for(i=0;i<(*inputp)->nsam;i++)
-        free(list[i]);
-    free(list);
+        free(mutations_matrix[i]);
+    free(mutations_matrix);
     
 	free(neutpar[0].freq);
 	free(neutpar[0].fhapl);
@@ -2960,7 +2956,7 @@ int ms(struct var2 **inputp,char *file_out,double **matrix_test,struct prob_par 
     return 0;
 }
 
-void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long int count0, struct var_priors *priors,int mhits)
+void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long int count0, struct var_priors *priors,int mhits, char **mutations_matrix)
 {
     long j,k,Ss,i;
     int h,y;
@@ -3032,12 +3028,12 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 			for(i=0;i<(int)segsites;i++) if(!(posit[i-1] == posit[i])) fprintf(output,"%g ",(double)posit[i]/(double)(*inputp)->nsites);
 			fprintf(output,"\n");
 			if(Ss > 0) {
-				for(i=0;i<(*inputp)->nsam;i++) list[i][segsites] = '\0';
+				for(i=0;i<(*inputp)->nsam;i++) mutations_matrix[i][segsites] = '\0';
 				for(i=0;i<(*inputp)->nsam;i++) {
-					if(mhits) {for(j=0;j<(int)segsites;j++) if(!(posit[j-1] == posit[j])) fprintf(output,"%c",list[i][j]);}
+					if(mhits) {for(j=0;j<(int)segsites;j++) if(!(posit[j-1] == posit[j])) fprintf(output,"%c",mutations_matrix[i][j]);}
 					else {
 						for(j=0;j<(int)segsites;j++) {
-							if(list[i][j] != '0') ss[0] = '1';
+							if(mutations_matrix[i][j] != '0') ss[0] = '1';
 							else ss[0] = '0';
 							fprintf(output,"%c",ss[0]);
 						}
@@ -3076,12 +3072,12 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 							for(j=s0;j<s1;j++) {
 								if(mhits) {
                                     if(!(posit[j-1] == posit[j]))
-                                        fprintf(output,"%c",list[i][j]);
+                                        fprintf(output,"%c",mutations_matrix[i][j]);
                                     else/*we cannot avoid those positions because segsites is already defined and printed!!. RE-CODE*/
-                                        fprintf(output,"%c",list[i][j]);/*error: segsites already printed!!*/
+                                        fprintf(output,"%c",mutations_matrix[i][j]);/*error: segsites already printed!!*/
                                 }
 								else {
-									if(list[i][j] != '0') ss[0] = '1';
+									if(mutations_matrix[i][j] != '0') ss[0] = '1';
 									else ss[0] = '0';
 									fprintf(output,"%c",ss[0]);
 								}
@@ -3129,12 +3125,12 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 						for(j=s0;j<s1;j++) {
 							if(mhits) {
                                 if(!(posit[j-1] == posit[j]))
-                                    fprintf(output,"%c",list[i][j]);
+                                    fprintf(output,"%c",mutations_matrix[i][j]);
                                 else/*we cannot avoid those positions because segsites is already defined and printed!!. RE-CODE*/
-                                    fprintf(output,"%c",list[i][j]);/*error: segsites already printed!!*/
+                                    fprintf(output,"%c",mutations_matrix[i][j]);/*error: segsites already printed!!*/
                             }
                             else {
-								if(list[i][j] != '0') ss[0] = '1';
+								if(mutations_matrix[i][j] != '0') ss[0] = '1';
 								else ss[0] = '0';
 								fprintf(output,"%c",ss[0]);
 							}
@@ -3156,16 +3152,16 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
 			list2[i][(*inputp)->nsites] = '\0';
 		}
 		for(i=0;i<(*inputp)->nsam;i++) {
-			if(list[i][0] == '1') list2[i][posit[0]] = 'G';
-			if(list[i][0] == '2') list2[i][posit[0]] = 'C';
-			if(list[i][0] == '3') list2[i][posit[0]] = 'T';
+			if(mutations_matrix[i][0] == '1') list2[i][posit[0]] = 'G';
+			if(mutations_matrix[i][0] == '2') list2[i][posit[0]] = 'C';
+			if(mutations_matrix[i][0] == '3') list2[i][posit[0]] = 'T';
 		}
 		for(j=1;j<(int)segsites;j++) {
 			if(!(posit[j-1] == posit[j])) {
 				for(i=0;i<(*inputp)->nsam;i++) {
-					if(list[i][j] == '1') list2[i][posit[j]] = 'G';
-					if(list[i][j] == '2') list2[i][posit[j]] = 'C';
-					if(list[i][j] == '3') list2[i][posit[j]] = 'T';
+					if(mutations_matrix[i][j] == '1') list2[i][posit[j]] = 'G';
+					if(mutations_matrix[i][j] == '2') list2[i][posit[j]] = 'C';
+					if(mutations_matrix[i][j] == '3') list2[i][posit[j]] = 'T';
 				}
 			}
 		}
@@ -3196,20 +3192,20 @@ void print_matrix(long int segsites,struct var2 **inputp,FILE *output,int x,long
         }
         k = 0;
         if(segsites > 0) {
-            if((h=ispolnomhit(0,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) {
+            if((h=ispolnomhit(0,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) {
                 for(i=0;i<(*inputp)->nsam;i++) {
-                    if(list[i][0] == '1') list2[i][posit[0]-k] = 'G';
-                    if(list[i][0] == '2') list2[i][posit[0]-k] = 'C';
-                    if(list[i][0] == '3') list2[i][posit[0]-k] = 'T';
+                    if(mutations_matrix[i][0] == '1') list2[i][posit[0]-k] = 'G';
+                    if(mutations_matrix[i][0] == '2') list2[i][posit[0]-k] = 'C';
+                    if(mutations_matrix[i][0] == '3') list2[i][posit[0]-k] = 'T';
                 }
             }
             else if(h == -2) k++;/*k=0; check positions*/
             for(j=1;j<(int)segsites;j++) {
-                if((h=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) {
+                if((h=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) {
                     for(i=0;i<(*inputp)->nsam;i++) {
-                        if(list[i][j] == '1') list2[i][posit[j]-k] = 'G';
-                        if(list[i][j] == '2') list2[i][posit[j]-k] = 'C';
-                        if(list[i][j] == '3') list2[i][posit[j]-k] = 'T';
+                        if(mutations_matrix[i][j] == '1') list2[i][posit[j]-k] = 'G';
+                        if(mutations_matrix[i][j] == '2') list2[i][posit[j]-k] = 'C';
+                        if(mutations_matrix[i][j] == '3') list2[i][posit[j]-k] = 'T';
                     }
                 }
                 else if(h == -2) k++;/*k=0; check positions*/
@@ -3296,7 +3292,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 				}
 				else {
 					/*transversions*/
-					r = (double)rand()/(double)RAND_MAX;
+					r = rand()/(double)RAND_MAX;
 					if(r<patcg[0]) {
 						n[0] = 'A';
 						r = rand()/(double)RAND_MAX;
@@ -3502,7 +3498,7 @@ void function_atcg(int nsam,long int nsites,char **list2,double *patcg)
 	}
 }
 
-void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
+void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut, char **mutations_matrix)
 {
     long int x,y,z;
     int r,h,i,j,k;
@@ -3531,15 +3527,15 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
 			if(k) {				/* ordenar mhits de mes antic a mes recent (...)*/
 				for(y=(x-k);y<x;y++) {
 					j = 0;
-					for(i=0;i<(*inputp)->nsam;i++) if(list[i][y] != '0') j++;
+					for(i=0;i<(*inputp)->nsam;i++) if(mutations_matrix[i][y] != '0') j++;
 					for(z=y+1;z<(x+1);z++) {
 						h = 0;
-						for(i=0;i<(*inputp)->nsam;i++) if(list[i][z] != '0') h++;
+						for(i=0;i<(*inputp)->nsam;i++) if(mutations_matrix[i][z] != '0') h++;
 						if(j < h) {
 							for(i=0;i<(*inputp)->nsam;i++) {
-								*a = list[i][y];
-								list[i][y] = list[i][z];
-								list[i][z] = *a;
+								*a = mutations_matrix[i][y];
+								mutations_matrix[i][y] = mutations_matrix[i][z];
+								mutations_matrix[i][z] = *a;
 							}
 							j = h;
 						}
@@ -3549,37 +3545,37 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
 					for(y=(x-k+1);y<x+1;y++) {	/* afegir les mutacions a la posicio mes antiga */
 						r = -1;
 						for(i=0;i<(*inputp)->nsam;i++) {
-							if(list[i][y] != '0') {
+							if(mutations_matrix[i][y] != '0') {
 								if(r == -1) {
-									rr = (double)ran1();	/* inclou ratio trans/transv */
+									rr = ran1();	/* inclou ratio trans/transv */
 									if(rr < r_transc) r = 0;	/* transicio, la resta transversions */
 									else if (rr >= r_transc && rr < 1.0 - r_transv) r = 1;
 									else r = 2;
-									if(list[i][x-k] == '0') {
-										if(r==0) list[i][x-k] = *a = '1';
-										else if(r==1) list[i][x-k] = *a = '2';
-										else if(r==2) list[i][x-k] = *a = '3';
+									if(mutations_matrix[i][x-k] == '0') {
+										if(r==0) mutations_matrix[i][x-k] = *a = '1';
+										else if(r==1) mutations_matrix[i][x-k] = *a = '2';
+										else if(r==2) mutations_matrix[i][x-k] = *a = '3';
 									}
 									else
-										if(list[i][x-k] == '1') {
-											if(r==0) list[i][x-k] = *a = '0';
-											else if(r==1) list[i][x-k] = *a = '2';
-											else if(r==2) list[i][x-k] = *a = '3';
+										if(mutations_matrix[i][x-k] == '1') {
+											if(r==0) mutations_matrix[i][x-k] = *a = '0';
+											else if(r==1) mutations_matrix[i][x-k] = *a = '2';
+											else if(r==2) mutations_matrix[i][x-k] = *a = '3';
 										}
 										else
-											if(list[i][x-k] == '2') {
-												if(r==0) list[i][x-k] = *a = '3';
-												else if(r==1) list[i][x-k] = *a = '0';
-												else if(r==2) list[i][x-k] = *a = '1';
+											if(mutations_matrix[i][x-k] == '2') {
+												if(r==0) mutations_matrix[i][x-k] = *a = '3';
+												else if(r==1) mutations_matrix[i][x-k] = *a = '0';
+												else if(r==2) mutations_matrix[i][x-k] = *a = '1';
 											}
 											else
-												if(list[i][x-k] == '3') {
-													if(r==0) list[i][x-k] = *a = '2';
-													else if(r==1) list[i][x-k] = *a = '1';
-													else if(r==2) list[i][x-k] = *a = '0';
+												if(mutations_matrix[i][x-k] == '3') {
+													if(r==0) mutations_matrix[i][x-k] = *a = '2';
+													else if(r==1) mutations_matrix[i][x-k] = *a = '1';
+													else if(r==2) mutations_matrix[i][x-k] = *a = '0';
 												}
 								}
-								else list[i][x-k] = *a;
+								else mutations_matrix[i][x-k] = *a;
 							}
 						}
 					}
@@ -3587,8 +3583,8 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
 				else {
 					for(y=(x+1-k),r=2;y<x+1;y++,r++) {	/* mutacions fix, totes s'han de veure (fins a tres mutacions) */
 						for(i=0;i<(*inputp)->nsam;i++) 
-							if(list[i][y] != '0') 
-								list[i][x-k] = r + '0';
+							if(mutations_matrix[i][y] != '0') 
+								mutations_matrix[i][x-k] = r + '0';
 					}
 					if(r>4) {
 						perror("Error: more than 3 mutations in one position");
@@ -3599,11 +3595,11 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
 			/*in case no outgroup but mhits: assign '0' randomly to the mhits positions (when no '0' is observed but in putative outgroup)*/
 			if((*inputp)->T_out == 0.) {
 				r = 0;
-				for(i=0;i<(*inputp)->nsam;i++) if(list[i][x-k] == '0') r++;
+				for(i=0;i<(*inputp)->nsam;i++) if(mutations_matrix[i][x-k] == '0') r++;
 				if(r==0) {
-					r = list[0][x-k];
+					r = mutations_matrix[0][x-k];
 					for(i=0;i<(*inputp)->nsam;i++) {
-						if(list[i][x-k] == r) list[i][x-k] = '0';
+						if(mutations_matrix[i][x-k] == r) mutations_matrix[i][x-k] = '0';
 					}
 				}
 			}
@@ -3619,10 +3615,10 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
             exit(1);
         }
         for(x=0;x<Sout;x++) {
-			valuer = ran1()*(double)(weightmut[(*inputp)->nsites-1]);
+			valuer = ran1()*(weightmut[(*inputp)->nsites-1]);
 			y = localize_positiontop(weightmut,valuer,(long int)0,(*inputp)->nsites);
             
-			rr = (double)ran1();
+			rr = ran1();
             if(rr < r_transc) r = 1;	/* transicio, la resta transversions */
             else if (rr >= r_transc && rr < 1.0 - r_transv) r = 2;
 			else r = 3 ;
@@ -3653,8 +3649,8 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
 				mhsout[y] = 0;
 				
 				for(i=0;i<(*inputp)->nsam;i++) {
-					if(list[i][k] == '0') list[i][k] = (char)r + '0';
-					else if (list[i][k] == (char)r + '0') list[i][k] = '0';
+					if(mutations_matrix[i][k] == '0') mutations_matrix[i][k] = (char)r + '0';
+					else if (mutations_matrix[i][k] == (char)r + '0') mutations_matrix[i][k] = '0';
 				}
 			}
         }
@@ -3665,7 +3661,7 @@ void mod_mhits(long int segsites, struct var2 **inputp,double *weightmut)
 	
     (*inputp)->Sout = Sout;
 }
-void mod_outgroup(long int segsit, struct var2 **inputp)
+void mod_outgroup(long int segsit, struct var2 **inputp, char **mutations_matrix)
 {
 	int j,h,polc,inito,nt0;
 	int oldn;
@@ -3673,24 +3669,24 @@ void mod_outgroup(long int segsit, struct var2 **inputp)
 	for(j=0;j<segsit;j++) {
 		nt0 = 0;
 		for(h=0;h<(*inputp)->pop_outgroup;h++) nt0 += (*inputp)->config[h];	
-		inito = list[nt0][j]; /*nt of the outgroup*/
+		inito = mutations_matrix[nt0][j]; /*nt of the outgroup*/
 		polc = 0;
 		for(h=nt0+1;h<nt0+(*inputp)->config[(*inputp)->pop_outgroup];h++) {
-			if(list[h][j] != inito) {
+			if(mutations_matrix[h][j] != inito) {
 				polc = 1; /*if outgroup polymorphic*/
 				break;
 			}
 		}
 		if(polc == 1) {
-			if(inito < list[h][j]) oldn = inito;
-			else oldn = list[h][j];
+			if(inito < mutations_matrix[h][j]) oldn = inito;
+			else oldn = mutations_matrix[h][j];
 		}
 		else oldn = inito;
 		
 		if(oldn != '0') {
 			for(h=0;h<(*inputp)->nsam;h++) {
-				if(list[h][j] == (char)oldn) list[h][j] = '0';
-				else if(list[h][j] == '0') list[h][j] = (char)oldn;
+				if(mutations_matrix[h][j] == (char)oldn) mutations_matrix[h][j] = '0';
+				else if(mutations_matrix[h][j] == '0') mutations_matrix[h][j] = (char)oldn;
 			}
 		}
 	}
@@ -3723,8 +3719,9 @@ double ttime(struct node *ptree, int nsam)	/* la Ttot de l'arbre */
     return(t);
 }
 
-void make_gametes(int nsam, struct node *ptree, double tt,long int newsites,long int ns, int mhits, double r_transc,double r_transv)
-{					/* posa les mutacions a la matriu list */
+/* posa les mutacions a la matriu mutations_matrix */
+void make_gametes(int nsam, struct node *ptree, double tt,long int newsites,long int ns, int mhits, double r_transc,double r_transv, char **mutations_matrix)
+{
     long int j;
     int tip,node;
     int pickb(int, struct node *,double);
@@ -3736,7 +3733,7 @@ void make_gametes(int nsam, struct node *ptree, double tt,long int newsites,long
 	
     for(j=ns;j<ns+newsites;j++) {
 		if(mhits) {
-			rr = (double)ran1();
+			rr = ran1();
 			if(rr < r_transc) r = '1';/* transicio, la resta transversions */
 			else if (rr >= r_transc && rr < 1.0 - r_transv) r = '2';
 			else r = '3';
@@ -3745,10 +3742,10 @@ void make_gametes(int nsam, struct node *ptree, double tt,long int newsites,long
         node = pickb(nsam,ptree,tt);	/* busca una branca al'atzar en funcio de la mida de t*/
         for(tip=0;tip<nsam;tip++) {
             if(tdesn(ptree,tip,node))	{ /* posa mutació si la mostra té relació amb la branca */
-                list[tip][j] = r; 
+                mutations_matrix[tip][j] = r; 
 			}
             else
-                list[tip][j] = '0';
+                mutations_matrix[tip][j] = '0';
         }
     }
 }
@@ -3757,7 +3754,7 @@ int pickb(int nsam, struct node *ptree,double tt) /* agafa la branca a on ha cai
     double x,y,z;
     int i;
     
-    x = (double)ran1()*tt;
+    x = ran1()*tt;
     for(i=0,y=0;i<2*nsam-2;i++) {
         z = (ptree + (ptree+i)->abv)->time - (ptree+i)->time;
         if(z < 0.) z = 0.; /* en cas d'extincio, per si hi han problemes de precissio */
@@ -3781,12 +3778,12 @@ void mnmial(long int n,long int nclass,double *p,long int *rv)
     double x,s;
     long int i,j;
     
-    for(i=0;i<(long int)nclass;i++) rv[i]=0;	/* inicialitzar */
-    for(i=0;i<(long int)n;i++) {	/* posa les n mutacions */
-        x = (double)ran1();	/* agafa un nombre [0,1) */
+    for(i=0;i<nclass;i++) rv[i]=0;	/* inicialitzar */
+    for(i=0;i<n;i++) {	/* posa les n mutacions */
+        x = ran1();	/* agafa un nombre [0,1) */
         j = 0;
         s = p[0];	/* p és el temps total de cada segment relatiu a 1 */
-        while((x>s) && (j<((long int)nclass-(long int)1))) s += p[++j]; /* busca el segment fins que ran sigui major que s, posa a j+1 */
+        while((x>s) && (j<(nclass-1))) s += p[++j]; /* busca el segment fins que ran sigui major que s, posa a j+1 */
         rv[j]++; 	/* afegeix la mutació al segment j */
     }
 }
@@ -3795,13 +3792,13 @@ void mnmial2(long int n,long int nclass,double *p,long int *rv,long int *len)
     double x,s;
     long int i,j;
     
-    for(i=0;i<(long int)nclass;i++) rv[i]=0;	/* inicialitzar */
+    for(i=0;i<nclass;i++) rv[i]=0;	/* inicialitzar */
     i = 0;
-    while(i<(long int)n) {	/* posa les n mutacions */
-        x = (double)ran1();	/* agafa un nombre [0,1) */
+    while(i<n) {	/* posa les n mutacions */
+        x = ran1();	/* agafa un nombre [0,1) */
         j = 0;
         s = p[0];	/* p és el temps total de cada segment relatiu a 1 */
-        while((x>s) && (j<((long int)nclass-(long int)1))) s += p[++j]; /* busca el segment fins que ran sigui major que s, posa a j+1 */
+        while((x>s) && (j<(nclass-1))) s += p[++j]; /* busca el segment fins que ran sigui major que s, posa a j+1 */
         if(len[j] > 0) {
             len[j]--;	
             rv[j]++; 	/* afegeix la mutació al segment j */
@@ -3815,7 +3812,7 @@ void mnmial2_psel(long int n,long int nclass,double *p,long int *rv,long int *le
     long int i,j;
 	long int sumlen;
     
-    for(i=0;i<(long int)nclass;i++) rv[i]=0;	/* inicialitzar */
+    for(i=0;i<nclass;i++) rv[i]=0;	/* inicialitzar */
     j=0;/*locate the selected position*/
 	sumlen = len[j];
 	while(sumlen<sel_nt) {
@@ -3825,11 +3822,11 @@ void mnmial2_psel(long int n,long int nclass,double *p,long int *rv,long int *le
 	rv[j] += 1;
 	len[j] -=1;
 	i = 1;	
-    while(i<(long int)n) {	/* posa les altres n-1 mutacions */
-        x = (double)ran1();	/* agafa un nombre [0,1) */
+    while(i<n) {	/* posa les altres n-1 mutacions */
+        x = ran1();	/* agafa un nombre [0,1) */
         j = 0;
         s = p[0];	/* p és el temps total de cada segment relatiu a 1 */
-        while((x>s) && (j<((long int)nclass-(long int)1))) s += p[++j]; /* busca el segment fins que ran sigui major que s, posa a j+1 */
+        while((x>s) && (j<(nclass-1))) s += p[++j]; /* busca el segment fins que ran sigui major que s, posa a j+1 */
         if(len[j] > 0) {
             len[j]--;	
             rv[j]++; 	/* afegeix la mutació al segment j */
@@ -4941,7 +4938,7 @@ double calc_quantile(double *vec, long int lenvec,double quant, long int numit) 
     return(res);
 }
 
-void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa)
+void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar *ntpar,double valuer,int npopa, char **mutations_matrix)
 {
     long int pi;
     double k_,k_e1,k_n1;
@@ -5075,7 +5072,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			   (ntpar)->fhapl[a] = 0;
 			}
 			for(j=0;j<segsit;j++) { /*all valid positions are invariant positions in nsam=1*/
-				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) == 0) (ntpar)->freq[0] += 1;
+				if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, mutations_matrix, posit)) == 0) (ntpar)->freq[0] += 1;
 			}		
 			(ntpar)->fhapl[0] = nsam;
 			(ntpar)->maxhapl = nsam;
@@ -5127,7 +5124,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			exit(1);
 		}
 		   
-		if(valuer || (*inputp)->mhits) (ntpar)->Rm = Min_rec(0,(int)segsit,nsam,inits,(*inputp)->nsam, list, posit);
+		if(valuer || (*inputp)->mhits) (ntpar)->Rm = Min_rec(0,(int)segsit,nsam,inits,(*inputp)->nsam, mutations_matrix, posit);
 		else (ntpar)->Rm = (int)0;
 
         /* calcul B' i Q, pero sense dividir per S (Wall) */
@@ -5139,21 +5136,21 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
         for(j=0;j<(long int)segsitesm1;) {
             k = j;
             while(k+1 < segsit) { /*calcular k*/
-                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
+                if((ispolnomhit(k,inits,nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break;
                 else {
 					k++;
 				}
             }
             j = k+1;
             while(j < segsit) { /*calcular j*/
-                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break;
+                if((ispolnomhit(j,inits,nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break;
                 else j++;
             }
             if(j < segsit) {                
                 val20 = val21 = -1;
                 b = 0;
                 for(i=inits;i<inits+nsam;i++) {
-                    val10 = (list[i][k] - 48)*4 + (list[i][j]- 48);
+                    val10 = (mutations_matrix[i][k] - 48)*4 + (mutations_matrix[i][j]- 48);
                     if(val20 == -1) val20 = val10;
                     else{
                         if(val20 != val10) {
@@ -5169,7 +5166,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					B += 1;
 					if(!A) {
 						for(i=inits;i<inits+nsam;i++) {
-							if(list[i][j] > '0') x = '1';
+							if(mutations_matrix[i][j] > '0') x = '1';
 							else x = '0';
 							veca[A][i] = x;
 						}
@@ -5180,7 +5177,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						for(c=0;c<A;c++) {
 							d = 0;
 							for(i=inits;i<inits+nsam;i++) {
-								if(list[i][j] > '0') x = '1';
+								if(mutations_matrix[i][j] > '0') x = '1';
 								else x = '0';
 								if(veca[c][i] == x) {
 									d += 1;
@@ -5193,7 +5190,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						}
 						if(!a) {
 							for(i=inits;i<inits+nsam;i++) {
-								if(list[i][j] > '0') x = '1';
+								if(mutations_matrix[i][j] > '0') x = '1';
 								else x = '0';
 								veca[A][i] = x;
 							}
@@ -5231,7 +5228,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
         for(j=0;j<segsit;j++) {
             pi = 0;
             while(j < segsit) {
-                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, list, posit)) > 0) break; /*h is the frequency of the new mutation*/
+                if((h=ispolnomhit(j,inits,nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break; /*h is the frequency of the new mutation*/
                 else {
 					j++;
 					if(h == -2) nmh += 1;
@@ -5241,10 +5238,10 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
             if(j<segsit) {
                 (ntpar)->freq[h] += 1;
                 for(a=inits;a<inits+nsam;a++) {
-                    hapl[(a-inits)*segsit+S] = list[a][j];
+                    hapl[(a-inits)*segsit+S] = mutations_matrix[a][j];
                     /*new two lines: for singleton mutations (no outgroup)*/
-                    if(h == 1) if(list[a][j] != '0') (ntpar)->unic[a-inits] += 1;
-                    if(h == nsam-1) if(list[a][j] == '0') (ntpar)->unic[a-inits] += 1;
+                    if(h == 1) if(mutations_matrix[a][j] != '0') (ntpar)->unic[a-inits] += 1;
+                    if(h == nsam-1) if(mutations_matrix[a][j] == '0') (ntpar)->unic[a-inits] += 1;
                 }
                 S++;
 				if(h > 1) Se1++;
@@ -5252,7 +5249,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				z = 0;/*mismatch dist*/
                 for(a=inits;a<inits+nsam-1;a++) {
                     for(b=a+1;b<inits+nsam;b++) {
-						if(list[a][j] != list[b][j]) {
+						if(mutations_matrix[a][j] != mutations_matrix[b][j]) {
 							pi++;
 							if(h > 1) k_e1++;
 							if(h > 1 && h < nsam-1) k_n1++;
@@ -5399,7 +5396,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				ehhr = (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -5581,7 +5578,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				ehhr =  (long int)1e7;
 				for(j=0;j<segsit;j++) {
 					while(j < segsit) {
-						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+						if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break;
 						else j++;
 					}                    
 					if(j<segsit) {
@@ -5676,7 +5673,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				flagM = 1;
 				for(j=k+1;j<segsit;j++) {
 					if(flagM) {
-						EHHS[j][k] = (double)EHHS[j][k] / (double)EHHS[j][j];
+						EHHS[j][k] = EHHS[j][k] / EHHS[j][j];
 						if(EHHS[j][k] < 0.1) {
 							flagM = 0;
 							nousedM[j][k] = 1;
@@ -5694,7 +5691,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					l=j-1;
 					while(l>=0 && nousedM[k][l]) l--;
 					if(l==-1) continue;
-					iES[k] += ((double)(EHHS[k][l]+EHHS[k][j])*(double)(posit[j]-posit[l]))/(double)2;
+					iES[k] += ((EHHS[k][l]+EHHS[k][j])*(double)(posit[j]-posit[l]))/2.0;
 				}
 				if((ntpar)->max_iES < log(iES[k])) (ntpar)->max_iES = log(iES[k]);
 			}
@@ -5796,18 +5793,18 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			S = 0;
 			for(j=0;j<segsit;j++) {
 				while(j < segsit) {
-					if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+					if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break;
 					else j++;
 				}                    
 				if(j<segsit) {
 					inits1 = 0;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						for(a=inits1;a<inits1+(*inputp)->config[h]-1;a++) {
-							hapl[(a)*segsit+S] = list[a][j];
+							hapl[(a)*segsit+S] = mutations_matrix[a][j];
 						}
-						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit);
+						c = ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, mutations_matrix, posit);
 						piw[h] += (c * ((*inputp)->config[h] - c));
-						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = list[inits1+(*inputp)->config[h]-1][j];
+						hapl[(inits1+(*inputp)->config[h]-1)*segsit+S] = mutations_matrix[inits1+(*inputp)->config[h]-1][j];
 						inits1 += (*inputp)->config[h];
 					}
 					S++;
@@ -5816,11 +5813,11 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					inits2 = inits;
 					for(h=0;h<(*inputp)->npop_sampled;h++) {
 						if((*inputp)->config[h] > 0 && (*inputp)->config[npopa] > 0 && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/
-						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, list, posit)>=0) 
-						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit)>=0))) {
+						   && ((ispolnomhit(j,inits1,(*inputp)->config[h],(*inputp)->nsam, mutations_matrix, posit)>=0) 
+						   &&  (ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, mutations_matrix, posit)>=0))) {
 							for(a=inits1;a<inits1+(*inputp)->config[h];a++)
 								for(b=inits2;b<inits2+(*inputp)->config[npopa];b++)
-									if(list[a][j] != list[b][j]) pib[h]++;
+									if(mutations_matrix[a][j] != mutations_matrix[b][j]) pib[h]++;
 						}
 						inits1 += (*inputp)->config[h];
 					}
@@ -5831,13 +5828,13 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			for(j=0;j<segsit;j++) {
 				inits1 = 0;
 				for(h=0;h<(*inputp)->pop_outgroup;h++) inits1 += (*inputp)->config[h];
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 &&
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) == 0) {
-					if(list[inits2][j] == list[inits1][j]) 
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, mutations_matrix, posit) == 0 &&
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, mutations_matrix, posit) == 0) {
+					if(mutations_matrix[inits2][j] == mutations_matrix[inits1][j]) 
 						(ntpar)->freq[0] -= 1;
 				}
-				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, list, posit) == 0 && 
-				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, list, posit) < 0) {
+				if(ispolnomhit(j,inits2,(*inputp)->config[npopa],(*inputp)->nsam, mutations_matrix, posit) == 0 && 
+				   ispolnomhit(j,inits1,(*inputp)->config[(*inputp)->pop_outgroup],(*inputp)->nsam, mutations_matrix, posit) < 0) {
 					(ntpar)->freq[0] -= 1;
 				}
 			}			
@@ -5877,12 +5874,12 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					(ntpar)->piaallcomp[h] = pib[h] / (double)((*inputp)->config[h] * (*inputp)->config[npopa]);/*keeping all comparisons*/
 					if((ntpar)->piaallcomp[h]) {
 						if((*inputp)->config[h] > 1 && (*inputp)->config[npopa] > 1) 
-							(ntpar)->fstallcomp[h] = 1.0 - ((double)((ntpar)->piwallcomp[h]+(ntpar)->piwallcomp[npopa])/2.0)/(double)(ntpar)->piaallcomp[h];
+							(ntpar)->fstallcomp[h] = 1.0 - (((ntpar)->piwallcomp[h]+(ntpar)->piwallcomp[npopa])/2.0)/(ntpar)->piaallcomp[h];
 						else {
 							if((*inputp)->config[h] == 1 && (*inputp)->config[npopa] > 1)
-								(ntpar)->fstallcomp[h] = 1.0 - ((double)((ntpar)->piwallcomp[npopa])/2.0)/(double)(ntpar)->piaallcomp[h];
+								(ntpar)->fstallcomp[h] = 1.0 - ((ntpar)->piwallcomp[npopa]/2.0)/(ntpar)->piaallcomp[h];
 							if((*inputp)->config[h] > 1 && (*inputp)->config[npopa] == 1)
-								(ntpar)->fstallcomp[h] = 1.0 - ((double)((ntpar)->piwallcomp[h])/2.0)/(double)(ntpar)->piaallcomp[h];
+								(ntpar)->fstallcomp[h] = 1.0 - ((ntpar)->piwallcomp[h]/2.0)/(ntpar)->piaallcomp[h];
 							if((*inputp)->config[h] == 1 && (*inputp)->config[npopa] == 1)
 								(ntpar)->fstallcomp[h] = 1.0;
 						}
@@ -5904,12 +5901,12 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					(ntpar)->hapaallcomp[h] = 1.0 - hapb[h] / (double)((*inputp)->config[h] * (*inputp)->config[npopa]);/*keeping all comparisons*/
 					if((ntpar)->hapaallcomp[h]) {
 						if((*inputp)->config[h] > 1 && (*inputp)->config[npopa] > 1) 
-							(ntpar)->fsthapallcomp[h] = 1.0 - ((double)((ntpar)->hapwallcomp[h]+(ntpar)->hapwallcomp[npopa])/2.0)/(double)(ntpar)->hapaallcomp[h];
+							(ntpar)->fsthapallcomp[h] = 1.0 - (((ntpar)->hapwallcomp[h]+(ntpar)->hapwallcomp[npopa])/2.0)/(ntpar)->hapaallcomp[h];
 						else {
 							if((*inputp)->config[h] == 1 && (*inputp)->config[npopa] > 1)
-								(ntpar)->fsthapallcomp[h] = 1.0 - ((double)((ntpar)->hapwallcomp[npopa])/2.0)/(double)(ntpar)->hapaallcomp[h];
+								(ntpar)->fsthapallcomp[h] = 1.0 - ((ntpar)->hapwallcomp[npopa]/2.0)/(ntpar)->hapaallcomp[h];
 							if((*inputp)->config[h] > 1 && (*inputp)->config[npopa] == 1)
-								(ntpar)->fsthapallcomp[h] = 1.0 - ((double)((ntpar)->hapwallcomp[h])/2.0)/(double)(ntpar)->hapaallcomp[h];
+								(ntpar)->fsthapallcomp[h] = 1.0 - ((ntpar)->hapwallcomp[h]/2.0)/(ntpar)->hapaallcomp[h];
 							if((*inputp)->config[h] == 1 && (*inputp)->config[npopa] == 1)
 								(ntpar)->fsthapallcomp[h] = 1.0;
 						}
@@ -5942,7 +5939,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 			comb2 = 0;
 			
 			for(h=0;h<(*inputp)->npop_sampled;h++) {
-				if((*inputp)->config[h] && (*inputp)->config[npopa] && npopa != h /**/ && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
+				if((*inputp)->config[h] && (*inputp)->config[npopa] && npopa != h && h != (*inputp)->pop_outgroup/*Included to eliminate the outgroup in the analysis*/) {
 					comb = (*inputp)->config[h] * (*inputp)->config[npopa];
 					(ntpar)->pib += (double)pib[h]/(double)comb;
 					comb2++;
@@ -5964,13 +5961,13 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		}
 		for(j=0;j<segsit;j++) {
 			while(j < segsit) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<segsit) {					
 				pola = polb = polc = 0; /*if polymorphic in pop1,pop2,popo*/
 				
-				/*find the value inits1,inits2 and initso: indicate the position in list[inits12o][j] for comparison of polymorphsms*/
+				/*find the value inits1,inits2 and initso: indicate the position in mutations_matrix[inits12o][j] for comparison of polymorphsms*/
 				inits1 = -1;
 				for(pop1=1;pop1<=(*inputp)->ancestral_pol[0][0];pop1++) {
 					if((*inputp)->config[(*inputp)->ancestral_pol[0][pop1]]) {
@@ -6005,7 +6002,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						nt0 = 0;
 						for(h=0;h<(*inputp)->ancestral_pol[0][pop1];h++) nt0 += (*inputp)->config[h];	
 						for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[0][pop1]];h++) {
-							if(list[h][j] != list[inits1][j]) {
+							if(mutations_matrix[h][j] != mutations_matrix[inits1][j]) {
 								pola = 1;
 								break;
 							}
@@ -6016,7 +6013,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						nt0 = 0;
 						for(h=0;h<(*inputp)->ancestral_pol[1][pop2];h++) nt0 += (*inputp)->config[h];	
 						for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[1][pop2]];h++) {
-							if(list[h][j] != list[inits2][j]) {
+							if(mutations_matrix[h][j] != mutations_matrix[inits2][j]) {
 								polb = 1;
 								break;
 							}
@@ -6027,7 +6024,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						nt0 = 0;
 						for(h=0;h<(*inputp)->ancestral_pol[2][popo];h++) nt0 += (*inputp)->config[h];	
 						for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[2][popo]];h++) {
-							if(list[h][j] != list[initso][j]) {
+							if(mutations_matrix[h][j] != mutations_matrix[initso][j]) {
 								polc = 1;
 								break;
 							}
@@ -6039,7 +6036,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				/*define classes*/
 				if(pola==1 && polb==0 && polc==0) {
 					if((*inputp)->ancestral_pol[2][0]) {
-						if(list[inits2][j] == list[initso][j]) (ntpar)->Sanc[0] += 1;/*Sx1*/
+						if(mutations_matrix[inits2][j] == mutations_matrix[initso][j]) (ntpar)->Sanc[0] += 1;/*Sx1*/
 						else (ntpar)->Sanc[6] += 1;/*Sx1f2*/
 					}
 					else {
@@ -6048,7 +6045,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				}
 				if(pola==0 && polb==1 && polc==0) {
 					if((*inputp)->ancestral_pol[2][0]) {
-						if(list[inits1][j] == list[initso][j]) (ntpar)->Sanc[1] += 1;/*Sx2*/
+						if(mutations_matrix[inits1][j] == mutations_matrix[initso][j]) (ntpar)->Sanc[1] += 1;/*Sx2*/
 						else (ntpar)->Sanc[7] += 1;/*Sx2f1*/
 					}
 					else {
@@ -6056,7 +6053,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					}
 				}
 				if(polc == 1 && (pola != -1 && polb != -1)) {
-					if((pola==0 && polb==0) && (list[inits1][j] == list[inits2][j])) {
+					if((pola==0 && polb==0) && (mutations_matrix[inits1][j] == mutations_matrix[inits2][j])) {
 						(ntpar)->Sanc[2] += 1;/*Sxo*/
 					}
 					else {
@@ -6068,13 +6065,13 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 				}
 				if(pola==0 && polb==0 && polc==0) {
 					if((*inputp)->ancestral_pol[2][0]) {
-						if(list[inits2][j] == list[initso][j] && list[inits1][j] != list[initso][j]) {
+						if(mutations_matrix[inits2][j] == mutations_matrix[initso][j] && mutations_matrix[inits1][j] != mutations_matrix[initso][j]) {
 							(ntpar)->Sanc[3] += 1;/*Sf1*/
 						}
-						if(list[inits1][j] == list[initso][j] && list[inits2][j] != list[initso][j]) {
+						if(mutations_matrix[inits1][j] == mutations_matrix[initso][j] && mutations_matrix[inits2][j] != mutations_matrix[initso][j]) {
 							(ntpar)->Sanc[4] += 1;/*Sf2*/
 						}
-						if(list[inits1][j] == list[inits2][j] && list[inits1][j] != list[initso][j]) {
+						if(mutations_matrix[inits1][j] == mutations_matrix[inits2][j] && mutations_matrix[inits1][j] != mutations_matrix[initso][j]) {
 							(ntpar)->Sanc[5] += 1;/*Sfo*/
 						}
 					}
@@ -6101,7 +6098,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		for(h=0;h<4*(*inputp)->type_ancestral;h++) {
 			(ntpar)->Sanc[h] = 0;
 		}
-		/*find the value initsq1,initsq2,initso: indicate the POSITION in list[inits][j] for comparison of polymorphsms*/
+		/*find the value initsq1,initsq2,initso: indicate the POSITION in mutations_matrix[inits][j] for comparison of polymorphsms*/
 		/*do for the outgroup (the last population is defined as outgroup)*/
 		initso = -1;
 		for(popo=1;popo<=(*inputp)->ancestral_pol[(*inputp)->type_ancestral-1][0];popo++) {
@@ -6138,7 +6135,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 		}
 		for(j=0;j<segsit;j++) {
 			while(j < segsit) {
-				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, list, posit)) > 0) break;
+				if((c=ispolnomhit(j,0,(*inputp)->nsam,(*inputp)->nsam, mutations_matrix, posit)) > 0) break;
 				else j++;
 			}                    
 			if(j<segsit) {
@@ -6148,7 +6145,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					nt0 = 0;
 					for(h=0;h<(*inputp)->ancestral_pol[(*inputp)->type_ancestral-1][popo];h++) nt0 += (*inputp)->config[h];	
 					for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[(*inputp)->type_ancestral-1][popo]];h++) {
-						if(list[h][j] != list[initso][j]) {
+						if(mutations_matrix[h][j] != mutations_matrix[initso][j]) {
 							polc = 1;
 							break;
 						}
@@ -6163,7 +6160,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 							nt0 = 0;
 							for(h=0;h<(*inputp)->ancestral_pol[x][pop1];h++) nt0 += (*inputp)->config[h];	
 							for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[x][pop1]];h++) {
-								if(list[h][j] != list[initsq1[x]][j]) {
+								if(mutations_matrix[h][j] != mutations_matrix[initsq1[x]][j]) {
 									polqa[x] = 1;
 									break;
 								}
@@ -6176,7 +6173,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 									nt0 = 0;
 									for(h=0;h<(*inputp)->ancestral_pol[pop1][pop2];h++) nt0 += (*inputp)->config[h];	
 									for(h=nt0;h<nt0+(*inputp)->config[(*inputp)->ancestral_pol[pop1][pop2]];h++) {
-										if(list[h][j] != list[initsq2[x]][j]) {
+										if(mutations_matrix[h][j] != mutations_matrix[initsq2[x]][j]) {
 											polqb[x] = 1;
 											break;
 										}
@@ -6190,7 +6187,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					
 					/*define classes*/
 					if(polqa[x]==1 && polqb[x]==0 && polc==0) {
-						if(list[initsq2[x]][j] == list[initso][j]) (ntpar)->Sanc[x*4+0] += 1;/*Sx1*/
+						if(mutations_matrix[initsq2[x]][j] == mutations_matrix[initso][j]) (ntpar)->Sanc[x*4+0] += 1;/*Sx1*/
 						else (ntpar)->Sanc[x*4+2] += 1;/*Sx1f2*/
 					}
 					
@@ -6198,7 +6195,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 						(ntpar)->Sanc[x*4+3] += 1;/*Ssh*/
 					}
 					if(polqa[x]==0 && polqb[x]==0 && polc==0) {
-						if((list[initsq2[x]][j] == list[initso][j]) && (list[initsq1[x]][j] != list[initso][j])) {
+						if((mutations_matrix[initsq2[x]][j] == mutations_matrix[initso][j]) && (mutations_matrix[initsq1[x]][j] != mutations_matrix[initso][j])) {
 							(ntpar)->Sanc[x*4+1] += 1;/*Sf1*/
 						}
 					}
@@ -6208,7 +6205,7 @@ void calc_neutpar(int valuep,long int segsit,struct var2 **inputp, struct dnapar
 					(ntpar)->Sanc[((*inputp)->type_ancestral-1)*4+0] += 1;/*Sxo*/
 				}
 				if(polqa[0]==0 && polqb[0]==0 && polc==0) {
-					if((list[initsq1[0]][j] == list[initsq2[0]][j]) && (list[initsq1[0]][j] != list[initso][j])) {
+					if((mutations_matrix[initsq1[0]][j] == mutations_matrix[initsq2[0]][j]) && (mutations_matrix[initsq1[0]][j] != mutations_matrix[initso][j])) {
 						(ntpar)->Sanc[((*inputp)->type_ancestral-1)*4+1] += 1;/*Sfo*/
 					}
 				}	
