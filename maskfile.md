@@ -8,7 +8,7 @@ If you choose to do so, then running `mask --help` will give you an overview of 
 
 ## build
 
-> Builds the application with `CMAKE` and genearate the executables. An optional `--target` flag can be passed to specify a single target.
+> Builds the application with `CMAKE` and generate the executables. An optional `--target` flag can be passed to specify a single target.
 
 It is possible to tweak the flags used by `CMAKE` by specifying the `btype` flag:
 
@@ -39,16 +39,20 @@ Building target <mlcoalsimXmpi> ...
 * btype
   * flags: -b --btype
   * type: string
-  * desc: Build type used by CMAKE (valid types: `Debug`, `Release`, `MinSizeRel`, `RelWithDebInfo`). Default is `RelWithDebInfo`. 
+  * desc: Build type used by CMAKE (valid types: `Debug`, `Release`, `MinSizeRel`, `RelWithDebInfo`). Default is `RelWithDebInfo`.
 
 ~~~sh
 
 _target=${target:-all}
+# Issue with clang on osx: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93082
+CMAKE_C_COMPILER=${CMAKE_C_COMPILER:-/usr/bin/gcc}
+DCMAKE_CXX_COMPILER=${DCMAKE_CXX_COMPILER:-/usr/bin/g++}
+
 _build_type=${btype:-RelWithDebInfo}
 
 mkdir -p build
 
-cmake -B build -DCMAKE_BUILD_TYPE="$_build_type"
+cmake -B build -DCMAKE_BUILD_TYPE="$_build_type" -DCMAKE_C_COMPILER="$CMAKE_C_COMPILER" -DCMAKE_CXX_COMPILER="$DCMAKE_CXX_COMPILER"
 
 if [[ "$_target" == "all" ]]; then
     echo "Building all targets..."
@@ -57,6 +61,16 @@ else
     printf 'Building target <%s> ...\n' "$_target"
     make -j4 -C build "$_target"
 fi
+~~~
+
+## test
+
+> Builds the application with `CMAKE` with `debug` debug mode and then run unit tests.
+
+~~~sh
+
+mask build --btype Debug --target mlcoalsim_test
+./build/test/mlcoalsim_test
 ~~~
 
 ## validate

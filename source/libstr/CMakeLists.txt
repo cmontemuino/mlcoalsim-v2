@@ -1,0 +1,9 @@
+project(libstr)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_OUTPUT_NAME str)
+
+add_library(${PROJECT_NAME} SHARED str.c)
+target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

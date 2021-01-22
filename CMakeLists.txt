@@ -13,15 +13,37 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -Wextra")
 
 # MPI is required
-find_package(MPI 3 REQUIRED)
-
+find_package(MPI 3.1 REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 
+enable_testing()
+
+# Include testing library
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/munit/munit.c")
+    find_program(GIT git) 
+    if(GIT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+        execute_process(COMMAND ${GIT} submodule update --init --recursive)
+    else()
+        message (FATAL_ERROR "It looks like you don't have submodules checked out.
+If you are compiling from git, make sure to run `git submodule update --init --recursive', which will invoke that command for you.")
+    endif()
+endif()
+
+# Include third-party libs
+add_subdirectory("${CMAKE_SOURCE_DIR}/lib")
+
 # Include ZF_LOG
-add_subdirectory(zf_log)
+add_subdirectory(${CMAKE_SOURCE_DIR}/zf_log)
 
 # Include the Benchmark library
-add_subdirectory(benchmark)
+add_subdirectory(${CMAKE_SOURCE_DIR}/benchmark)
+
+# Include string module
+add_subdirectory("${CMAKE_SOURCE_DIR}/source/libstr")
+target_compile_options(libstr PRIVATE -Wall -Wextra)
+
+# Include the test module
+add_subdirectory("${CMAKE_SOURCE_DIR}/test")
 
 file(GLOB SOURCES "source/*.c")
 
@@ -71,6 +93,6 @@ foreach(EXECUTABLE ${ALL_EXECUTABLES})
         set_target_properties(${EXECUTABLE} PROPERTIES COMPILE_FLAGS "${CURRENT_FLAGS} -DBENCHMARK_ENABLED")
     endif ()
 
-    target_link_libraries(${EXECUTABLE} zf_log benchmark)
+    target_link_libraries(${EXECUTABLE} zf_log benchmark libstr)
     install(TARGETS ${EXECUTABLE} DESTINATION ${CMAKE_INSTALL_PREFIX})
 endforeach()

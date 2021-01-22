@@ -1,3 +1,4 @@
+#include "neutpar.h"
 #include "mlsp_sm.h"
 #include "ms2_sm_helpers.h"
 

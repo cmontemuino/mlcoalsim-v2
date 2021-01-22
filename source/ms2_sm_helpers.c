@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include "ran1.h"
 #include "distrib.h"
+#include "ms2_sm_helpers.h"
 
 // Expand matrix with mutations
 void biggerlist(int nsam, char **mutations_matrix, long int maxsites)
@@ -158,8 +160,9 @@ void locate(long int n, long int beg, long int *ptr, int mhits, double *weightmu
 
 /* localitza les mutacions en un fragment */
 void locate2(long int n, long int beg, long int *ptr, int mhits, int nsam, double *weightmut, long int end, char **mutations_matrix)
-{    
-     ordran2(n,ptr,mhits,nsam,beg,weightmut,end, mutations_matrix);	/* mutacions en [0,len) ordenades de major a menor */
+{
+	void ordran2(long int n, long int *pbuf, int mhits, int nsam, long int beg, double *weightmut, long int end, char **mutations_matrix);
+    ordran2(n,ptr,mhits,nsam,beg,weightmut,end, mutations_matrix);	/* mutacions en [0,len) ordenades de major a menor */
 }
 
 double logPPoisson2(long int Si, double lambda)
@@ -173,13 +176,15 @@ double logPPoisson2(long int Si, double lambda)
 /* localitza les mutacions en un fragment */
 void locate_psel(long int n, long int beg, long int *ptr, int mhits, long int sel_nt, double *weightmut, long int end)
 {    
-     ordran_psel(n,ptr,mhits,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
+	void ordran_psel(long int n, long int *pbuf, int mhits, long int sel_nt, long int beg, double *weightmut, long int end);
+    ordran_psel(n,ptr,mhits,sel_nt,beg,weightmut,end);	/* mutacions en [0,len) ordenades de major a menor */
 }
 
 /* localitza les mutacions en un fragment */
 void locate2_psel(long int n, long int beg, long int *ptr, int mhits, int nsam, long int sel_nt, double *weightmut, long int end, char **mutations_matrix)
-{     
-     ordran2_psel(n,ptr,mhits,nsam,sel_nt,beg,weightmut,end, mutations_matrix);	/* mutacions en [0,len) ordenades de major a menor */
+{
+	void ordran2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end, char **mutations_matrix);  
+    ordran2_psel(n,ptr,mhits,nsam,sel_nt,beg,weightmut,end, mutations_matrix);	/* mutacions en [0,len) ordenades de major a menor */
 }
 
 void order(long int n, long int *pbuf)/* ordena els valors: es molt lent per un gran nombre de polimofismes! */
@@ -203,10 +208,10 @@ void ordran(long int n, long int *pbuf, int mhits, long int beg, double *weightm
     order(n,pbuf);
 }
 
+/* posa un nombre entre [0,len) */
 void ordran2(long int n, long int *pbuf, int mhits, int nsam, long int beg, double *weightmut, long int end, char **mutations_matrix)
 {
-    /* posa un nombre entre [0,len) */
-
+	void ranvec2(long int n, long int *pbuf, int mhits, int nsam, long int beg, double *weightmut, long int end, char **mutations_matrix);
     ranvec2(n,pbuf,mhits,nsam,beg,weightmut,end, mutations_matrix);
     order(n,pbuf);
 }
@@ -214,12 +219,14 @@ void ordran2(long int n, long int *pbuf, int mhits, int nsam, long int beg, doub
 
 void ordran_psel(long int n, long int *pbuf, int mhits, long int sel_nt, long int beg, double *weightmut, long int end)
 {
+	void ranvec_psel(long int n, long int *pbuf, int mhits, long int sel_nt, long int beg, double *weightmut, long int end);
     ranvec_psel(n,pbuf,mhits,sel_nt,beg,weightmut,end);
     order(n,pbuf);
 }
 
 void ordran2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end, char **mutations_matrix)
 {
+	void ranvec2_psel(long int n,long int *pbuf,int mhits,int nsam,long int sel_nt,long int beg,double *weightmut,long int end, char **mutations_matrix);
     ranvec2_psel(n,pbuf,mhits,nsam,sel_nt,beg,weightmut,end, mutations_matrix);
     order(n,pbuf);
 }

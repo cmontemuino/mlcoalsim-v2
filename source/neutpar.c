@@ -1,7 +1,9 @@
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "mlsp_sm.h"
+#include "neutpar.h"
 
 void calc_neutparSRH(long int segsit, struct var2 **inputp, struct dnapar *ntpar, double valuer, int npopa, int flaghap, char **mutations_matrix, long int *positions)
 {

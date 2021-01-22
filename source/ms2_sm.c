@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <str.h>
 
 #define FACTOR (double)1.5
 /*please, NIT_PRIOR no more than 32000*/
